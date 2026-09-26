@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recursão · PDS I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds1">PDS I</a>
+      <span class="sep">/</span><span>Recursão</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software I</div>
+    <h1>Recursão: a pilha de chamadas</h1>
+    <p class="lead">Uma função recursiva chama a si mesma. Cada chamada ganha seu próprio <b>quadro</b> na pilha, com suas próprias variáveis. À esquerda você vê a pilha; à direita, a <b>árvore de recursão</b> com todas as chamadas feitas até agora.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Função">
+        <button class="btn" data-fn="fatorial">Fatorial</button>
+        <button class="btn" data-fn="fib">Fibonacci</button>
+        <button class="btn" data-fn="fibMemo">Fibonacci + memoização</button>
+      </div>
+      <label>n = <input id="n" type="number" min="0" value="4" style="width:70px"></label>
+      <span class="c-muted" id="limit"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>executando agora</span>
+      <span><i style="background:var(--surface-3); border:1px solid var(--muted)"></i>esperando o retorno de outra chamada</span>
+      <span><i style="background:var(--yellow)"></i>retornando</span>
+      <span><i style="background:var(--green)"></i>terminada</span>
+      <span><i style="background:var(--purple)"></i>valor reaproveitado da memória</span>
+    </div>
+
+    <section class="prose">
+      <h2>Os dois ingredientes</h2>
+      <ol>
+        <li><b>Caso base:</b> uma entrada pequena o bastante para ser respondida diretamente, sem recursão. Sem ele a pilha cresce até estourar (<i>stack overflow</i>).</li>
+        <li><b>Passo recursivo:</b> reduz o problema a uma versão <b>menor</b> de si mesmo, que certamente se aproxima do caso base.</li>
+      </ol>
+      <p>O fatorial é o exemplo clássico: $n! = n \cdot (n-1)!$ com $0! = 1! = 1$. Repare que a multiplicação só acontece <b>na volta</b>, quando as chamadas vão sendo desempilhadas.</p>
+
+      <h2>Fibonacci e o perigo de recalcular</h2>
+      <p>$F(n) = F(n-1) + F(n-2)$ parece inofensivo, mas cada chamada gera <b>duas</b>. Para $n = 7$ a árvore tem 41 nós, e $F(2)$ é calculado 8 vezes. O número de chamadas cresce como $\varphi^n \approx 1{,}618^n$.</p>
+      <p>A <b>memoização</b> guarda cada resultado em um vetor na primeira vez em que ele é calculado. A árvore "murcha" para um caminho com ramos curtos: $O(n)$ chamadas. Essa é a semente da <b>programação dinâmica</b>, que você verá em Algoritmos I.</p>
+      <div class="callout tip">
+        <p><b>Todo algoritmo recursivo pode ser escrito com laços</b>, bastando simular a pilha à mão. A recursão brilha quando o problema tem estrutura recursiva natural: árvores, divisão e conquista, backtracking.</p>
+      </div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { CODES, LIMITS, recursionSteps, layoutTree } from './recursao.js';
+
+    const W = 900, H = 540;
+    const STACK_X = 20, STACK_W = 250, TREE_X0 = 300, TREE_X1 = W - 24, TREE_Y0 = 60;
+    let fn = 'fatorial';
+    let layout = null;
+
+    const STATUS = {
+      active: { fill: COLORS.blue, text: '#0b1a20' },
+      waiting: { fill: COLORS.surface3, text: COLORS.text },
+      ret: { fill: COLORS.yellow, text: '#1d1a08' },
+      done: { fill: COLORS.green, text: '#0f1d0a' },
+      memo: { fill: COLORS.purple, text: '#170c2a' },
+    };
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H,
+      render(step, s) {
+        const name = fn === 'fatorial' ? 'fatorial' : 'fib';
+
+        // --- Pilha de chamadas (cresce para cima) ---
+        s.text('stack-title', 'PILHA DE CHAMADAS', { x: STACK_X + STACK_W / 2, y: 24, size: 12, weight: 700, fill: COLORS.muted });
+        s.line('stack-floor', STACK_X, H - 30, STACK_X + STACK_W, H - 30, { stroke: COLORS.border, sw: 2, layer: 'bg' });
+        const fh = Math.min(46, (H - 90) / Math.max(1, step.stack.length));
+        step.stack.forEach((f, k) => {
+          const y = H - 34 - (k + 1) * fh;
+          const top = k === step.stack.length - 1;
+          const st = STATUS[step.nodes[f.id].status];
+          s.rect(`fr${f.id}`, { x: STACK_X, y, w: STACK_W, h: fh - 4, fill: top ? '#1c3640' : COLORS.surface2, stroke: top ? COLORS.blue : COLORS.border, sw: top ? 2 : 1 });
+          s.text(`frt${f.id}`, `${name}(n=${f.n})`, { x: STACK_X + 12, y: y + (fh - 4) / 2, size: fh > 30 ? 14 : 11, anchor: 'start', mono: true, weight: 600, fill: top ? COLORS.blue : COLORS.text });
+          s.text(`frn${f.id}`, f.note, { x: STACK_X + STACK_W - 10, y: y + (fh - 4) / 2, size: fh > 30 ? 12 : 10, anchor: 'end', mono: true, fill: st === STATUS.ret ? COLORS.yellow : COLORS.muted });
+        });
+
+        // --- Memória (memoização) ---
+        if (step.memo) {
+          const cw = Math.min(34, (TREE_X1 - TREE_X0) / step.memo.length);
+          step.memo.forEach((m, k) => {
+            const x = TREE_X0 + k * cw;
+            s.rect(`mm${k}`, { x, y: H - 58, w: cw - 3, h: 26, rx: 4, fill: m == null ? COLORS.surface : '#2a2140', stroke: m == null ? COLORS.border : COLORS.purple });
+            s.text(`mmv${k}`, m ?? '−1', { x: x + (cw - 3) / 2, y: H - 45, size: 11, mono: true, fill: m == null ? COLORS.faint : COLORS.purple });
+            s.text(`mmk${k}`, k, { x: x + (cw - 3) / 2, y: H - 20, size: 10, mono: true, fill: COLORS.faint });
+          });
+          s.text('memo-title', 'memo[ ]', { x: TREE_X0, y: H - 74, size: 12, anchor: 'start', weight: 700, fill: COLORS.muted });
+        }
+
+        // --- Árvore de recursão ---
+        s.text('tree-title', 'ÁRVORE DE RECURSÃO', { x: (TREE_X0 + TREE_X1) / 2, y: 24, size: 12, weight: 700, fill: COLORS.muted });
+        const { pos, leaves, depth } = layout;
+        const bottom = step.memo ? H - 100 : H - 40;
+        const dy = Math.min(70, (bottom - TREE_Y0) / Math.max(1, depth));
+        const dx = (TREE_X1 - TREE_X0) / Math.max(1, leaves);
+        const r = Math.max(10, Math.min(20, dx * 0.42, dy * 0.3));
+        const P = id => ({ x: TREE_X0 + dx * (pos.get(id).x + 0.5), y: TREE_Y0 + dy * pos.get(id).depth });
+        for (const nd of step.nodes) {
+          const p = P(nd.id);
+          if (nd.parent != null) {
+            const q = P(nd.parent);
+            s.line(`e${nd.id}`, q.x, q.y + r, p.x, p.y - r, { stroke: COLORS.border, sw: 1.5 });
+          }
+          const st = STATUS[nd.status];
+          s.circle(`n${nd.id}`, { x: p.x, y: p.y, r, fill: st.fill, stroke: nd.status === 'waiting' ? COLORS.muted : 'none', sw: 1.5 });
+          s.text(`nt${nd.id}`, nd.n, { x: p.x, y: p.y, size: r * 0.95, weight: 700, mono: true, fill: st.text });
+          if (nd.ret != null) {
+            s.text(`nr${nd.id}`, `=${nd.ret}`, { x: p.x, y: p.y + r + 10, size: Math.max(9, r * 0.7), mono: true, fill: COLORS.yellow });
+          }
+        }
+      },
+    });
+
+    function run() {
+      const input = $('#n');
+      const n = Math.max(0, Math.min(LIMITS[fn], Math.round(+input.value || 0)));
+      input.value = n;
+      input.max = LIMITS[fn];
+      $('#limit').textContent = `(máx. ${LIMITS[fn]} para caber na tela)`;
+      $$('[data-fn]').forEach(b => b.setAttribute('aria-pressed', b.dataset.fn === fn));
+      const steps = recursionSteps(fn, n);
+      layout = layoutTree(steps[steps.length - 1].nodes);
+      player.setCode(CODES[fn], 'cpp');
+      player.load(steps);
+    }
+
+    $$('[data-fn]').forEach(b => b.addEventListener('click', () => {
+      fn = b.dataset.fn;
+      if (fn !== 'fatorial' && +$('#n').value < 5) $('#n').value = 5;
+      run();
+    }));
+    $('#n').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Quantos quadros estão empilhados, <b>no máximo</b>, durante o cálculo de <code>fatorial(5)</code>?',
+        options: ['5', '1', '6', '120'],
+        answer: 0,
+        explain: 'fatorial(5) → fatorial(4) → … → fatorial(1): cinco chamadas ativas ao mesmo tempo, no instante em que o caso base é atingido.',
+      },
+      {
+        q: 'O que acontece se removermos o caso base <code>if (n &lt;= 1) return 1;</code>?',
+        options: ['A recursão nunca para e a pilha estoura (stack overflow)', 'O resultado vira 0', 'O compilador acusa erro', 'A função retorna 1 sempre'],
+        answer: 0,
+        explain: 'Sem caso base, cada chamada gera outra (n vai para 0, −1, −2, …) até a memória da pilha acabar.',
+      },
+      {
+        q: 'Quantas chamadas <code>fib(n)</code> <b>sem memoização</b> faz para n = 5?',
+        options: ['15', '5', '9', '32'],
+        answer: 0,
+        explain: 'O número de chamadas C(n) satisfaz C(n) = C(n−1) + C(n−2) + 1, com C(0) = C(1) = 1. Para n = 5 isso dá 15. Rode a animação e confira no painel de variáveis!',
+      },
+    ]);
+  </script>
+</body>
+</html>

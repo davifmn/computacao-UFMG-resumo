@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ponteiros · PDS I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds1">PDS I</a>
+      <span class="sep">/</span><span>Ponteiros</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software I</div>
+    <h1>Ponteiros e memória</h1>
+    <p class="lead">A memória é uma fileira enorme de caixinhas numeradas. Um <b>ponteiro</b> é uma caixinha que guarda o <b>número</b> (endereço) de outra caixinha. Execute o programa linha a linha e observe as setas.</p>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>ponteiro válido</span>
+      <span><i style="background:var(--yellow)"></i>acesso via <code>*</code> (desreferência)</span>
+      <span><i style="background:var(--red)"></i>ponteiro pendente / memória liberada</span>
+    </div>
+
+    <section class="prose">
+      <h2>Resumo dos operadores</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Expressão</th><th>Lê-se</th><th>Neste programa</th></tr>
+          <tr><td><code>&amp;x</code></td><td>endereço de x</td><td>0x100</td></tr>
+          <tr><td><code>int *p</code></td><td>p é um ponteiro para int</td><td>declaração</td></tr>
+          <tr><td><code>*p</code></td><td>o valor apontado por p</td><td>30 (quando p = &amp;x)</td></tr>
+          <tr><td><code>p + 1</code></td><td>próximo int depois de p</td><td>endereço + 4 bytes</td></tr>
+          <tr><td><code>v[i]</code></td><td>o mesmo que <code>*(v + i)</code></td><td>—</td></tr>
+          <tr><td><code>new T</code> / <code>delete p</code></td><td>aloca / libera no heap</td><td>0x5A0</td></tr>
+        </table>
+      </div>
+
+      <h2>Pilha × heap</h2>
+      <p>Variáveis locais vivem na <b>pilha</b>: são criadas quando a função começa e destruídas automaticamente quando ela termina. Memória alocada com <code>new</code> vive no <b>heap</b> até que alguém chame <code>delete</code>. Isso dá liberdade (o dado sobrevive à função, e o tamanho pode ser decidido em tempo de execução), mas traz responsabilidade:</p>
+      <ul>
+        <li><b>Vazamento de memória</b> (<i>memory leak</i>): esquecer o <code>delete</code>.</li>
+        <li><b>Ponteiro pendente</b> (<i>dangling pointer</i>): usar o ponteiro depois do <code>delete</code>.</li>
+        <li><b>Liberação dupla</b> (<i>double free</i>): chamar <code>delete</code> duas vezes no mesmo endereço.</li>
+      </ul>
+      <div class="callout tip">
+        <p>Em C++ moderno, prefira <code>std::vector</code> e <i>smart pointers</i> (<code>std::unique_ptr</code>), que chamam <code>delete</code> por você. Mas entender ponteiros "crus" é essencial para Estruturas de Dados: <b>listas encadeadas e árvores são feitas de ponteiros</b>.</p>
+      </div>
+
+      <h2>Passagem por valor × por referência</h2>
+      <p>Por que <code>void troca(int a, int b)</code> não troca nada? Porque a função recebe <b>cópias</b>. Com ponteiros, a função recebe endereços e pode alterar as variáveis originais:</p>
+      <pre class="panel" style="padding:12px 16px; overflow:auto"><code>void troca(int *a, int *b) {
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+troca(&amp;x, &amp;y);   // em C++ também dá para usar referências: void troca(int &amp;a, int &amp;b)</code></pre>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { CODE, pointerSteps } from './ponteiros.js';
+
+    const W = 900, H = 500;
+    const ORDER = ['x', 'y', 'p', 'v0', 'v1', 'v2', 'q', 'h'];
+    const ROW0 = 76, ROW = 46, BOX_X = 190, BOX_W = 130, BOX_H = 34;
+    const HEAP_X = 640, HEAP_W = 150;
+    const rowY = key => ROW0 + ORDER.indexOf(key) * ROW;
+
+    new StepPlayer($('#player'), {
+      code: CODE, lang: 'cpp', width: W, height: H, codeTitle: 'Programa',
+      render(step, s) {
+        s.text('stk', 'PILHA (stack)', { x: 120, y: 30, size: 12, weight: 700, fill: COLORS.muted });
+        s.text('heap-t', 'HEAP (memória dinâmica)', { x: HEAP_X + HEAP_W / 2, y: 30, size: 12, weight: 700, fill: COLORS.muted });
+        s.rect('heap-bg', { x: HEAP_X - 30, y: 50, w: HEAP_W + 60, h: H - 80, rx: 14, fill: 'none', stroke: COLORS.border, dash: '6 6', layer: 'bg' });
+        s.text('hdr-addr', 'endereço', { x: 30, y: 54, size: 11, anchor: 'start', fill: COLORS.faint });
+        s.text('hdr-name', 'nome', { x: 176, y: 54, size: 11, anchor: 'end', fill: COLORS.faint });
+        s.text('hdr-val', 'valor', { x: BOX_X + BOX_W / 2, y: 54, size: 11, fill: COLORS.faint });
+
+        const byKey = new Map(step.cells.map(c => [c.key, c]));
+        const place = c => c.region === 'heap'
+          ? { x: HEAP_X, y: rowY('h') - BOX_H / 2, w: HEAP_W }
+          : { x: BOX_X, y: rowY(c.key) - BOX_H / 2, w: BOX_W };
+
+        for (const c of step.cells) {
+          const { x, y, w } = place(c);
+          const touched = step.touched.includes(c.key);
+          const derefTarget = step.deref && byKey.get(step.deref)?.target === c.key;
+          let stroke = c.kind === 'ptr' ? COLORS.blue : COLORS.border;
+          if (touched) stroke = COLORS.yellow;
+          if (c.state === 'freed' || c.state === 'dangling') stroke = COLORS.red;
+          const fill = c.state === 'freed' ? '#2a1717' : derefTarget ? '#3d3a22' : COLORS.surface2;
+          s.rect(`box-${c.key}`, { x, y, w, h: BOX_H, fill, stroke, sw: touched ? 2.5 : 1.5, dash: c.state === 'freed' ? '5 4' : null });
+          s.text(`val-${c.key}`, c.value, {
+            x: x + w / 2, y: y + BOX_H / 2, size: 15, mono: true, weight: 600,
+            fill: c.state === 'freed' ? COLORS.red : c.kind === 'ptr' ? COLORS.blue : COLORS.text,
+          });
+          if (c.region === 'heap') {
+            s.text(`addr-${c.key}`, c.addr, { x: x + w / 2, y: y - 14, size: 12, mono: true, fill: COLORS.faint });
+            s.text(`name-${c.key}`, c.state === 'freed' ? 'liberado!' : 'int (anônimo)', { x: x + w / 2, y: y + BOX_H + 14, size: 12, fill: c.state === 'freed' ? COLORS.red : COLORS.muted });
+          } else {
+            s.text(`addr-${c.key}`, c.addr, { x: 30, y: y + BOX_H / 2, size: 12, anchor: 'start', mono: true, fill: COLORS.faint });
+            s.text(`name-${c.key}`, c.name, { x: 176, y: y + BOX_H / 2, size: 15, anchor: 'end', mono: true, weight: 600, fill: COLORS.text });
+          }
+        }
+
+        // Setas dos ponteiros
+        for (const c of step.cells) {
+          if (c.kind !== 'ptr' || !c.target) continue;
+          const t = byKey.get(c.target);
+          if (!t) continue;
+          const a = place(c), b = place(t);
+          const y1 = a.y + BOX_H / 2, y2 = b.y + BOX_H / 2;
+          const x1 = a.x + a.w;
+          const color = c.state === 'dangling' ? COLORS.red : step.deref === c.key ? COLORS.yellow : COLORS.blue;
+          let d;
+          if (t.region === 'heap') {
+            d = `M ${x1 + 4} ${y1} C ${x1 + 150} ${y1}, ${b.x - 150} ${y2}, ${b.x - 6} ${y2}`;
+          } else {
+            const bend = 60 + Math.abs(y2 - y1) * 0.35;
+            d = `M ${x1 + 4} ${y1} C ${x1 + bend} ${y1}, ${x1 + bend} ${y2}, ${x1 + 8} ${y2}`;
+          }
+          s.path(`arrow-${c.key}`, d, { stroke: color, sw: 2.5, arrow: true, dash: c.state === 'dangling' ? '7 5' : null });
+        }
+      },
+    }).load(pointerSteps());
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Depois de <code>int a = 5; int *p = &amp;a; *p = *p * 2;</code>, quanto vale <code>a</code>?',
+        options: ['10', '5', 'O endereço de a vezes 2', 'Erro de compilação'],
+        answer: 0,
+        explain: '<code>*p</code> é a própria variável a, então a linha equivale a <code>a = a * 2</code>.',
+      },
+      {
+        q: 'Se <code>int *q</code> vale 0x200, quanto vale <code>q + 3</code> (int de 4 bytes)?',
+        options: ['0x20C', '0x203', '0x206', '0x230'],
+        answer: 0,
+        explain: 'Aritmética de ponteiros anda em unidades do tipo apontado: 0x200 + 3 × 4 = 0x200 + 12 = 0x20C.',
+      },
+      {
+        q: 'Qual trecho causa um <b>vazamento de memória</b>?',
+        options: [
+          '<code>int *p = new int(1); p = new int(2);</code>',
+          '<code>int *p = new int(1); delete p;</code>',
+          '<code>int x = 1; int *p = &amp;x;</code>',
+          '<code>int *p = nullptr;</code>',
+        ],
+        answer: 0,
+        explain: 'O primeiro bloco perde seu único ponteiro quando p é reatribuído. Fica ocupado para sempre, sem que ninguém consiga dar <code>delete</code> nele.',
+      },
+    ]);
+  </script>
+</body>
+</html>

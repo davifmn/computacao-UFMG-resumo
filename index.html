@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resumão de Ciência da Computação</title>
+  <meta name="description" content="A graduação em Ciência da Computação da UFMG explicada com visualizações interativas: código, animação e exercícios lado a lado.">
+  <link rel="icon" href="assets/favicon.svg">
+  <link rel="stylesheet" href="engine/theme.css">
+  <style>
+    .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; padding: 24px 0 8px; }
+    .hero h1 { font-size: clamp(34px, 5vw, 56px); margin: 10px 0 14px; }
+    .hero h1 em { font-style: normal; color: var(--blue); }
+    .hero svg { width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
+    .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 28px 0 8px; }
+    .pillar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .pillar b { display: block; margin-bottom: 4px; }
+    .pillar span { color: var(--muted); font-size: 14px; }
+    .period { margin-top: 44px; scroll-margin-top: 70px; }
+    .period-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .period-head h2 { margin: 0; }
+    .disc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-top: 14px; scroll-margin-top: 70px; border-left: 4px solid var(--c); }
+    .disc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .disc-head h3 { margin: 0; font-size: 19px; }
+    .disc-head .links { display: flex; gap: 12px; font-size: 14px; }
+    .disc p { color: var(--muted); margin: 6px 0 14px; font-size: 15px; }
+    .viz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+    .viz { display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); transition: border-color .15s, transform .15s; }
+    .viz:hover { border-color: var(--c); transform: translateY(-2px); text-decoration: none; }
+    .viz b { display: block; margin-bottom: 4px; }
+    .viz span { color: var(--muted); font-size: 13px; line-height: 1.45; display: block; }
+    .future { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+    .future .card h3 { font-size: 15px; color: var(--muted); }
+    .future ul { margin: 0; padding-left: 18px; color: var(--faint); font-size: 14px; }
+    @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs"><span class="sep">/</span><span>Ciência da Computação · UFMG</span></nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Bacharelado em Ciência da Computação · UFMG</div>
+        <h1>A graduação inteira, <em>para ver funcionando</em>.</h1>
+        <p class="lead">Um resumo da graduação em que cada conceito ganha uma visualização interativa, no espírito do 3Blue1Brown: o <b>código</b> ao lado da <b>animação</b>, a linha em execução destacada, as variáveis mudando e exercícios para fixar.</p>
+        <a class="btn primary" href="#periodo-01">Começar pelo 1º período ↓</a>
+        <a class="btn" href="#periodo-02" style="margin-left:6px">Ir para o 2º período</a>
+      </div>
+      <svg id="hero" aria-label="Animação decorativa de uma grade sendo transformada"></svg>
+    </section>
+
+    <div class="pillars">
+      <div class="pillar"><b class="c-blue">▶ Passo a passo</b><span>Avance, volte e pause qualquer algoritmo. Use <kbd>←</kbd> <kbd>→</kbd> e <kbd>espaço</kbd>.</span></div>
+      <div class="pillar"><b class="c-yellow">{ } Código real</b><span>O mesmo código que roda em C++ e Python, com testes, está na pasta de cada disciplina.</span></div>
+      <div class="pillar"><b class="c-green">✎ Exercícios</b><span>Perguntas comentadas e geradores que criam questões novas a cada clique.</span></div>
+      <div class="pillar"><b class="c-pink">∑ Teoria</b><span>Cada disciplina tem um resumo com fórmulas, intuições e armadilhas comuns.</span></div>
+    </div>
+
+    <div id="periods"></div>
+
+    <footer class="footer">
+      Feito por Davi Fraga, ex-aluno, para os próximos. Encontrou um erro ou quer contribuir? Veja o <a href="https://github.com" id="repo-link">repositório no GitHub</a> e o guia <code>CONTRIBUTING.md</code>.
+      Grade de referência: <a href="https://dcc.ufmg.br/estrutura-curricular-do-bacharelado-em-ciencia-da-computacao/" target="_blank" rel="noopener">estrutura curricular do DCC/UFMG (2024)</a>.
+    </footer>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from './engine/scene.js';
+    import { h } from './engine/page.js';
+    import { PERIODOS, REPO } from './catalogo.js';
+
+    // No GitHub Pages os READMEs não são renderizados: apontamos para o GitHub quando REPO estiver definido.
+    const src = (path, readme = false) => (REPO ? `${REPO}/${readme ? 'blob' : 'tree'}/main/${path}${readme ? '/README.md' : ''}` : `${path}${readme ? '/README.md' : '/'}`);
+    if (REPO) document.getElementById('repo-link').href = REPO;
+
+    // ---------- Lista de períodos ----------
+    const root = document.getElementById('periods');
+    for (const p of PERIODOS) {
+      const sec = h('section', { class: 'period', id: p.id });
+      if (p.disciplinas) {
+        const total = p.disciplinas.reduce((n, d) => n + d.visualizacoes.length, 0);
+        sec.append(h('div', { class: 'period-head' }, h('h2', {}, `${p.numero}º período`), h('span', { class: 'badge ok' }, `${total} páginas interativas`)));
+        for (const d of p.disciplinas) {
+          sec.append(h('article', { class: 'disc', id: d.id, style: `--c: var(--${d.cor})` },
+            h('div', { class: 'disc-head' },
+              h('h3', {}, d.nome, ' ', h('span', { class: 'badge' }, d.codigo)),
+              h('div', { class: 'links' }, h('a', { href: src(d.pasta, true) }, 'resumo teórico'), h('a', { href: src(d.pasta) }, 'código-fonte'))),
+            h('p', {}, d.resumo),
+            h('div', { class: 'viz-grid' }, ...d.visualizacoes.map(v =>
+              h('a', { class: 'viz', href: `${d.pasta}/${v.tipo === 'tutorial' ? 'tutoriais' : 'visualizacoes'}/${v.arquivo}` },
+                h('b', {}, v.titulo, v.tipo === 'tutorial' ? h('span', { class: 'badge info', style: 'margin-left:8px;display:inline-block' }, 'tutorial') : null),
+                h('span', {}, v.descricao))))));
+        }
+      }
+      root.append(sec);
+    }
+    const future = h('section', { class: 'period', id: 'em-breve' },
+      h('div', { class: 'period-head' }, h('h2', {}, 'Próximos períodos'), h('span', { class: 'badge warn' }, 'em construção')),
+      h('div', { class: 'future' }, ...PERIODOS.filter(p => p.planejadas).map(p =>
+        h('div', { class: 'card', id: p.id }, h('h3', {}, `${p.numero}º período`), h('ul', {}, ...p.planejadas.map(n => h('li', {}, n)))))));
+    root.append(future);
+
+    // ---------- Animação decorativa: a grade dançando entre transformações ----------
+    const W = 520, H = 360, U = 36, O = [W / 2, H / 2];
+    const scene = new Scene(document.getElementById('hero'), { width: W, height: H });
+    scene.setAnimated(false);
+    const P = ([x, y]) => [O[0] + x * U, O[1] - y * U];
+    const ap = (M, [x, y]) => [M[0][0] * x + M[0][1] * y, M[1][0] * x + M[1][1] * y];
+    const lerp = (A, B, t) => A.map((r, i) => r.map((v, j) => v + (B[i][j] - v) * t));
+    const c = Math.cos(0.6), s = Math.sin(0.6);
+    const seq = [[[1, 0], [0, 1]], [[1, 1], [0, 1]], [[c, -s], [s, c]], [[1.4, 0.4], [0.2, 0.8]], [[0, -1], [1, 0]]];
+    function draw(M) {
+      scene.frame(sc => {
+        for (let k = -10; k <= 10; k++) {
+          const axis = k === 0;
+          const opt = { stroke: axis ? COLORS.text : COLORS.blue, sw: axis ? 1.8 : 1, opacity: axis ? 0.8 : 0.45 };
+          sc.line(`v${k}`, ...P(ap(M, [k, -10])), ...P(ap(M, [k, 10])), opt);
+          sc.line(`h${k}`, ...P(ap(M, [-10, k])), ...P(ap(M, [10, k])), opt);
+        }
+        const sq = [[0, 0], [1, 0], [1, 1], [0, 1]].map(p => P(ap(M, p)).join(' '));
+        sc.path('sq', `M ${sq.join(' L ')} Z`, { stroke: COLORS.yellow, sw: 1.5, fill: 'rgba(244,211,94,.25)' });
+        sc.path('i', `M ${O.join(' ')} L ${P(ap(M, [1, 0])).join(' ')}`, { stroke: COLORS.green, sw: 4, arrow: true });
+        sc.path('j', `M ${O.join(' ')} L ${P(ap(M, [0, 1])).join(' ')}`, { stroke: COLORS.red, sw: 4, arrow: true });
+      });
+    }
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let k = 0;
+    draw(seq[0]);
+    async function loop() {
+      const A = seq[k % seq.length], B = seq[(k + 1) % seq.length];
+      await tween(1600, t => draw(lerp(A, B, t)), ease.smooth).promise;
+      k++;
+      setTimeout(loop, 900);
+    }
+    if (!reduce) setTimeout(loop, 600);
+  </script>
+</body>
+</html>

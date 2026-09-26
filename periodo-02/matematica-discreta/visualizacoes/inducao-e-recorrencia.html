@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Indução e Recorrência · Matemática Discreta</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#discreta">Matemática Discreta</a>
+      <span class="sep">/</span><span>Indução e recorrência</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Matemática Discreta</div>
+    <h1>Indução e recorrência: a Torre de Hanói</h1>
+    <p class="lead">Para mover $n$ discos basta saber mover $n-1$: esse é o raciocínio <b>recursivo</b>, e a <b>indução</b> é a sua prova. Assista ao algoritmo e depois conte os movimentos.</p>
+
+    <div class="toolbar"><label>Discos <input id="n" type="number" min="1" max="7" value="4" style="width:60px"></label><span class="c-muted" id="moves-info"></span></div>
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Contando os movimentos: a recorrência</h2>
+      <p>Seja $T(n)$ o número de movimentos para $n$ discos. O algoritmo move $n-1$ discos, depois o maior, depois $n-1$ de novo:</p>
+      <p>$$ T(0) = 0, \qquad T(n) = 2\,T(n-1) + 1. $$</p>
+      <p>Calculando: $T(1) = 1,\ T(2) = 3,\ T(3) = 7,\ T(4) = 15$. O padrão sugere $T(n) = 2^n - 1$, mas <b>padrão não é prova</b>. Para isso serve a indução.</p>
+
+      <h2>Prova por indução</h2>
+      <div class="callout">
+        <p><b>Afirmação:</b> $T(n) = 2^n - 1$ para todo $n \ge 0$.</p>
+        <p><b>Base</b> ($n = 0$): $T(0) = 0 = 2^0 - 1$. ✓</p>
+        <p><b>Hipótese de indução:</b> suponha que $T(n-1) = 2^{n-1} - 1$ para algum $n \ge 1$.</p>
+        <p><b>Passo:</b> $T(n) = 2\,T(n-1) + 1 = 2(2^{n-1} - 1) + 1 = 2^n - 2 + 1 = 2^n - 1$. ✓</p>
+        <p>Pelo princípio da indução, vale para todo $n$. ∎</p>
+      </div>
+      <p>A indução funciona como uma fileira de dominós: a <b>base</b> derruba o primeiro, e o <b>passo</b> garante que cada dominó derruba o seguinte. Repare que a estrutura da prova é idêntica à do algoritmo recursivo: caso base + passo que usa o caso menor. <b>Provar um algoritmo recursivo correto é fazer uma indução.</b></p>
+      <p>Também dá para provar que $2^n - 1$ é <b>ótimo</b>: o maior disco só pode se mover quando todos os outros estão numa única outra torre, e isso exige pelo menos $T(n-1)$ movimentos antes e $T(n-1)$ depois. Com 64 discos, a lenda diz que o mundo acaba quando os monges terminarem: são $2^{64} - 1 \approx 1{,}8 \times 10^{19}$ movimentos, ou 585 bilhões de anos a um movimento por segundo.</p>
+
+      <h2>Variações da indução</h2>
+      <ul>
+        <li><b>Indução forte:</b> a hipótese vale para <i>todos</i> os valores menores que $n$, não só para $n-1$. É útil quando o passo "pula" (ex.: todo $n \ge 2$ é produto de primos).</li>
+        <li><b>Indução estrutural:</b> para estruturas definidas recursivamente (listas, árvores, fórmulas). Prova-se para os casos base (folhas) e para cada forma de construção.</li>
+        <li><b>Invariante de laço:</b> é a indução aplicada a um <code>while</code>. Vale antes da 1ª iteração (base), cada iteração a preserva (passo), e ao sair do laço ela implica a resposta.</li>
+      </ul>
+
+      <h2>Resolvendo recorrências</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Recorrência</th><th>Solução</th><th>Onde aparece</th></tr>
+          <tr><td>$T(n) = T(n-1) + 1$</td><td>$\Theta(n)$</td><td>percorrer uma lista recursivamente</td></tr>
+          <tr><td>$T(n) = T(n-1) + n$</td><td>$\Theta(n^2)$</td><td>selection sort</td></tr>
+          <tr><td>$T(n) = 2T(n-1) + 1$</td><td>$2^n - 1$</td><td>Hanói</td></tr>
+          <tr><td>$T(n) = T(n-1) + T(n-2)$</td><td>$\Theta(\varphi^n)$</td><td>Fibonacci ingênuo</td></tr>
+          <tr><td>$T(n) = T(n/2) + 1$</td><td>$\Theta(\log n)$</td><td>busca binária</td></tr>
+          <tr><td>$T(n) = 2T(n/2) + n$</td><td>$\Theta(n \log n)$</td><td>merge sort</td></tr>
+        </table>
+      </div>
+      <p>Recorrências lineares homogêneas como $a_n = c_1 a_{n-1} + c_2 a_{n-2}$ se resolvem pela <b>equação característica</b> $r^2 = c_1 r + c_2$: se ela tem raízes distintas $r_1, r_2$, então $a_n = \alpha r_1^n + \beta r_2^n$. Para Fibonacci, as raízes são $\varphi = \frac{1+\sqrt5}{2}$ e $\frac{1-\sqrt5}{2}$ (fórmula de Binet). As do tipo "dividir e conquistar" serão resolvidas com o <b>Teorema Mestre</b> em Algoritmos I.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { HANOI_CODE, hanoiSteps } from './discreta.js';
+
+    const W = 900, H = 420, PEG_X = [170, 450, 730], BASE = 330;
+    const DISK_COLORS = [COLORS.red, COLORS.orange, COLORS.yellow, COLORS.green, COLORS.teal, COLORS.blue, COLORS.purple];
+    const player = new StepPlayer($('#player'), {
+      code: HANOI_CODE, lang: 'python', width: W, height: H, codeTitle: 'Hanói (Python)',
+      render(step, s) {
+        const n = step.n, dh = Math.min(30, 200 / n);
+        ['A', 'B', 'C'].forEach((name, p) => {
+          s.rect(`peg${p}`, { x: PEG_X[p] - 5, y: BASE - 230, w: 10, h: 230, rx: 4, fill: COLORS.surface3, stroke: 'none', layer: 'bg' });
+          s.text(`pegl${p}`, name, { x: PEG_X[p], y: BASE + 26, size: 18, weight: 800, fill: COLORS.muted });
+        });
+        s.rect('base', { x: 40, y: BASE, w: W - 80, h: 10, rx: 4, fill: COLORS.surface3, stroke: 'none', layer: 'bg' });
+        step.pegs.forEach((peg, p) => peg.forEach((disk, level) => {
+          const w = 40 + disk * (200 / n);
+          const hot = step.moved === disk;
+          s.rect(`d${disk}`, { x: PEG_X[p] - w / 2, y: BASE - (level + 1) * dh, w, h: dh - 3, rx: 8, fill: DISK_COLORS[(disk - 1) % DISK_COLORS.length], stroke: hot ? '#fff' : 'none', sw: 2.5 });
+          s.text(`dt${disk}`, disk, { x: PEG_X[p], y: BASE - (level + 1) * dh + (dh - 3) / 2, size: Math.min(15, dh * 0.6), weight: 800, fill: '#0b0e12' });
+        }));
+        s.text('count', `movimentos: ${step.moves} / ${2 ** n - 1}`, { x: W - 40, y: 30, size: 16, anchor: 'end', weight: 700, mono: true, fill: COLORS.yellow });
+        step.stack.forEach((f, i) => {
+          s.text(`st${i}`, `hanoi(${f.n}, ${f.from}→${f.to})`, { x: 40, y: 30 + i * 20, size: 12, anchor: 'start', mono: true, fill: i === step.stack.length - 1 ? COLORS.blue : COLORS.faint });
+        });
+      },
+    });
+    function run() {
+      const n = Math.max(1, Math.min(7, Math.round(+$('#n').value || 3)));
+      $('#n').value = n;
+      $('#moves-info').textContent = `(${2 ** n - 1} movimentos)`;
+      player.load(hanoiSteps(n));
+    }
+    $('#n').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Numa prova por indução de que $1 + 2 + \\dots + n = \\frac{n(n+1)}{2}$, o que se usa no passo?', options: ['Que a fórmula vale para n − 1, somando n aos dois lados', 'Que vale para n = 1', 'Que vale para todo n', 'Que n é par'], answer: 0, explain: '$\\frac{(n-1)n}{2} + n = \\frac{n(n+1)}{2}$.' },
+      { q: 'Qual o erro da "prova" de que todos os cavalos têm a mesma cor (passo: dos n cavalos, os n−1 primeiros e os n−1 últimos têm a mesma cor, e eles se sobrepõem)?', options: ['Com n = 2 os dois grupos de 1 cavalo não se sobrepõem', 'A base está errada', 'Indução não vale para cavalos', 'Falta indução forte'], answer: 0, explain: 'O passo de 1 para 2 falha: {cavalo 1} e {cavalo 2} não têm elemento em comum. O passo precisa valer para <b>todo</b> n.' },
+      { q: 'Quanto vale $T(n)$ se $T(1) = 1$ e $T(n) = 3T(n-1)$?', options: ['$3^{n-1}$', '$3n$', '$3^n$', '$n^3$'], answer: 0, explain: '$T(n) = 3 \\cdot 3 \\cdots 3 \\cdot T(1) = 3^{n-1}$.' },
+    ]);
+  </script>
+</body>
+</html>

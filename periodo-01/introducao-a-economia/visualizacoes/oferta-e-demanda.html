@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oferta e Demanda · Economia</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 9.5em 1fr 3.5em; gap: 6px 10px; align-items: center; padding: 8px 14px 14px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 14px 14px; }
+    .kpi { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+    .kpi .l { font-size: 12px; color: var(--muted); }
+    .kpi .v { font: 700 18px var(--mono); }
+    .story { padding: 6px 14px 14px; font-size: 15px; color: #d9dde3; min-height: 70px; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 4px; }
+    @media (max-width: 980px) { .lab { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#economia">Economia</a>
+      <span class="sep">/</span><span>Oferta e demanda</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Economia</div>
+    <h1>Oferta, demanda e intervenções no mercado</h1>
+    <p class="lead">Mexa nas curvas, aplique choques e políticas, e veja preço, quantidade e bem-estar (excedentes) se ajustarem. As áreas coloridas são o "lucro" de cada lado do mercado.</p>
+
+    <div class="toolbar">
+      <span class="c-muted" style="font-size:14px">Choques:</span>
+      <div class="chips" id="shocks">
+        <button class="btn small" data-shock="renda">Renda sobe (bem normal)</button>
+        <button class="btn small" data-shock="geada">Geada destrói safra</button>
+        <button class="btn small" data-shock="tecnologia">Nova tecnologia</button>
+        <button class="btn small" data-shock="substituto">Substituto fica mais barato</button>
+        <button class="btn small" data-shock="reset">Restaurar</button>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="chart" aria-label="Gráfico de oferta e demanda"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Curvas</div>
+          <div class="ctl">
+            <label for="A">Demanda (nível)</label><input id="A" type="range" min="60" max="140" value="100"><output id="A-o"></output>
+            <label for="B">Demanda (inclinação)</label><input id="B" type="range" min="0.3" max="3" step="0.1" value="1"><output id="B-o"></output>
+            <label for="C">Oferta (nível)</label><input id="C" type="range" min="0" max="60" value="10"><output id="C-o"></output>
+            <label for="D">Oferta (inclinação)</label><input id="D" type="range" min="0.3" max="3" step="0.1" value="1"><output id="D-o"></output>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Política do governo</div>
+          <div class="seg" id="policy">
+            <button class="btn small" data-p="none">Nenhuma</button>
+            <button class="btn small" data-p="tax">Imposto</button>
+            <button class="btn small" data-p="ceiling">Preço máximo</button>
+            <button class="btn small" data-p="floor">Preço mínimo</button>
+          </div>
+          <div class="ctl" id="policy-ctl" hidden>
+            <label for="pv" id="pv-l">Valor</label><input id="pv" type="range" min="0" max="120" value="20"><output id="pv-o"></output>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Resultado</div>
+          <div class="kpis" id="kpis"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Interpretação</div>
+          <div class="story" id="story"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>excedente do consumidor</span>
+      <span><i style="background:var(--green)"></i>excedente do produtor</span>
+      <span><i style="background:var(--yellow)"></i>arrecadação do governo</span>
+      <span><i style="background:var(--red)"></i>peso morto (bem-estar perdido)</span>
+    </div>
+
+    <section class="prose">
+      <h2>As leis da oferta e da demanda</h2>
+      <p>A <b>demanda</b> é negativamente inclinada: quanto mais caro, menos as pessoas querem comprar. A <b>oferta</b> é positivamente inclinada: quanto mais caro, mais vale a pena produzir. O <b>equilíbrio</b> é o único preço em que a quantidade que os consumidores querem comprar é igual à que os produtores querem vender:</p>
+      <p>$$ A - BQ = C + DQ \;\Rightarrow\; Q^* = \frac{A - C}{B + D},\qquad P^* = A - BQ^* $$</p>
+      <div class="callout"><p><b>Mover a curva × mover-se sobre a curva.</b> Uma mudança no preço do próprio bem move você <i>ao longo</i> da curva (variação da quantidade demandada). Mudanças em renda, gostos, preços de bens relacionados, custos ou tecnologia <b>deslocam a curva inteira</b> (variação da demanda ou da oferta).</p></div>
+
+      <h2>Excedentes e eficiência</h2>
+      <p>O <b>excedente do consumidor</b> é a diferença entre o que cada consumidor estaria disposto a pagar (a altura da demanda) e o preço pago. O <b>do produtor</b> é a diferença entre o preço recebido e o custo (a altura da oferta). No equilíbrio de livre mercado, a soma dos dois é máxima. Qualquer política que afaste a quantidade de $Q^*$ cria um <b>peso morto</b>: trocas que beneficiariam os dois lados e deixam de acontecer.</p>
+
+      <h2>Quem paga o imposto?</h2>
+      <p>Não importa sobre quem a lei cobra o imposto: o <b>lado menos elástico</b> (que tem menos alternativas) arca com a maior parte. Com curvas lineares ($P = A - BQ$ e $P = C + DQ$), os consumidores pagam a fração $\frac{B}{B+D}$ do imposto e os produtores, $\frac{D}{B+D}$. Experimente deixar a demanda bem íngreme (inelástica, como combustível ou remédios) e aplicar um imposto.</p>
+
+      <h2>Elasticidade-preço</h2>
+      <p>$$ \varepsilon = \frac{\%\Delta Q}{\%\Delta P} = \frac{dQ}{dP}\cdot\frac{P}{Q} $$</p>
+      <p>Se $|\varepsilon| &gt; 1$ a demanda é <b>elástica</b> (reage muito ao preço); se $|\varepsilon| &lt; 1$, é <b>inelástica</b>. Em uma reta de demanda a elasticidade muda ao longo da curva: é mais elástica em cima (preço alto) e mais inelástica embaixo.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt } from '../../../engine/page.js';
+    import { market, demandP, supplyP } from './mercado.js';
+
+    const W = 900, H = 600, ML = 70, MR = 30, MT = 30, MB = 60;
+    const QMAX = 120, PMAX = 150;
+    const X = q => ML + (q / QMAX) * (W - ML - MR);
+    const Y = p => H - MB - (p / PMAX) * (H - MT - MB);
+    const scene = new Scene($('#chart'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+
+    const BASE = { A: 100, B: 1, C: 10, D: 1 };
+    let m = { ...BASE };
+    let policy = 'none';
+    let prevEq = null;
+    let lastShock = null;
+
+    const poly = (s, key, pts, color) => {
+      if (!pts.length) return;
+      s.path(key, `M ${pts.map(([q, p]) => `${X(q)} ${Y(Math.max(0, p))}`).join(' L ')} Z`, { stroke: 'none', fill: color, layer: 'areas' });
+    };
+
+    function policyObj() {
+      const v = +$('#pv').value;
+      return policy === 'tax' ? { type: 'tax', t: v } : policy === 'none' ? { type: 'none' } : { type: policy, p: v };
+    }
+
+    function draw() {
+      const r = market(m, policyObj());
+      scene.frame(s => {
+        // Eixos e grade
+        for (let p = 0; p <= PMAX; p += 25) {
+          s.line(`gp${p}`, X(0), Y(p), X(QMAX), Y(p), { stroke: COLORS.border, sw: 1, layer: 'bg' });
+          s.text(`lp${p}`, p, { x: ML - 12, y: Y(p), size: 12, anchor: 'end', fill: COLORS.faint, mono: true });
+        }
+        for (let q = 0; q <= QMAX; q += 20) {
+          s.line(`gq${q}`, X(q), Y(0), X(q), Y(PMAX), { stroke: COLORS.border, sw: 1, layer: 'bg' });
+          s.text(`lq${q}`, q, { x: X(q), y: Y(0) + 18, size: 12, fill: COLORS.faint, mono: true });
+        }
+        s.text('ax-p', 'Preço (P)', { x: ML - 10, y: MT - 12, size: 13, anchor: 'start', fill: COLORS.muted, weight: 600 });
+        s.text('ax-q', 'Quantidade (Q)', { x: W - MR, y: H - 16, size: 13, anchor: 'end', fill: COLORS.muted, weight: 600 });
+
+        // Áreas
+        poly(s, 'cs', r.polys.cs, 'rgba(88,196,221,.30)');
+        poly(s, 'ps', r.polys.ps, 'rgba(131,193,103,.30)');
+        poly(s, 'tax', r.polys.tax, 'rgba(244,211,94,.35)');
+        poly(s, 'dwl', r.polys.dwl, 'rgba(252,98,85,.45)');
+
+        // Curvas (desenhadas dentro da janela)
+        const qEndD = Math.min(QMAX, m.A / m.B);
+        s.line('demand', X(0), Y(m.A), X(qEndD), Y(demandP(m, qEndD)), { stroke: COLORS.blue, sw: 3.5 });
+        const qEndS = Math.min(QMAX, (PMAX - m.C) / m.D);
+        s.line('supply', X(0), Y(m.C), X(qEndS), Y(supplyP(m, qEndS)), { stroke: COLORS.green, sw: 3.5 });
+        s.text('dl', 'D', { x: X(qEndD) + (qEndD >= QMAX ? -14 : 10), y: Y(demandP(m, qEndD)) - 14, size: 18, weight: 800, fill: COLORS.blue });
+        s.text('sl', 'O', { x: X(qEndS) - 16, y: Y(supplyP(m, qEndS)) + (qEndS >= QMAX ? 16 : 14), size: 18, weight: 800, fill: COLORS.green });
+
+        // Equilíbrio anterior (fantasma) para comparar após um choque
+        if (prevEq && (Math.abs(prevEq.Q - r.eq.Q) > 0.5 || Math.abs(prevEq.P - r.eq.P) > 0.5)) {
+          s.circle('prev', { x: X(prevEq.Q), y: Y(prevEq.P), r: 6, fill: 'none', stroke: COLORS.muted, sw: 2 });
+          s.path('prev-arrow', `M ${X(prevEq.Q)} ${Y(prevEq.P)} L ${X(r.eq.Q)} ${Y(r.eq.P)}`, { stroke: COLORS.muted, sw: 1.5, dash: '4 4', arrow: true });
+        }
+
+        // Linhas de política
+        const pol = policyObj();
+        if (pol.type === 'tax' && pol.t > 0) {
+          const qEnd = Math.min(QMAX, (PMAX - m.C - pol.t) / m.D);
+          s.line('supply-tax', X(0), Y(m.C + pol.t), X(qEnd), Y(m.C + pol.t + m.D * qEnd), { stroke: COLORS.green, sw: 2, dash: '8 6' });
+          s.text('stl', 'O + t', { x: X(qEnd) - 44, y: Y(m.C + pol.t + m.D * qEnd) + 26, size: 14, weight: 700, fill: COLORS.green });
+          s.line('pc', X(0), Y(r.Pc), X(r.Q), Y(r.Pc), { stroke: COLORS.yellow, sw: 1.5, dash: '4 4' });
+          s.line('ps', X(0), Y(r.Ps), X(r.Q), Y(r.Ps), { stroke: COLORS.yellow, sw: 1.5, dash: '4 4' });
+          s.text('pcl', `consumidor paga ${fmt(r.Pc, 1)}`, { x: ML + 6, y: Y(r.Pc) - 10, size: 12, anchor: 'start', fill: COLORS.yellow });
+          s.text('psl', `produtor recebe ${fmt(r.Ps, 1)}`, { x: ML + 6, y: Y(r.Ps) + 12, size: 12, anchor: 'start', fill: COLORS.yellow });
+        }
+        if ((pol.type === 'ceiling' || pol.type === 'floor')) {
+          s.line('pline', X(0), Y(pol.p), X(QMAX), Y(pol.p), { stroke: COLORS.orange, sw: 2.5 });
+          s.text('pll', `${pol.type === 'ceiling' ? 'preço máximo' : 'preço mínimo'} = ${pol.p}${r.binding ? '' : ' (não restringe)'}`, { x: W - MR - 4, y: Y(pol.p) - 12, size: 13, anchor: 'end', weight: 700, fill: COLORS.orange });
+          if (r.gap) {
+            const y = Y(r.gap.p);
+            s.path('gap', `M ${X(Math.min(r.gap.Qs, r.gap.Qd))} ${y + 16} L ${X(Math.max(r.gap.Qs, r.gap.Qd))} ${y + 16}`, { stroke: COLORS.red, sw: 3, arrow: true });
+            s.text('gapl', `${r.gap.kind}: ${fmt(Math.abs(r.gap.Qd - r.gap.Qs), 1)} unidades`, { x: X((r.gap.Qs + r.gap.Qd) / 2), y: y + 34, size: 13, weight: 700, fill: COLORS.red });
+          }
+        }
+
+        // Ponto de equilíbrio / transação
+        s.line('eq-v', X(r.Q), Y(0), X(r.Q), Y(Math.max(r.Pc, r.Ps)), { stroke: COLORS.faint, sw: 1, dash: '3 5' });
+        s.circle('eq', { x: X(r.eq.Q), y: Y(r.eq.P), r: 7, fill: COLORS.yellow, stroke: COLORS.bg, sw: 2 });
+        s.text('eql', `E (${fmt(r.eq.Q, 1)}; ${fmt(r.eq.P, 1)})`, { x: X(r.eq.Q) + 12, y: Y(r.eq.P) - 16, size: 13, anchor: 'start', weight: 700, fill: COLORS.yellow });
+      });
+      kpis(r);
+      story(r);
+    }
+
+    function kpis(r) {
+      const k = (l, v, c = '') => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`;
+      $('#kpis').innerHTML =
+        k('Quantidade negociada', fmt(r.Q, 1)) +
+        k('Preço (consumidor)', fmt(r.Pc, 1)) +
+        k('Exc. do consumidor', fmt(r.CS, 0), 'c-blue') +
+        k('Exc. do produtor', fmt(r.PS, 0), 'c-green') +
+        k('Arrecadação', fmt(r.T, 0), 'c-yellow') +
+        k('Peso morto', fmt(r.DWL, 0), 'c-red') +
+        k('Elasticidade da demanda', fmt(r.Ed, 2)) +
+        k('Bem-estar total', fmt(r.total, 0));
+    }
+
+    const SHOCKS = {
+      renda: { d: { A: +25 }, text: 'Com mais renda, as pessoas querem comprar mais a <b>qualquer</b> preço: a demanda se desloca para a <b>direita</b>. Preço e quantidade de equilíbrio sobem.' },
+      geada: { d: { C: +25 }, text: 'A geada encarece a produção: a oferta se desloca para a <b>esquerda</b> (para cima). O preço sobe e a quantidade cai.' },
+      tecnologia: { d: { C: -10, D: -0.3 }, text: 'A tecnologia barateia a produção: a oferta se desloca para a <b>direita</b>. O preço cai e a quantidade sobe, e o consumidor ganha.' },
+      substituto: { d: { A: -20 }, text: 'Se um bem substituto (ex.: margarina × manteiga) fica mais barato, parte dos consumidores migra: a demanda cai (desloca à <b>esquerda</b>).' },
+    };
+
+    function story(r) {
+      const el = $('#story');
+      const pol = policyObj();
+      let txt = lastShock ? SHOCKS[lastShock].text + ' ' : '';
+      if (pol.type === 'tax' && pol.t > 0) {
+        txt += `Um imposto de ${pol.t} por unidade cria uma cunha entre o preço pago (${fmt(r.Pc, 1)}) e o recebido (${fmt(r.Ps, 1)}). Os consumidores pagam <b>${fmt(100 * r.consumerShare, 0)}%</b> do imposto, e a quantidade cai de ${fmt(r.eq.Q, 1)} para ${fmt(r.Q, 1)}, gerando peso morto de ${fmt(r.DWL, 0)}.`;
+      } else if (pol.type === 'ceiling') {
+        txt += r.binding
+          ? `O preço máximo ficou abaixo do equilíbrio: produtores ofertam menos e consumidores querem mais, gerando <b>escassez</b> (filas, mercado negro, queda de qualidade). Parte dos consumidores ganha, mas o bem-estar total cai.`
+          : 'Um preço máximo <b>acima</b> do equilíbrio não tem efeito: o mercado já negocia a um preço menor.';
+      } else if (pol.type === 'floor') {
+        txt += r.binding
+          ? `O preço mínimo ficou acima do equilíbrio: sobra produto (<b>excedente</b>). O salário mínimo é o exemplo clássico, com o "excedente de trabalho" sendo o desemprego no modelo simples.`
+          : 'Um preço mínimo <b>abaixo</b> do equilíbrio não tem efeito.';
+      } else if (!lastShock) {
+        txt = `Livre mercado: equilíbrio em Q* = ${fmt(r.eq.Q, 1)} e P* = ${fmt(r.eq.P, 1)}. Não há peso morto: toda troca que beneficia os dois lados acontece.`;
+      }
+      el.innerHTML = txt;
+    }
+
+    function syncOutputs() {
+      for (const k of ['A', 'B', 'C', 'D']) { $(`#${k}`).value = m[k]; $(`#${k}-o`).value = fmt(m[k], 1); }
+      $('#pv-o').value = $('#pv').value;
+    }
+
+    function animateTo(target) {
+      const from = { ...m };
+      tween(900, t => {
+        for (const k of Object.keys(m)) m[k] = from[k] + (target[k] - from[k]) * t;
+        syncOutputs(); draw();
+      }, ease.smooth);
+    }
+
+    for (const k of ['A', 'B', 'C', 'D']) {
+      $(`#${k}`).addEventListener('input', e => { m[k] = +e.target.value; lastShock = null; syncOutputs(); draw(); });
+    }
+    $$('#shocks [data-shock]').forEach(b => b.addEventListener('click', () => {
+      const name = b.dataset.shock;
+      prevEq = market(m).eq;
+      if (name === 'reset') { lastShock = null; prevEq = null; return animateTo({ ...BASE }); }
+      lastShock = name;
+      const target = { ...BASE };
+      for (const [k, dv] of Object.entries(SHOCKS[name].d)) target[k] = BASE[k] + dv;
+      prevEq = market(BASE).eq;
+      animateTo(target);
+    }));
+    $$('#policy [data-p]').forEach(b => b.addEventListener('click', () => {
+      policy = b.dataset.p;
+      $$('#policy [data-p]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      $('#policy-ctl').hidden = policy === 'none';
+      const eq = market(m).eq;
+      const cfg = { tax: ['Imposto por unidade', 0, 60, 20], ceiling: ['Preço máximo', 0, 150, Math.round(eq.P - 15)], floor: ['Preço mínimo', 0, 150, Math.round(eq.P + 15)] }[policy];
+      if (cfg) { $('#pv-l').textContent = cfg[0]; $('#pv').min = cfg[1]; $('#pv').max = cfg[2]; $('#pv').value = cfg[3]; }
+      syncOutputs(); draw();
+    }));
+    $('#pv').addEventListener('input', () => { syncOutputs(); draw(); });
+    $('[data-p=none]').setAttribute('aria-pressed', 'true');
+    syncOutputs();
+    draw();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'O preço do café sobe. O que acontece com a <b>demanda por açúcar</b> (bem complementar)?',
+        options: ['Desloca para a esquerda', 'Desloca para a direita', 'Não muda; há movimento ao longo da curva', 'A oferta de açúcar aumenta'],
+        answer: 0,
+        explain: 'Complementares são consumidos juntos: café mais caro → menos café → menos açúcar a qualquer preço. A curva inteira se desloca para a esquerda.',
+      },
+      {
+        q: 'Com demanda $P = 100 - Q$ e oferta $P = 10 + Q$, qual é o equilíbrio?',
+        options: ['Q = 45, P = 55', 'Q = 55, P = 45', 'Q = 50, P = 50', 'Q = 90, P = 10'],
+        answer: 0,
+        explain: '$100 - Q = 10 + Q \\Rightarrow Q = 45$, e $P = 100 - 45 = 55$. É o estado inicial do simulador.',
+      },
+      {
+        q: 'Um preço máximo abaixo do equilíbrio causa:',
+        options: ['Escassez (demanda maior que oferta)', 'Excedente (oferta maior que demanda)', 'Nada', 'Aumento da quantidade negociada'],
+        answer: 0,
+        explain: 'No preço baixo, consumidores querem mais e produtores ofertam menos. A quantidade negociada é limitada pela oferta.',
+      },
+    ]);
+  </script>
+</body>
+</html>

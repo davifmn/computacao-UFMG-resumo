@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circuitos Sequenciais · Sistemas Lógicos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+    svg .clickable { cursor: pointer; }
+    .state-box { padding: 10px 14px 14px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#sistemas-logicos">Sistemas Lógicos</a>
+      <span class="sep">/</span><span>Circuitos sequenciais</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução a Sistemas Lógicos</div>
+    <h1>Circuitos sequenciais: como o hardware lembra</h1>
+    <p class="lead">Num circuito combinacional, a saída depende só das entradas <i>agora</i>. Ligando a saída de volta na entrada (<b>realimentação</b>), o circuito passa a depender também do passado, e surge a <b>memória</b>.</p>
+
+    <h2>1. Latch SR: a menor memória possível</h2>
+    <div class="two">
+      <div class="stage"><svg id="sr" aria-label="Latch SR com portas NOR"></svg></div>
+      <div class="side" style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Estado</div><div class="state-box" id="sr-state"></div></div>
+        <div class="panel"><div class="panel-body">
+          <table class="data"><tr><th>S</th><th>R</th><th>Q seguinte</th></tr>
+            <tr><td>0</td><td>0</td><td>Q (mantém)</td></tr><tr><td>1</td><td>0</td><td>1 (set)</td></tr>
+            <tr><td>0</td><td>1</td><td>0 (reset)</td></tr><tr><td>1</td><td>1</td><td class="f">proibido</td></tr></table>
+        </div></div>
+      </div>
+    </div>
+    <p class="c-muted" style="max-width:900px">Clique em <b>S</b> (set) e depois volte-o para 0: o Q <b>continua 1</b>. Com S = R = 0 o circuito "lembra" o último comando. Esse é um bit de memória feito com duas portas.</p>
+
+    <h2>2. Latch D × flip-flop D</h2>
+    <div class="toolbar">
+      <span class="c-muted" style="font-size:14px"><b>Clique na linha D</b> para desenhar o sinal de dados.</span>
+      <span class="spacer"></span>
+      <button class="btn small" id="d-example">Exemplo com "glitch"</button>
+      <button class="btn small" id="d-random">Aleatório</button>
+      <button class="btn small" id="d-clear">Zerar D</button>
+    </div>
+    <div class="stage"><svg id="timing" aria-label="Diagrama de tempo"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>latch D: transparente enquanto CLK = 1</span>
+      <span><i style="background:var(--yellow)"></i>flip-flop D: só captura D na borda de subida ↑</span>
+      <span><i style="background:rgba(252,98,85,.5)"></i>instantes em que os dois discordam</span>
+    </div>
+
+    <h2>3. Contador síncrono de 3 bits</h2>
+    <div class="toolbar">
+      <button class="btn primary" id="tick">↑ Pulso de clock</button>
+      <button class="btn" id="auto">▶ Automático</button>
+      <button class="btn" id="reset">Reset</button>
+      <label><input type="checkbox" id="down"> contagem decrescente</label>
+    </div>
+    <div class="stage"><svg id="counter" aria-label="Contador de 3 bits"></svg></div>
+
+    <section class="prose">
+      <h2>Resumo</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Elemento</th><th>Quando muda</th><th>Uso</th></tr>
+          <tr><td>Latch SR</td><td>sempre que S ou R ativam</td><td>base conceitual</td></tr>
+          <tr><td>Latch D</td><td>enquanto o clock está em 1 (nível)</td><td>simples, mas deixa "vazar" mudanças</td></tr>
+          <tr><td>Flip-flop D</td><td>só na borda de subida do clock</td><td><b>registradores</b>: o padrão em processadores</td></tr>
+          <tr><td>Flip-flop T</td><td>inverte na borda se T = 1</td><td>contadores</td></tr>
+          <tr><td>Flip-flop JK</td><td>J = set, K = reset, J = K = 1 inverte</td><td>o "canivete suíço" clássico</td></tr>
+        </table>
+      </div>
+      <p>Por que o flip-flop venceu? Num circuito síncrono, todos os registradores mudam no <b>mesmo instante</b> (a borda do relógio). Entre duas bordas, a lógica combinacional tem um ciclo inteiro para estabilizar. É isso que torna possível projetar processadores com bilhões de transistores sem que as mudanças "corram" descontroladas pelo circuito. O período mínimo do relógio é o atraso do caminho crítico: 1 ns permite 1 GHz.</p>
+      <h3>Máquinas de estados finitos</h3>
+      <p>Registradores guardam o <b>estado</b>, e a lógica combinacional calcula o <b>próximo estado</b> e as saídas. O contador é a máquina de estados mais simples (0 → 1 → … → 7 → 0). Um semáforo, um protocolo de comunicação e a unidade de controle de uma CPU seguem o mesmo esquema. Você vai reencontrar essas máquinas como <b>autômatos finitos</b> em Fundamentos da Teoria da Computação.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { srLatch, clock, timing, counterNext, bitsToInt } from './sequenciais.js';
+
+    const NOR = 'M -34 -24 Q -18 0 -34 24 Q 6 24 28 0 Q 6 -24 -34 -24 Z';
+    const on = v => (v ? COLORS.green : '#3a4250');
+
+    // ================= 1. Latch SR =================
+    const sr = new Scene($('#sr'), { width: 700, height: 340, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    $('#sr').style.setProperty('--dur', '200ms');
+    let S = 0, R = 0, Q = 0;
+    function drawSR() {
+      const st = srLatch(S, R, Q);
+      Q = st.Q;
+      sr.frame(s => {
+        const sw = (key, label, v, x, y) => {
+          const r = s.rect(key, { x: x - 24, y: y - 16, w: 48, h: 32, rx: 16, fill: v ? '#27401f' : COLORS.surface2, stroke: v ? COLORS.green : COLORS.border, sw: 2 });
+          r.classList.add('clickable'); r.dataset.sw = label;
+          s.circle(`${key}k`, { x: x + (v ? 9 : -9), y, r: 10, fill: v ? COLORS.green : COLORS.muted, stroke: 'none' }).style.pointerEvents = 'none';
+          s.text(`${key}l`, `${label} = ${v}`, { x: x - 34, y, size: 16, anchor: 'end', weight: 700, mono: true, fill: v ? COLORS.green : COLORS.muted });
+        };
+        sw('R', 'R', R, 130, 98);
+        sw('S', 'S', S, 130, 262);
+        const gate = (key, x, y, out) => {
+          s.add(key, 'path', { d: NOR, fill: COLORS.surface2, stroke: out ? COLORS.green : COLORS.muted, 'stroke-width': 2.2 }, { x, y, layer: 'nodes' });
+          s.circle(`${key}b`, { x: x + 33, y, r: 5, fill: COLORS.surface2, stroke: out ? COLORS.green : COLORS.muted, sw: 2 });
+          s.text(`${key}t`, 'NOR', { x: x - 6, y, size: 10, weight: 700, fill: COLORS.faint });
+        };
+        gate('g1', 430, 110, st.Q);
+        gate('g2', 430, 250, st.Qn);
+        const w = (key, d, v) => s.path(key, d, { stroke: on(v), sw: v ? 3.2 : 2.4 });
+        w('wR', 'M 154 98 H 400', R);
+        w('wS', 'M 154 262 H 400', S);
+        w('wQ', 'M 468 110 H 610', st.Q);
+        w('wQn', 'M 468 250 H 610', st.Qn);
+        w('fbQ', 'M 560 110 V 190 H 360 V 238 H 400', st.Q);      // Q volta para a porta de baixo
+        w('fbQn', 'M 530 250 V 170 H 380 V 122 H 400', st.Qn);    // Q̄ volta para a porta de cima
+        const led = (key, label, v, x, y) => {
+          s.circle(key, { x, y, r: 18, fill: v ? COLORS.yellow : COLORS.surface2, stroke: v ? COLORS.yellow : COLORS.border, sw: 2 });
+          s.text(`${key}v`, v, { x, y, size: 15, weight: 800, mono: true, fill: v ? '#1d1a08' : COLORS.muted });
+          s.text(`${key}l`, label, { x: x + 28, y, size: 18, anchor: 'start', weight: 700, fill: v ? COLORS.yellow : COLORS.muted });
+        };
+        led('Q', 'Q', st.Q, 630, 110);
+        led('Qn', 'Q̄', st.Qn, 630, 250);
+      });
+      const msg = {
+        set: 'S = 1 força <b>Q = 1</b> (set).',
+        reset: 'R = 1 força <b>Q = 0</b> (reset).',
+        'mantém': `S = R = 0: o circuito <b>mantém</b> Q = ${st.Q}. A realimentação sustenta o valor sozinha.`,
+        proibido: '<span class="c-red">S = R = 1: Q e Q̄ ficam os dois em 0, o que contradiz Q̄ ser o inverso de Q. Ao soltar as duas ao mesmo tempo, o resultado é imprevisível.</span>',
+      }[st.state];
+      $('#sr-state').innerHTML = `<div style="font:700 22px var(--mono)">Q = ${st.Q}, Q̄ = ${st.Qn}</div><p style="margin:8px 0 0">${msg}</p>`;
+    }
+    $('#sr').addEventListener('click', e => {
+      const k = e.target.dataset?.sw;
+      if (k === 'S') S ^= 1;
+      if (k === 'R') R ^= 1;
+      if (k) drawSR();
+    });
+    drawSR();
+
+    // ================= 2. Diagrama de tempo =================
+    const T = 40, X0 = 120, SLOT = (900 - X0 - 20) / T;
+    const tm = new Scene($('#timing'), { width: 900, height: 330, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    tm.setAnimated(false);
+    const clk = clock(T, 8);
+    let D = Array(T).fill(0);
+    const example = () => { D = Array(T).fill(0); [[2, 7], [9, 12], [13, 14], [21, 26], [30, 31], [33, 38]].forEach(([a, b]) => { for (let t = a; t < b; t++) D[t] = 1; }); };
+    example();
+    const ROWS = { CLK: 40, D: 110, 'Q (latch D)': 190, 'Q (flip-flop D)': 270 };
+    const wave = (vals, y) => {
+      let d = `M ${X0} ${y - (vals[0] ? 22 : 0)}`;
+      vals.forEach((v, t) => {
+        const yy = y - (v ? 22 : 0);
+        if (t > 0 && v !== vals[t - 1]) d += ` V ${yy}`;
+        d += ` H ${X0 + (t + 1) * SLOT}`;
+      });
+      return d;
+    };
+    function drawTiming() {
+      const { latch, ff } = timing(clk, D);
+      tm.frame(s => {
+        for (let t = 0; t < T; t++) {
+          if (clk[t] && !clk[t - 1]) {
+            s.line(`edge${t}`, X0 + t * SLOT, 14, X0 + t * SLOT, 300, { stroke: COLORS.yellow, sw: 1, dash: '3 5', opacity: 0.5, layer: 'bg' });
+            s.text(`edgel${t}`, '↑', { x: X0 + t * SLOT, y: 312, size: 13, fill: COLORS.yellow, layer: 'bg' });
+          }
+          if (latch[t] !== ff[t]) s.rect(`diff${t}`, { x: X0 + t * SLOT, y: 160, w: SLOT, h: 120, rx: 0, fill: 'rgba(252,98,85,.18)', stroke: 'none', layer: 'bg' });
+          const cell = s.rect(`dc${t}`, { x: X0 + t * SLOT + 1, y: 80, w: SLOT - 2, h: 36, rx: 3, fill: D[t] ? 'rgba(131,193,103,.12)' : 'transparent', stroke: 'none', layer: 'bg' });
+          cell.classList.add('clickable'); cell.dataset.t = t;
+        }
+        for (const [name, y] of Object.entries(ROWS)) {
+          s.text(`lbl-${name}`, name, { x: X0 - 12, y: y - 11, size: 13, anchor: 'end', weight: 600, fill: COLORS.muted });
+          s.line(`base-${name}`, X0, y, 880, y, { stroke: COLORS.border, sw: 1, layer: 'bg' });
+        }
+        s.path('w-clk', wave(clk, ROWS.CLK), { stroke: COLORS.muted, sw: 2.2 });
+        s.path('w-d', wave(D, ROWS.D), { stroke: COLORS.green, sw: 2.6 });
+        s.path('w-l', wave(latch, ROWS['Q (latch D)']), { stroke: COLORS.blue, sw: 2.6 });
+        s.path('w-f', wave(ff, ROWS['Q (flip-flop D)']), { stroke: COLORS.yellow, sw: 2.6 });
+      });
+    }
+    $('#timing').addEventListener('click', e => {
+      const t = e.target.dataset?.t;
+      if (t == null) return;
+      D[+t] ^= 1;
+      drawTiming();
+    });
+    $('#d-example').addEventListener('click', () => { example(); drawTiming(); });
+    $('#d-random').addEventListener('click', () => { let v = 0; D = D.map(() => (Math.random() < 0.25 ? (v ^= 1) : v)); drawTiming(); });
+    $('#d-clear').addEventListener('click', () => { D = Array(T).fill(0); drawTiming(); });
+    drawTiming();
+
+    // ================= 3. Contador =================
+    const cs = new Scene($('#counter'), { width: 900, height: 380, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    $('#counter').style.setProperty('--dur', '300ms');
+    let q = [0, 0, 0], history = [[0, 0, 0]], autoTimer = null, lastT = [1, 0, 0];
+    function drawCounter() {
+      const down = $('#down').checked;
+      const { T: tNext } = counterNext(q, { down });
+      cs.frame(s => {
+        // flip-flops (bit 2 à esquerda, bit 0 à direita, como no número)
+        [2, 1, 0].forEach((bit, k) => {
+          const x = 70 + k * 170, y = 60;
+          s.rect(`ff${bit}`, { x, y, w: 110, h: 90, rx: 10, fill: COLORS.surface2, stroke: q[bit] ? COLORS.yellow : COLORS.blue, sw: 2 });
+          s.text(`fft${bit}`, `FF-T ${bit}`, { x: x + 55, y: y + 18, size: 13, weight: 700, fill: COLORS.blue });
+          s.text(`ffq${bit}`, `Q${bit} = ${q[bit]}`, { x: x + 55, y: y + 50, size: 20, weight: 800, mono: true, fill: q[bit] ? COLORS.yellow : COLORS.muted });
+          s.text(`fftn${bit}`, `T${bit} = ${tNext[bit]}`, { x: x + 55, y: y + 76, size: 12, mono: true, fill: tNext[bit] ? COLORS.green : COLORS.faint });
+          s.line(`clkw${bit}`, x + 55, 190, x + 55, y + 90, { stroke: COLORS.muted, sw: 1.5 });
+        });
+        s.line('clk-bus', 60, 190, 460, 190, { stroke: COLORS.muted, sw: 1.5 });
+        s.text('clk-l', 'CLK (comum a todos: síncrono)', { x: 60, y: 210, size: 12, anchor: 'start', fill: COLORS.muted });
+        s.text('rule', down ? 'Tᵢ = 1 quando todos os bits abaixo de i valem 0' : 'Tᵢ = 1 quando todos os bits abaixo de i valem 1', { x: 260, y: 30, size: 13, fill: COLORS.muted });
+        s.text('val', `${q[2]}${q[1]}${q[0]}₂ = ${bitsToInt(q)}`, { x: 260, y: 250, size: 26, weight: 800, mono: true, fill: COLORS.yellow });
+
+        // diagrama de estados em círculo
+        const cx = 720, cy = 150, r = 110;
+        for (let k = 0; k < 8; k++) {
+          const a = -Math.PI / 2 + (2 * Math.PI * k) / 8;
+          const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+          const cur = bitsToInt(q) === k;
+          s.circle(`st${k}`, { x, y, r: 20, fill: cur ? COLORS.yellow : COLORS.surface2, stroke: cur ? COLORS.yellow : COLORS.border, sw: 2 });
+          s.text(`stt${k}`, k.toString(2).padStart(3, '0'), { x, y, size: 11, weight: 700, mono: true, fill: cur ? '#1d1a08' : COLORS.muted });
+          const b = -Math.PI / 2 + (2 * Math.PI * (k + (down ? -1 : 1))) / 8;
+          const [x1, y1] = [cx + r * Math.cos(a + (down ? -0.22 : 0.22)), cy + r * Math.sin(a + (down ? -0.22 : 0.22))];
+          const [x2, y2] = [cx + r * Math.cos(b - (down ? -0.22 : 0.22)), cy + r * Math.sin(b - (down ? -0.22 : 0.22))];
+          s.path(`sa${k}`, `M ${x1} ${y1} A ${r} ${r} 0 0 ${down ? 0 : 1} ${x2} ${y2}`, { stroke: COLORS.faint, sw: 1.5, arrow: true });
+        }
+        s.text('fsm', 'diagrama de estados', { x: cx, y: cy, size: 12, fill: COLORS.faint });
+
+        // formas de onda Q0, Q1, Q2
+        const X = 120, SL = Math.min(40, 740 / Math.max(16, history.length));
+        [0, 1, 2].forEach(bit => {
+          const y = 300 + bit * 28;
+          const vals = history.map(h => h[bit]);
+          let d = `M ${X} ${y - (vals[0] ? 18 : 0)}`;
+          vals.forEach((v, t) => { const yy = y - (v ? 18 : 0); if (t && v !== vals[t - 1]) d += ` V ${yy}`; d += ` H ${X + (t + 1) * SL}`; });
+          s.path(`wq${bit}`, d, { stroke: [COLORS.blue, COLORS.green, COLORS.pink][bit], sw: 2.4 });
+          s.text(`wql${bit}`, `Q${bit}`, { x: X - 14, y: y - 9, size: 13, anchor: 'end', weight: 700, fill: [COLORS.blue, COLORS.green, COLORS.pink][bit] });
+        });
+        s.text('div', 'repare: Q0 tem metade da frequência do clock, Q1 um quarto, Q2 um oitavo (divisor de frequência)', { x: 120, y: 368, size: 12, anchor: 'start', fill: COLORS.faint });
+      });
+    }
+    const tick = () => {
+      const { next } = counterNext(q, { down: $('#down').checked });
+      q = next;
+      history.push([...q]);
+      if (history.length > 18) history.shift();
+      drawCounter();
+    };
+    $('#tick').addEventListener('click', tick);
+    $('#reset').addEventListener('click', () => { q = [0, 0, 0]; history = [[0, 0, 0]]; drawCounter(); });
+    $('#down').addEventListener('change', drawCounter);
+    $('#auto').addEventListener('click', e => {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; e.target.textContent = '▶ Automático'; return; }
+      autoTimer = setInterval(tick, 700);
+      e.target.textContent = '⏸ Pausar';
+    });
+    drawCounter();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'D muda de 0 para 1 e volta para 0 enquanto o clock está em 1, sem nenhuma borda de subida no meio. O que acontece?',
+        options: ['O latch D copia o pulso; o flip-flop D não percebe nada', 'Os dois copiam o pulso', 'Nenhum dos dois muda', 'Só o flip-flop copia'],
+        answer: 0,
+        explain: 'O latch é transparente durante todo o nível alto. O flip-flop só olha para D no instante da borda de subida. Veja o "Exemplo com glitch".',
+      },
+      {
+        q: 'Um contador síncrono de 3 bits está em 011. Quais flip-flops T invertem no próximo pulso (contando para cima)?',
+        options: ['Os três (T0 = 1, T1 = Q0 = 1, T2 = Q0·Q1 = 1): vai para 100', 'Só o bit 0', 'Bits 0 e 1', 'Só o bit 2'],
+        answer: 0,
+        explain: '011 + 1 = 100: todos os bits invertem, exatamente como o vai-um se propaga numa soma.',
+      },
+      {
+        q: 'Quantos flip-flops são necessários para uma máquina de estados com 10 estados?',
+        options: ['4', '10', '3', '5'],
+        answer: 0,
+        explain: '$\\lceil \\log_2 10 \\rceil = 4$, já que 3 flip-flops só distinguem 8 estados.',
+      },
+    ]);
+  </script>
+</body>
+</html>

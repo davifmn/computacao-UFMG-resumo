@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>std::vector por Dentro · PDS II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds2">PDS II</a>
+      <span class="sep">/</span><span>std::vector por dentro</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software II</div>
+    <h1><code>std::vector</code> por dentro</h1>
+    <p class="lead">Um vetor dinâmico é só um bloco de memória que, quando enche, é trocado por um bloco <b>maior</b>. A pergunta que importa: maior <b>quanto</b>? Compare as duas políticas e veja o gráfico de custo.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Política de crescimento">
+        <button class="btn" data-p="dobra">Dobrar capacidade (×2)</button>
+        <button class="btn" data-p="soma1">Somar 1 (+1)</button>
+      </div>
+      <label>Número de push_back <input id="n" type="number" min="1" max="20" value="9" style="width:70px"></label>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Análise amortizada</h2>
+      <p>Um único <code>push_back</code> pode custar caro (copiar tudo), mas isso acontece <b>raramente</b>. Com a política de dobrar, depois de $n$ inserções o total de cópias é</p>
+      <p>$$ 1 + 2 + 4 + \dots + 2^{k} < 2n \quad\Rightarrow\quad \text{custo total} < 3n \quad\Rightarrow\quad O(1) \text{ amortizado por inserção.} $$</p>
+      <p>Somando uma constante $c$, o total é $\approx \frac{n^2}{2c}$: <b>quadrático</b>, não importa o tamanho de $c$. O segredo é crescer <b>proporcionalmente</b> ao tamanho atual.</p>
+
+      <h2>Consequências práticas</h2>
+      <ul>
+        <li><code>v.reserve(n)</code> aloca de uma vez quando você já sabe o tamanho final: zero realocações.</li>
+        <li><code>size()</code> é quantos elementos há; <code>capacity()</code> é quanto cabe sem realocar.</li>
+        <li><b>Invalidação:</b> ponteiros, referências e iteradores para elementos ficam <b>pendentes</b> depois de uma realocação, porque o bloco antigo foi liberado. Guardar <code>&amp;v[0]</code> e depois dar <code>push_back</code> é um bug clássico.</li>
+        <li>Por isso, em C++11 em diante, o vetor <b>move</b> elementos em vez de copiá-los quando o construtor de movimento é <code>noexcept</code>.</li>
+      </ul>
+      <div class="callout tip"><p>A classe completa com <b>regra dos três</b> (construtor de cópia, atribuição e destrutor), <code>template</code> e testes está em <a href="../codigo/vetor.cpp"><code>codigo/vetor.cpp</code></a>.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { CODES, vectorSteps } from './vetor.js';
+
+    const W = 900, H = 540;
+    const BX = 150, BW = 720;
+    const CH_TOP = 330, CH_BOT = 500;
+    let policy = 'dobra', total = 9;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'Vetor.hpp',
+      render(step, s) {
+        const maxCap = Math.max(1, ...step.blocks.map(b => b.cap));
+        const cw = Math.min(46, BW / Math.max(maxCap, 8));
+        const blockY = i => 50 + i * 100;
+
+        // ponteiro dados
+        s.rect('dados', { x: 20, y: 62, w: 100, h: 40, fill: COLORS.surface2, stroke: COLORS.blue });
+        s.text('dados-l', 'dados', { x: 70, y: 48, size: 12, mono: true, fill: COLORS.muted });
+        s.text('dados-v', step.dados == null ? 'nullptr' : '●', { x: 70, y: 82, size: step.dados == null ? 13 : 16, mono: true, fill: COLORS.blue });
+        s.text('meta', `tam = ${step.tam}   cap = ${step.cap}`, { x: 70, y: 124, size: 12, mono: true, fill: COLORS.muted });
+
+        step.blocks.forEach((b, bi) => {
+          const y = blockY(bi);
+          const freed = b.state === 'freed';
+          s.text(`bl${b.id}`, `bloco de capacidade ${b.cap}${b.state === 'new' ? ' (novo)' : freed ? ' (liberando)' : ''}`, { x: BX, y: y - 8, size: 12, anchor: 'start', fill: freed ? COLORS.red : b.state === 'new' ? COLORS.teal : COLORS.muted });
+          b.cells.forEach((v, i) => {
+            const hot = (step.copy && step.copy[1] === b.id && step.copy[2] === i) || (step.wrote === i && b.id === step.dados);
+            s.rect(`c${b.id}-${i}`, { x: BX + i * cw, y, w: cw - 4, h: 40, rx: 4,
+              fill: freed ? '#2a1717' : v == null ? COLORS.surface : hot ? '#3d3a22' : '#1c3640',
+              stroke: freed ? COLORS.red : hot ? COLORS.yellow : v == null ? COLORS.border : COLORS.blue, sw: hot ? 2.5 : 1.2, dash: freed ? '4 3' : null });
+            if (v != null) s.text(`cv${b.id}-${i}`, v, { x: BX + i * cw + (cw - 4) / 2, y: y + 20, size: cw > 30 ? 13 : 10, mono: true, weight: 600, fill: freed ? COLORS.red : COLORS.text });
+          });
+          if (b.id === step.dados) {
+            s.path('dados-a', `M 120 82 C 135 82, ${BX - 30} ${y + 20}, ${BX - 6} ${y + 20}`, { stroke: COLORS.blue, sw: 2.5, arrow: true });
+          }
+        });
+        if (step.copy) {
+          const [from, to, i] = step.copy;
+          const fi = step.blocks.findIndex(b => b.id === from), ti = step.blocks.findIndex(b => b.id === to);
+          const x = BX + i * cw + (cw - 4) / 2;
+          s.path('copy', `M ${x} ${blockY(fi) + 42} L ${x} ${blockY(ti) - 4}`, { stroke: COLORS.yellow, sw: 2.5, arrow: true, layer: 'fx' });
+        }
+
+        // gráfico de custo por push
+        s.text('ch-t', 'custo de cada push_back (escritas)', { x: BX, y: CH_TOP - 14, size: 12, anchor: 'start', weight: 600, fill: COLORS.muted });
+        s.line('ch-base', BX, CH_BOT, BX + BW, CH_BOT, { stroke: COLORS.border, sw: 1.5 });
+        const maxCost = Math.max(total, 4);
+        const bw = BW / total;
+        const Y = c => CH_BOT - (c / maxCost) * (CH_BOT - CH_TOP);
+        step.costs.forEach((c, k) => {
+          s.rect(`cb${k}`, { x: BX + k * bw + 2, y: Y(c), w: bw - 4, h: CH_BOT - Y(c), rx: 2, fill: c > 1 ? COLORS.orange : COLORS.teal, stroke: 'none' });
+          s.text(`cbt${k}`, c, { x: BX + k * bw + bw / 2, y: Y(c) - 9, size: 11, mono: true, fill: COLORS.muted });
+        });
+        for (let k = 0; k < total; k++) s.text(`cbx${k}`, k + 1, { x: BX + k * bw + bw / 2, y: CH_BOT + 12, size: 10, mono: true, fill: COLORS.faint });
+        if (step.costs.length) {
+          const avg = step.costs.reduce((a, b) => a + b, 0) / step.costs.length;
+          s.line('avg', BX, Y(avg), BX + BW, Y(avg), { stroke: COLORS.yellow, sw: 1.5, dash: '6 5' });
+          s.text('avg-t', `média = ${avg.toFixed(2)}`, { x: BX + BW, y: Y(avg) - 10, size: 12, anchor: 'end', weight: 700, fill: COLORS.yellow });
+        }
+      },
+    });
+
+    function run() {
+      total = Math.max(1, Math.min(20, Math.round(+$('#n').value || 1)));
+      $('#n').value = total;
+      $$('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === policy));
+      player.setCode(CODES[policy], 'cpp');
+      player.load(vectorSteps(total, policy));
+    }
+    $$('[data-p]').forEach(b => b.addEventListener('click', () => { policy = b.dataset.p; run(); }));
+    $('#n').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Com a política de dobrar, começando vazio, quantas realocações acontecem em 1000 <code>push_back</code>?',
+        options: ['11', '1000', '10', '500'],
+        answer: 0,
+        explain: 'A capacidade passa por 1, 2, 4, …, 1024: são 11 alocações ($\\lceil \\log_2 1000 \\rceil + 1$).',
+      },
+      {
+        q: 'Qual trecho tem comportamento indefinido?',
+        options: ['<code>int* p = &amp;v[0]; v.push_back(1); *p = 5;</code>', '<code>v.reserve(10); v.push_back(1);</code>', '<code>int x = v[0]; v.push_back(1);</code>', '<code>v.push_back(v.size());</code>'],
+        answer: 0,
+        explain: 'Se o <code>push_back</code> realocar, <code>p</code> aponta para o bloco antigo, já liberado.',
+      },
+      {
+        q: 'Qual a complexidade de inserir n elementos com a política "+1"?',
+        options: ['$O(n^2)$', '$O(n)$', '$O(n \\log n)$', '$O(1)$'],
+        answer: 0,
+        explain: 'Cada inserção copia todos os elementos anteriores: $0 + 1 + \\dots + (n-1) = \\frac{n(n-1)}{2}$.',
+      },
+    ]);
+  </script>
+</body>
+</html>

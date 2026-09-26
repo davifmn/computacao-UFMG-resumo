@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bases Numéricas · Intro à Computação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .groups { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; font-family: var(--mono); }
+    .group { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; text-align: center; }
+    .group .bits { color: var(--blue); font-size: 18px; letter-spacing: .1em; }
+    .group .digit { color: var(--yellow); font-size: 22px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#intro-comp">Intro. à Computação</a>
+      <span class="sep">/</span><span>Bases numéricas</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Computação</div>
+    <h1>Mudança de base</h1>
+    <p class="lead">O número <b>treze</b> é o mesmo objeto, seja escrito <code>13</code>, <code>1101</code> ou <code>D</code>. Só muda a base. Veja os dois algoritmos clássicos de conversão rodando passo a passo.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Direção">
+        <button class="btn" data-mode="toBase">Decimal → base b</button>
+        <button class="btn" data-mode="toDec">Base b → decimal</button>
+      </div>
+      <label>Número <input id="num" type="text" size="10" value="156"></label>
+      <label>Base <select id="base">
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>7</option>
+        <option>8</option><option>12</option><option>16</option>
+      </select></label>
+      <span class="error c-red" id="err" style="font-size:14px"></span>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Notação posicional</h2>
+      <p>Em base $b$, o dígito na posição $i$ (contando da direita, a partir de 0) vale $d_i \cdot b^i$:</p>
+      <p>$$ (d_{k}\,d_{k-1}\dots d_1\,d_0)_b = \sum_{i=0}^{k} d_i\, b^i $$</p>
+      <p>Por exemplo, $1101_2 = 1\cdot 8 + 1\cdot 4 + 0\cdot 2 + 1\cdot 1 = 13$. O algoritmo de <b>Horner</b> da animação calcula exatamente essa soma, mas sem nenhuma potência: $((1\cdot 2 + 1)\cdot 2 + 0)\cdot 2 + 1$.</p>
+      <p><b>Por que as divisões funcionam?</b> O resto de $n \div b$ é justamente $d_0$, pois todas as outras parcelas são múltiplas de $b$. Dividir por $b$ "apaga" $d_0$ e desloca os demais dígitos uma casa para a direita. Repetindo, obtemos $d_1, d_2, \dots$</p>
+
+      <h2>O atalho binário ↔ hexadecimal</h2>
+      <p>Como $16 = 2^4$, cada dígito hexadecimal corresponde a <b>exatamente 4 bits</b>. Basta agrupar de 4 em 4, a partir da direita. Da mesma forma, octal usa grupos de 3. É por isso que programadores adoram hexadecimal: é binário compacto.</p>
+      <div class="toolbar" style="margin-top:8px">
+        <label>Binário <input id="grp-in" type="text" size="20" value="1011111011101111"></label>
+        <label>Grupos de <select id="grp-size"><option value="4">4 (hex)</option><option value="3">3 (octal)</option></select></label>
+      </div>
+      <div class="groups" id="groups"></div>
+
+      <div class="callout tip">
+        <p><b>Potências de 2 para decorar:</b> $2^{8} = 256$ (valores de um byte), $2^{10} = 1024 \approx 10^3$ (um "kibi"), $2^{16} = 65536$ e $2^{32} \approx 4{,}3$ bilhões (endereços IPv4, <code>unsigned int</code>).</p>
+      </div>
+      <p>O código em Python, com testes, está em <a href="../codigo/bases.py"><code>codigo/bases.py</code></a>.</p>
+
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, h, randInt, pick } from '../../../engine/page.js';
+    import { TO_BASE_CODE, TO_DEC_CODE, toBaseSteps, toDecimalSteps, isValidInBase, positional } from './numeros.js';
+
+    const W = 900, H = 460;
+    let mode = 'toBase';
+    const sub = n => String(n).split('').map(c => '₀₁₂₃₄₅₆₇₈₉'[c]).join('');
+    const sup = n => String(n).split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join('');
+
+    function renderToBase(step, s) {
+      const rows = step.rows;
+      const rh = Math.min(42, 340 / Math.max(1, rows.length));
+      const Y0 = 80;
+      s.text('title', `${step.n0}${sub(10)}  →  base ${step.base}`, { x: 250, y: 36, size: 20, weight: 700, fill: COLORS.text });
+      s.text('h1', 'divisão', { x: 190, y: Y0 - 20, size: 12, fill: COLORS.faint });
+      s.text('h2', 'resto', { x: 420, y: Y0 - 20, size: 12, fill: COLORS.faint });
+      rows.forEach((r, k) => {
+        const y = Y0 + k * rh + rh / 2;
+        const act = step.active === k;
+        s.text(`d${k}`, `${r.n} ÷ ${step.base} = ${r.q}`, { x: 190, y, size: Math.min(18, rh * 0.5), mono: true, fill: act ? COLORS.yellow : COLORS.text });
+        s.rect(`rb${k}`, { x: 400, y: y - rh * 0.4, w: 40, h: rh * 0.8, fill: act ? '#3d3a22' : COLORS.surface2, stroke: act ? COLORS.yellow : COLORS.blue, sw: 2 });
+        s.text(`rt${k}`, r.digit, { x: 420, y, size: Math.min(20, rh * 0.55), mono: true, weight: 700, fill: COLORS.blue });
+      });
+      if (step.done && rows.length) {
+        const yTop = Y0 + rh * 0.2, yBot = Y0 + (rows.length - 1) * rh + rh * 0.8;
+        s.path('read', `M 470 ${yBot} L 470 ${yTop}`, { stroke: COLORS.yellow, sw: 3, arrow: true });
+        s.text('read-l', 'leia de baixo', { x: 480, y: (yTop + yBot) / 2 - 10, size: 13, anchor: 'start', fill: COLORS.yellow });
+        s.text('read-l2', 'para cima', { x: 480, y: (yTop + yBot) / 2 + 10, size: 13, anchor: 'start', fill: COLORS.yellow });
+      }
+      // Resultado: o dígito da linha k fica na posição (rows − 1 − k) — os antigos deslizam para a direita.
+      s.text('res-t', 'resultado', { x: 730, y: 80, size: 12, fill: COLORS.faint });
+      const n = rows.length;
+      const cw = Math.min(36, 300 / Math.max(1, n));
+      const x0 = 730 - (n * cw) / 2;
+      rows.forEach((r, k) => {
+        const pos = n - 1 - k;
+        s.rect(`res${k}`, { x: x0 + pos * cw + 2, y: 100, w: cw - 4, h: 44, fill: COLORS.surface2, stroke: step.active === k ? COLORS.yellow : COLORS.border, sw: 2 });
+        s.text(`rest${k}`, r.digit, { x: x0 + pos * cw + cw / 2, y: 122, size: Math.min(22, cw * 0.7), mono: true, weight: 700, fill: COLORS.blue });
+        s.text(`resp${k}`, `${step.base}${sup(k)}`, { x: x0 + pos * cw + cw / 2, y: 160, size: 11, fill: COLORS.faint });
+      });
+      if (step.done) s.text('final', `${step.n0}${sub(10)} = ${step.result}${sub(step.base)}`, { x: 730, y: 220, size: 22, weight: 700, fill: COLORS.green });
+    }
+
+    function renderToDec(step, s) {
+      const n = step.digits.length;
+      const cw = Math.min(56, 700 / n);
+      const x0 = W / 2 - (n * cw) / 2;
+      s.text('title', `${step.digits.join('')}${sub(step.base)}  →  decimal`, { x: W / 2, y: 36, size: 20, weight: 700 });
+      step.digits.forEach((c, i) => {
+        const act = step.i === i;
+        const used = step.i != null ? i < step.i || (i === step.i) : false;
+        s.rect(`dg${i}`, { x: x0 + i * cw + 3, y: 70, w: cw - 6, h: 50, fill: act ? '#3d3a22' : COLORS.surface2, stroke: act ? COLORS.yellow : used || step.done ? COLORS.blue : COLORS.border, sw: 2 });
+        s.text(`dgt${i}`, c, { x: x0 + i * cw + cw / 2, y: 95, size: 24, mono: true, weight: 700, fill: act ? COLORS.yellow : COLORS.blue });
+        s.text(`dgp${i}`, `×${step.base}${sup(n - 1 - i)}`, { x: x0 + i * cw + cw / 2, y: 136, size: 12, fill: COLORS.faint });
+      });
+      const rh = Math.min(34, 220 / Math.max(1, n));
+      step.partial.forEach((p, k) => {
+        const y = 180 + k * rh;
+        s.text(`hp${k}`, `${p.antes} × ${step.base} + ${p.d} = ${p.valor}`, { x: W / 2, y, size: Math.min(18, rh * 0.6), mono: true, fill: k === step.partial.length - 1 && !step.done ? COLORS.yellow : COLORS.text });
+      });
+      if (step.done) {
+        const terms = positional(step.digits.join(''), step.base).map(t => `${t.value}·${t.weight}`).join(' + ');
+        s.text('expand', terms.length < 90 ? `= ${terms}` : '', { x: W / 2, y: H - 70, size: 14, mono: true, fill: COLORS.muted });
+        s.text('final', `${step.digits.join('')}${sub(step.base)} = ${step.valor}${sub(10)}`, { x: W / 2, y: H - 34, size: 22, weight: 700, fill: COLORS.green });
+      }
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, lang: 'python',
+      render: (step, s) => (step.mode === 'toBase' ? renderToBase(step, s) : renderToDec(step, s)),
+    });
+
+    function run() {
+      const base = +$('#base').value;
+      const raw = $('#num').value.trim().toUpperCase();
+      $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+      $('#err').textContent = '';
+      if (mode === 'toBase') {
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n < 0 || n > 65535) { $('#err').textContent = 'Use um inteiro entre 0 e 65535.'; return; }
+        player.setCode(TO_BASE_CODE, 'python');
+        player.load(toBaseSteps(n, base));
+      } else {
+        if (!isValidInBase(raw, base) || raw.length > 12) { $('#err').textContent = `Use até 12 dígitos válidos na base ${base} (0–${'0123456789ABCDEF'[base - 1]}).`; return; }
+        player.setCode(TO_DEC_CODE, 'python');
+        player.load(toDecimalSteps(raw, base));
+      }
+    }
+
+    $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
+      const base = +$('#base').value;
+      const v = $('#num').value.trim().toUpperCase();
+      // Ao trocar de direção, converte o número atual para que a animação continue fazendo sentido.
+      if (b.dataset.mode !== mode) {
+        if (b.dataset.mode === 'toDec' && /^\d+$/.test(v)) $('#num').value = Number(v).toString(base).toUpperCase();
+        if (b.dataset.mode === 'toBase' && isValidInBase(v, base)) $('#num').value = parseInt(v, base);
+      }
+      mode = b.dataset.mode;
+      run();
+    }));
+    $('#num').addEventListener('change', run);
+    $('#base').addEventListener('change', run);
+    run();
+
+    // Agrupamento binário → hex/octal
+    function groups() {
+      const bits = $('#grp-in').value.replace(/[^01]/g, '') || '0';
+      const g = +$('#grp-size').value;
+      const padded = bits.padStart(Math.ceil(bits.length / g) * g, '0');
+      const out = [];
+      for (let i = 0; i < padded.length; i += g) {
+        const chunk = padded.slice(i, i + g);
+        out.push(h('div', { class: 'group' }, h('div', { class: 'bits' }, chunk), h('div', { class: 'digit' }, parseInt(chunk, 2).toString(16).toUpperCase())));
+      }
+      const res = h('div', { class: 'group' }, h('div', { class: 'bits c-muted' }, 'resultado'), h('div', { class: 'digit c-green' }, parseInt(bits, 2).toString(g === 4 ? 16 : 8).toUpperCase()));
+      $('#groups').replaceChildren(...out, h('div', { class: 'group', style: 'border:0;background:none;align-self:center' }, '='), res);
+    }
+    $('#grp-in').addEventListener('input', groups);
+    $('#grp-size').addEventListener('change', groups);
+    groups();
+
+    // Exercícios
+    const clean = s => s.trim().toUpperCase().replace(/^0+(?=.)/, '').replace(/\s/g, '');
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['d2b', 'b2d', 'd2h', 'h2b']);
+        if (kind === 'd2b') {
+          const n = randInt(5, 200);
+          return { q: `Escreva <b>${n}</b>₁₀ em binário.`, input: true, answer: n.toString(2), check: v => clean(v) === n.toString(2), explain: `Divisões sucessivas por 2. Teste na animação acima com ${n}.` };
+        }
+        if (kind === 'b2d') {
+          const n = randInt(5, 255);
+          return { q: `Quanto vale <b>${n.toString(2)}</b>₂ em decimal?`, input: true, answer: String(n), check: v => clean(v) === String(n), explain: positional(n.toString(2), 2).filter(t => t.value).map(t => t.weight).join(' + ') + ` = ${n}.` };
+        }
+        if (kind === 'd2h') {
+          const n = randInt(16, 1000);
+          return { q: `Escreva <b>${n}</b>₁₀ em hexadecimal.`, input: true, answer: n.toString(16).toUpperCase(), check: v => clean(v).replace(/^0X/, '') === n.toString(16).toUpperCase(), explain: `Divisões sucessivas por 16 (restos 10–15 viram A–F).` };
+        }
+        const n = randInt(16, 4095);
+        const hx = n.toString(16).toUpperCase();
+        const bin = n.toString(2);
+        return { q: `Converta <b>${hx}</b>₁₆ para binário (sem precisar passar pelo decimal!).`, input: true, answer: bin, check: v => clean(v) === bin, explain: `Cada dígito hex vira 4 bits: ${hx.split('').map(c => parseInt(c, 16).toString(2).padStart(4, '0')).join(' ')}.` };
+      },
+    });
+  </script>
+</body>
+</html>

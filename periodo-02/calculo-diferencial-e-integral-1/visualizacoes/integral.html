@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integral · Cálculo I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    #fx { font-size: 17px; width: 220px; }
+    .ctl { display: grid; grid-template-columns: 3em 1fr 4em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .big { font: 800 26px var(--mono); padding: 4px 14px 0; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; }
+    #conv td, #conv th { padding: 4px 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo1">Cálculo I</a>
+      <span class="sep">/</span><span>Integral</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral I</div>
+    <h1>A integral: somando retângulos cada vez mais finos</h1>
+    <p class="lead">Para calcular a área sob uma curva, aproxime-a por retângulos. Com retângulos cada vez mais finos, o erro vai a zero, e o limite dessa soma é a <b>integral</b>.</p>
+
+    <div class="toolbar">
+      <label>f(x) = <input id="fx" type="text" value="x^2" spellcheck="false"></label>
+      <div class="chips" id="presets">
+        <button class="btn small">x^2</button><button class="btn small">sin(x)</button><button class="btn small">e^x</button>
+        <button class="btn small">1/x</button><button class="btn small">sqrt(4 - x^2)</button><button class="btn small">x^3 - 3x</button>
+      </div>
+      <label>a = <input id="a" type="number" value="0" step="0.5" style="width:70px"></label>
+      <label>b = <input id="b" type="number" value="2" step="0.5" style="width:70px"></label>
+      <span class="c-red" id="err" style="font-size:14px"></span>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Soma de Riemann"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Aproximação</div>
+          <div class="chips" style="padding:8px 14px 0" id="methods">
+            <button class="btn small" data-m="esquerda">Esquerda</button><button class="btn small" data-m="direita">Direita</button>
+            <button class="btn small" data-m="meio">Ponto médio</button><button class="btn small" data-m="trapezio">Trapézio</button>
+          </div>
+          <div class="ctl"><span>n</span><input id="n" type="range" min="1" max="200" value="6"><output id="n-o"></output></div>
+          <div style="padding:0 14px 12px"><button class="btn primary" id="refine">n → ∞</button></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Resultado</div>
+          <div class="big c-yellow" id="sum"></div>
+          <div class="readout" id="exact"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Convergência (erro × n)</div>
+          <div class="panel-body"><table class="data" id="conv"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>A definição</h2>
+      <p>Dividindo $[a, b]$ em $n$ pedaços de largura $\Delta x = \frac{b-a}{n}$ e escolhendo um ponto $x_i^*$ em cada um:</p>
+      <p>$$ \int_a^b f(x)\,dx = \lim_{n \to \infty} \sum_{i=1}^{n} f(x_i^*)\,\Delta x $$</p>
+      <p>Onde $f$ é negativa, os retângulos ficam <span class="c-red">vermelhos</span> e contam como área <b>negativa</b>: a integral mede área com sinal. Teste <code>sin(x)</code> de 0 a 2π (≈ 6,28): o resultado é 0.</p>
+
+      <h2>O Teorema Fundamental do Cálculo</h2>
+      <p>Somar infinitos retângulos parece difícil, mas existe um atalho. Se $F' = f$ (isto é, $F$ é uma <b>primitiva</b> de $f$), então</p>
+      <p>$$ \int_a^b f(x)\,dx = F(b) - F(a). $$</p>
+      <p><b>Intuição:</b> se $f$ é a velocidade e $F$ a posição, somar "velocidade × pequenos intervalos de tempo" dá o deslocamento total, $F(b) - F(a)$. Derivar e integrar são operações inversas, e essa ligação entre taxa de variação e acumulação é a ideia central do Cálculo. Exemplo: $\int_0^2 x^2\,dx = \left[\frac{x^3}{3}\right]_0^2 = \frac{8}{3} \approx 2{,}667$.</p>
+
+      <h2>Qual método converge mais rápido?</h2>
+      <p>Olhe a coluna "erro × n" da tabela de convergência. Nas regras da esquerda e da direita, dobrar $n$ divide o erro por <b>2</b> (erro $O(1/n)$). No ponto médio e no trapézio, divide por <b>4</b> (erro $O(1/n^2)$), porque os erros de cada lado do retângulo se cancelam. A <b>regra de Simpson</b>, que aproxima por parábolas, chega a $O(1/n^4)$. É ela que calcula o "valor de referência" desta página. Métodos numéricos como esses são o assunto de Cálculo Numérico e são usados sempre que não há primitiva conhecida (ex.: $e^{-x^2}$, a curva normal).</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt, tex } from '../../../engine/page.js';
+    import { parse, compile, riemann, simpson, toTex, simplify } from './expr.js';
+
+    const W = 900, H = 560;
+    const scene = new Scene($('#plot'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { box: [20, 20, W - 20, H - 20] });
+    plot.clip(['areas', 'edges', 'nodes']);
+    let f = null, tree = null, method = 'esquerda';
+
+    function view(a, b) {
+      const span = b - a;
+      const xs = [a - span * 0.3, b + span * 0.3];
+      let lo = 0, hi = 0;
+      for (let x = xs[0]; x <= xs[1]; x += span / 200) { const y = f(x); if (Number.isFinite(y) && Math.abs(y) < 50) { lo = Math.min(lo, y); hi = Math.max(hi, y); } }
+      const pad = (hi - lo) * 0.15 || 1;
+      plot.setView(xs, [lo - pad, hi + pad]);
+    }
+
+    function draw() {
+      const a = +$('#a').value, b = +$('#b').value, n = +$('#n').value;
+      $('#n-o').value = n;
+      if (!(b > a)) { $('#err').textContent = 'Use a < b.'; return; }
+      view(a, b);
+      const r = riemann(f, a, b, n, method);
+      const ref = simpson(f, a, b, 4000);
+      scene.frame(s => {
+        plot.axes(s);
+        r.rects.forEach((q, i) => {
+          if (!Number.isFinite(q.y0) || !Number.isFinite(q.y1)) return;
+          const neg = (q.y0 + q.y1) / 2 < 0;
+          const pts = [[q.x0, 0], [q.x0, q.y0], [q.x1, q.y1], [q.x1, 0]].map(p => plot.P(p).join(' '));
+          s.path(`r${i}`, `M ${pts.join(' L ')} Z`, { fill: neg ? 'rgba(252,98,85,.35)' : 'rgba(88,196,221,.30)', stroke: n <= 60 ? (neg ? COLORS.red : COLORS.blue) : 'none', sw: 1, layer: 'areas' });
+          if (q.xs != null && n <= 40) s.circle(`pt${i}`, { x: plot.X(q.xs), y: plot.Y(q.y0), r: 3.5, fill: COLORS.yellow, stroke: 'none' });
+        });
+        plot.fn(s, 'f', f, { stroke: COLORS.text, sw: 3 });
+        s.line('la', plot.X(a), plot.box[1], plot.X(a), plot.box[3], { stroke: COLORS.muted, sw: 1, dash: '4 5', layer: 'bg' });
+        s.line('lb', plot.X(b), plot.box[1], plot.X(b), plot.box[3], { stroke: COLORS.muted, sw: 1, dash: '4 5', layer: 'bg' });
+      });
+      $('#sum').textContent = `≈ ${fmt(r.sum, 6)}`;
+      $('#exact').innerHTML = '<div id="e1"></div><div id="e2" style="margin-top:6px"></div>';
+      tex($('#e1'), `\\int_{${fmt(a, 2)}}^{${fmt(b, 2)}} ${toTex(simplify(tree))}\\,dx \\approx ${fmt(ref, 6).replace(',', '{,}')}`);
+      $('#e2').innerHTML = `erro com n = ${n}: <b class="c-red">${Math.abs(r.sum - ref).toExponential(2)}</b>`;
+      // tabela de convergência
+      let rows = '<tr><th>n</th><th>soma</th><th>erro</th><th>erro anterior ÷ erro</th></tr>';
+      let prev = null;
+      for (let k = 1; k <= 256; k *= 2) {
+        const e = Math.abs(riemann(f, a, b, k, method).sum - ref);
+        rows += `<tr><td>${k}</td><td>${fmt(riemann(f, a, b, k, method).sum, 5)}</td><td>${e.toExponential(1)}</td><td>${prev && e > 1e-12 ? fmt(prev / e, 2) : '—'}</td></tr>`;
+        prev = e;
+      }
+      $('#conv').innerHTML = rows;
+      $('#err').textContent = '';
+    }
+
+    function setFunction(src) {
+      try { tree = parse(src); f = compile(tree); $('#err').textContent = ''; }
+      catch (e) { $('#err').textContent = e.message; return; }
+      draw();
+    }
+    const setMethod = m => { method = m; $$('#methods [data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m)); draw(); };
+    $$('#methods [data-m]').forEach(b => b.addEventListener('click', () => setMethod(b.dataset.m)));
+    $$('#presets button').forEach(b => b.addEventListener('click', () => {
+      $('#fx').value = b.textContent;
+      const ab = { 'sin(x)': [0, 3.14159], '1/x': [1, 4], 'sqrt(4 - x^2)': [-2, 2], 'x^3 - 3x': [-2, 2], 'e^x': [0, 1] }[b.textContent] ?? [0, 2];
+      $('#a').value = ab[0]; $('#b').value = ab[1];
+      setFunction(b.textContent);
+    }));
+    $('#fx').addEventListener('change', e => setFunction(e.target.value));
+    for (const id of ['a', 'b', 'n']) $(`#${id}`).addEventListener('input', draw);
+    let anim = null;
+    $('#refine').addEventListener('click', () => {
+      anim?.cancel();
+      anim = tween(3500, t => { $('#n').value = Math.round(1 + 199 * t * t); draw(); }, ease.linear);
+    });
+    tree = parse('x^2'); f = compile(tree);
+    setMethod('esquerda');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quanto vale $\\int_0^\\pi \\sin x\\,dx$?', options: ['2', '0', '1', 'π'], answer: 0, explain: 'Uma primitiva é $-\\cos x$: $-\\cos\\pi - (-\\cos 0) = 1 + 1 = 2$.' },
+      { q: 'Para uma função crescente, a soma pela esquerda…', options: ['subestima a integral', 'superestima a integral', 'é exata', 'depende de n'], answer: 0, explain: 'Cada retângulo usa a altura no início do intervalo, que é o menor valor ali.' },
+      { q: 'Se $F(x) = \\int_0^x t^2\\,dt$, quanto vale $F\'(3)$?', options: ['9', '27', '3', '6'], answer: 0, explain: 'Pelo Teorema Fundamental, $F\'(x) = x^2$, logo $F\'(3) = 9$.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+# binários dos exemplos em C++
+periodo-*/**/codigo/*
+!periodo-*/**/codigo/*.*
+!periodo-*/**/codigo/Makefile
+!periodo-*/**/codigo/*/
+**/build/

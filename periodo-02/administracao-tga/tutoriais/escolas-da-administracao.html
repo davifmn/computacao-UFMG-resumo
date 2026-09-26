@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escolas da Administração · TGA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    #timeline svg { display: block; width: 100%; }
+    #timeline .bar { cursor: pointer; }
+    .school-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: var(--radius); padding: 18px 22px; margin-top: 14px; }
+    .school-card h3 { margin: 0 0 4px; font-size: 22px; }
+    .school-card .meta { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+    .school-card .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+    .school-card ul { margin: 6px 0; padding-left: 20px; }
+    .school-card li { margin: 4px 0; color: #d4d8de; }
+    .school-card .box { background: var(--surface-2); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 15px; }
+    .podc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+    .podc div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .podc b { display: block; font-size: 17px; margin-bottom: 4px; }
+    .podc span { color: var(--muted); font-size: 14px; }
+    .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+    .swot div { border-radius: 10px; padding: 12px 16px; border: 1px solid var(--border); }
+    .swot b { display: block; margin-bottom: 4px; }
+    .swot ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#tga">Administração TGA</a>
+      <span class="sep">/</span><span>Escolas da administração</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Tutorial · Administração: Teoria Geral da Administração (EAD)</div>
+    <h1>Um século de ideias sobre como organizar o trabalho</h1>
+    <p class="lead">Cada escola da administração surgiu como resposta aos problemas (e aos exageros) da anterior. Entenda a <b>linha do tempo</b> e a TGA vira uma história, não uma lista de nomes para decorar. <b>Clique numa escola</b> para ver o resumo.</p>
+
+    <div class="stage" id="timeline"><svg aria-label="Linha do tempo das escolas da administração"></svg></div>
+    <div class="legend" id="legend"></div>
+    <div id="card"></div>
+
+    <div class="with-toc" style="margin-top:36px">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+        <h2>A história em cinco ênfases</h2>
+        <p>Chiavenato organiza as teorias pela variável que cada uma privilegia. A sequência acompanha o aumento da complexidade das organizações:</p>
+        <ol>
+          <li><b>Tarefas</b> (Taylor): como tornar o operário mais eficiente?</li>
+          <li><b>Estrutura</b> (Fayol, Weber, neoclássicos): como desenhar a organização?</li>
+          <li><b>Pessoas</b> (Relações Humanas, Comportamental): o que motiva quem trabalha?</li>
+          <li><b>Ambiente</b> (Sistemas, Contingência): como a organização se adapta ao mundo lá fora?</li>
+          <li><b>Tecnologia</b> (Contingência): como a forma de produzir molda a estrutura?</li>
+        </ol>
+        <div class="callout tip"><p><b>Padrão para a prova:</b> quase toda questão compara duas escolas. A Científica foca na tarefa (de baixo para cima, no chão de fábrica), enquanto a Clássica foca na estrutura (de cima para baixo, na direção). Relações Humanas é a reação às duas, e a Contingência diz que "depende".</p></div>
+
+        <h2>O processo administrativo (PODC)</h2>
+        <div class="podc">
+          <div><b class="c-blue">Planejar</b><span>definir objetivos e como alcançá-los (missão, visão, metas, estratégias)</span></div>
+          <div><b class="c-green">Organizar</b><span>dividir o trabalho, alocar recursos, definir estrutura e autoridade</span></div>
+          <div><b class="c-yellow">Dirigir</b><span>liderar, comunicar e motivar as pessoas</span></div>
+          <div><b class="c-pink">Controlar</b><span>medir o desempenho, comparar com o planejado e corrigir</span></div>
+        </div>
+        <p>O planejamento acontece em três níveis: <b>estratégico</b> (longo prazo, organização toda, alta direção), <b>tático</b> (médio prazo, departamentos, gerência) e <b>operacional</b> (curto prazo, tarefas, supervisão).</p>
+
+        <h2>Ciclo PDCA</h2>
+        <p>Ferramenta de melhoria contínua (Shewhart e Deming): <b>P</b>lan (planejar) → <b>D</b>o (executar) → <b>C</b>heck (verificar) → <b>A</b>ct (agir/padronizar) → volta ao P. É o mesmo espírito do ciclo <i>build → measure → learn</i> e das retrospectivas dos métodos ágeis.</p>
+
+        <h2>Análise SWOT (FOFA)</h2>
+        <p>Cruza o ambiente <b>interno</b> (que a organização controla) com o <b>externo</b> (que ela não controla). Exemplo para uma startup de software formada por alunos da UFMG:</p>
+        <div class="swot">
+          <div style="background:rgba(131,193,103,.08)"><b class="c-green">Forças (interno, +)</b><ul><li>equipe técnica forte</li><li>custo fixo baixo</li><li>proximidade com a pesquisa da universidade</li></ul></div>
+          <div style="background:rgba(252,98,85,.08)"><b class="c-red">Fraquezas (interno, −)</b><ul><li>pouca experiência comercial</li><li>marca desconhecida</li><li>dependência de poucos sócios</li></ul></div>
+          <div style="background:rgba(88,196,221,.08)"><b class="c-blue">Oportunidades (externo, +)</b><ul><li>digitalização de pequenas empresas</li><li>editais de fomento à inovação</li><li>ecossistema de startups em BH (San Pedro Valley)</li></ul></div>
+          <div style="background:rgba(244,211,94,.08)"><b class="c-yellow">Ameaças (externo, −)</b><ul><li>concorrentes com mais capital</li><li>mudanças na legislação (ex.: LGPD)</li><li>disputa por talentos com grandes empresas</li></ul></div>
+        </div>
+        <p>A análise só é útil se gera <b>estratégias</b>: usar forças para aproveitar oportunidades, reduzir fraquezas que ampliam ameaças etc.</p>
+
+        <h2>Motivação: Maslow, Herzberg e McGregor</h2>
+        <ul>
+          <li><b>Maslow:</b> necessidades fisiológicas → segurança → sociais → estima → autorrealização. Uma necessidade satisfeita deixa de motivar.</li>
+          <li><b>Herzberg:</b> fatores <i>higiênicos</i> (salário, condições, chefia) evitam insatisfação; fatores <i>motivacionais</i> (reconhecimento, responsabilidade, o trabalho em si) geram satisfação.</li>
+          <li><b>McGregor:</b> a Teoria X supõe que as pessoas evitam trabalho e precisam de controle; a Teoria Y, que buscam responsabilidade e se autocontrolam. O estilo de gestão tende a produzir o comportamento que supõe.</li>
+        </ul>
+
+        <h2>Por que isso importa para quem é da computação?</h2>
+        <p>Você vai trabalhar <b>dentro</b> de organizações e, muitas vezes, construir sistemas que as <b>modelam</b> (ERPs, fluxos de aprovação, controle de acesso). A <b>Lei de Conway</b> diz que sistemas refletem a estrutura de comunicação de quem os constrói, e a Engenharia de Software (6º período) é, em boa parte, administração aplicada: planejar, estimar, organizar times e controlar a qualidade.</p>
+
+        <h2>Exercícios gerados automaticamente</h2>
+        <div id="gen"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountGenerator } from '../../../engine/quiz.js';
+    import { $, h, buildToc } from '../../../engine/page.js';
+    import { ESCOLAS, ENFASES, randomQuestion } from './escolas.js';
+
+    const W = 1200, H = 60 + ESCOLAS.length * 40 + 40, X0 = 250, X1 = W - 30, Y0 = 50;
+    const Y1 = 1900, Y2 = 1990;
+    const X = y => X0 + ((y - Y1) / (Y2 - Y1)) * (X1 - X0);
+    const svg = $('#timeline svg');
+    const scene = new Scene(svg, { width: W, height: H });
+    svg.style.setProperty('--dur', '200ms');
+    const ordered = [...ESCOLAS].sort((a, b) => a.inicio - b.inicio);
+    let selected = 'cientifica';
+
+    function drawTimeline() {
+      scene.frame(s => {
+        for (let y = Y1; y <= Y2; y += 10) {
+          s.line(`g${y}`, X(y), Y0 - 10, X(y), H - 30, { stroke: COLORS.border, sw: 1, layer: 'bg' });
+          s.text(`gl${y}`, y, { x: X(y), y: Y0 - 26, size: 13, mono: true, fill: COLORS.faint });
+        }
+        ordered.forEach((e, i) => {
+          const y = Y0 + i * 40;
+          const color = COLORS[ENFASES[e.enfase[0]].cor];
+          const on = e.id === selected;
+          const bar = s.rect(`b-${e.id}`, { x: X(e.inicio), y: y + 4, w: X(e.fim) - X(e.inicio), h: 26, rx: 13, fill: color, stroke: on ? '#fff' : 'none', sw: 2, opacity: on ? 1 : 0.55 });
+          bar.classList.add('bar'); bar.dataset.id = e.id;
+          const lbl = s.text(`l-${e.id}`, e.nome, { x: X0 - 14, y: y + 17, size: 15, anchor: 'end', weight: on ? 700 : 500, fill: on ? COLORS.text : COLORS.muted });
+          lbl.classList.add('bar'); lbl.dataset.id = e.id;
+          s.text(`a-${e.id}`, e.autores[0], { x: X(e.inicio) + 12, y: y + 17, size: 12, anchor: 'start', weight: 700, fill: '#0b0e12' }).style.pointerEvents = 'none';
+        });
+      });
+    }
+
+    function drawCard() {
+      const e = ESCOLAS.find(x => x.id === selected);
+      const color = `var(--${ENFASES[e.enfase[0]].cor})`;
+      $('#card').replaceChildren(h('div', { class: 'school-card', style: `--c: ${color}` },
+        h('h3', {}, e.nome),
+        h('div', { class: 'meta' }, `${e.inicio}–${e.fim} · ênfase: ${e.enfase.map(k => ENFASES[k].nome).join(' e ')} · ${e.marco}`),
+        h('div', { class: 'grid' },
+          h('div', {}, h('b', {}, 'Ideias principais'), h('ul', {}, ...e.ideias.map(i => h('li', {}, i)))),
+          h('div', {},
+            h('div', { class: 'box' }, h('b', {}, 'Autores: '), e.autores.join(', ')),
+            h('div', { class: 'box' }, h('b', { class: 'c-red' }, 'Críticas: '), e.criticas),
+            h('div', { class: 'box' }, h('b', { class: 'c-blue' }, 'E na computação? '), e.computacao)))));
+    }
+
+    svg.addEventListener('click', ev => {
+      const id = ev.target.dataset?.id;
+      if (!id) return;
+      selected = id;
+      drawTimeline(); drawCard();
+    });
+    $('#legend').append(...Object.values(ENFASES).map(e => h('span', {}, h('i', { style: `background: var(--${e.cor})` }), `ênfase em ${e.nome.toLowerCase()}`)));
+    drawTimeline(); drawCard();
+    buildToc($('#toc'), $('#content'));
+    mountGenerator($('#gen'), { label: 'Nova pergunta', generate: () => randomQuestion() });
+  </script>
+</body>
+</html>

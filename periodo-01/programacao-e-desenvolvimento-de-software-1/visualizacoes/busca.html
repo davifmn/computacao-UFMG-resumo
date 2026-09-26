@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Busca Binária · PDS I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds1">PDS I</a>
+      <span class="sep">/</span><span>Busca</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software I</div>
+    <h1>Busca sequencial × busca binária</h1>
+    <p class="lead">Se o vetor está ordenado, cada comparação da busca binária elimina <b>metade</b> dos candidatos. Veja o intervalo de busca encolher.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="binaria">Binária</button>
+        <button class="btn" data-alg="sequencial">Sequencial</button>
+      </div>
+      <label>Vetor (será ordenado) <input id="arr" type="text" size="34" value="2, 5, 8, 12, 16, 23, 38, 56, 72, 91, 99, 105, 120, 131, 150"></label>
+      <label>Procurar <input id="x" type="number" value="23" style="width:80px"></label>
+      <button class="btn" id="rnd">Aleatório</button>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Por que é tão rápida?</h2>
+      <p>A cada iteração o tamanho do intervalo cai pela metade: $n \to n/2 \to n/4 \to \dots \to 1$. O número de passos é quantas vezes dá para dividir $n$ por 2, ou seja, $\lfloor \log_2 n \rfloor + 1$.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>n</th><th>Sequencial (pior caso)</th><th>Binária (pior caso)</th></tr>
+          <tr><td>15</td><td>15</td><td>4</td></tr>
+          <tr><td>1.000</td><td>1.000</td><td>10</td></tr>
+          <tr><td>1.000.000</td><td>1.000.000</td><td>20</td></tr>
+          <tr><td>8 bilhões (toda a humanidade)</td><td>8.000.000.000</td><td>33</td></tr>
+        </table>
+      </div>
+      <div class="callout warn">
+        <p><b>Cuidado com o pré-requisito:</b> a busca binária só funciona se o vetor estiver <b>ordenado</b>. Ordenar custa pelo menos $O(n \log n)$, então só compensa se você for fazer várias buscas.</p>
+      </div>
+      <div class="callout">
+        <p><b>Bug clássico:</b> <code>meio = (ini + fim) / 2</code> pode estourar o <code>int</code> quando <code>ini + fim</code> passa de $2^{31}-1$. A forma segura é <code>meio = ini + (fim - ini) / 2</code>. Esse bug ficou escondido por anos na biblioteca padrão do Java.</p>
+      </div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, binariaSteps, sequencialSteps } from './busca.js';
+
+    const W = 900, H = 340, PAD = 30, Y = 120;
+    let alg = 'binaria';
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H,
+      render(step, s) {
+        const n = step.v.length;
+        const slot = (W - 2 * PAD) / n;
+        const bw = Math.min(54, slot - 6);
+        const cx = k => PAD + slot * k + slot / 2;
+
+        s.text('alvo', `procurando x = ${step.x}`, { x: W / 2, y: 36, size: 20, weight: 700, fill: COLORS.yellow });
+        step.v.forEach((val, k) => {
+          const out = step.discarded.includes(k);
+          let fill = COLORS.surface2, stroke = COLORS.blue;
+          if (out) { fill = COLORS.surface; stroke = COLORS.border; }
+          if (k === step.meio || k === step.i) { fill = '#3d3a22'; stroke = COLORS.yellow; }
+          if (k === step.found) { fill = '#253a22'; stroke = COLORS.green; }
+          s.rect(`c${k}`, { x: cx(k) - bw / 2, y: Y - 24, w: bw, h: 48, fill, stroke, sw: 2, opacity: out ? 0.35 : 1 });
+          s.text(`t${k}`, val, { x: cx(k), y: Y, size: n > 16 ? 12 : 16, mono: true, weight: 600, opacity: out ? 0.35 : 1 });
+          s.text(`k${k}`, k, { x: cx(k), y: Y - 40, size: 11, fill: COLORS.faint, mono: true });
+        });
+
+        // Intervalo [ini, fim]
+        if (step.ini != null && step.ini <= step.fim) {
+          const x1 = cx(step.ini) - bw / 2, x2 = cx(step.fim) + bw / 2, y = Y + 36;
+          s.path('range', `M ${x1} ${y} L ${x1} ${y + 8} L ${x2} ${y + 8} L ${x2} ${y}`, { stroke: COLORS.teal, sw: 2 });
+          s.text('range-lbl', `${step.fim - step.ini + 1} candidato(s)`, { x: (x1 + x2) / 2, y: y + 24, size: 13, fill: COLORS.teal });
+        }
+        const markers = [['ini', COLORS.teal], ['meio', COLORS.yellow], ['fim', COLORS.pink], ['i', COLORS.yellow]];
+        const used = {};
+        for (const [name, color] of markers) {
+          const k = step[name];
+          if (typeof k !== 'number' || k < 0 || k >= n) continue;
+          const row = used[k] = (used[k] ?? 0) + 1;
+          s.text(`m-${name}`, `▲ ${name}`, { x: cx(k), y: Y + 70 + row * 20, size: 13, weight: 600, fill: color });
+        }
+        if (step.found != null) {
+          s.text('res', step.found >= 0 ? `retorna ${step.found}` : 'retorna −1 (não encontrado)', {
+            x: W / 2, y: H - 30, size: 18, weight: 700, fill: step.found >= 0 ? COLORS.green : COLORS.red,
+          });
+        }
+      },
+    });
+
+    function run() {
+      let v = $('#arr').value.split(/[,\s;]+/).map(Number).filter(Number.isFinite).map(Math.round).slice(0, 24);
+      if (v.length < 2) v = [1, 2, 3];
+      v = [...new Set(v)].sort((a, b) => a - b);
+      $('#arr').value = v.join(', ');
+      const x = Math.round(+$('#x').value || 0);
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      player.setCode(CODES[alg], 'cpp');
+      player.load(alg === 'binaria' ? binariaSteps(v, x) : sequencialSteps(v, x));
+    }
+
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.alg; run(); }));
+    $('#arr').addEventListener('change', run);
+    $('#x').addEventListener('change', run);
+    $('#rnd').addEventListener('click', () => {
+      const set = new Set();
+      while (set.size < 15) set.add(randInt(1, 150));
+      const v = [...set];
+      $('#arr').value = v.join(', ');
+      $('#x').value = Math.random() < 0.75 ? v[randInt(0, v.length - 1)] : randInt(1, 150);
+      run();
+    });
+    run();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'No pior caso, quantas comparações a busca binária faz em um vetor de <b>1024</b> elementos?',
+        options: ['11', '10', '512', '1024'],
+        answer: 0,
+        explain: '$1024 = 2^{10}$: o intervalo passa por 1024, 512, …, 2, 1, totalizando $\\log_2 1024 + 1 = 11$ tamanhos.',
+      },
+      {
+        q: 'Em <code>v = {1, 3, 5, 7, 9}</code>, procurando 7: qual é o primeiro valor de <code>meio</code>?',
+        options: ['2', '3', '1', '4'],
+        answer: 0,
+        explain: '(0 + 4) / 2 = 2, e v[2] = 5 &lt; 7, então ini vira 3.',
+      },
+      {
+        q: 'O que acontece se aplicarmos a busca binária em um vetor <b>não ordenado</b>?',
+        options: ['Pode dizer que o elemento não existe mesmo ele estando no vetor', 'Dá erro de compilação', 'Funciona, só que mais devagar', 'Entra em laço infinito'],
+        answer: 0,
+        explain: 'O algoritmo descarta metades com base na ordem; sem ordem, ele pode descartar justamente a metade que contém o alvo.',
+      },
+    ]);
+  </script>
+</body>
+</html>

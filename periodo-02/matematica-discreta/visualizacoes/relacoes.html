@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relações · Matemática Discreta</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 300px 320px; gap: 16px; align-items: start; }
+    .matrix { border-collapse: collapse; font-family: var(--mono); margin: 6px auto 12px; }
+    .matrix td, .matrix th { width: 38px; height: 38px; text-align: center; border: 1px solid var(--border); }
+    .matrix th { color: var(--muted); background: var(--surface-2); }
+    .matrix td { cursor: pointer; color: var(--faint); }
+    .matrix td.on { background: rgba(88, 196, 221, .2); color: var(--blue); font-weight: 700; }
+    .matrix td:hover { outline: 2px solid var(--yellow); outline-offset: -2px; }
+    .props { display: flex; flex-direction: column; gap: 6px; padding: 8px 14px 14px; font-size: 14px; }
+    .props .p { display: flex; gap: 8px; align-items: baseline; }
+    .props .p b { min-width: 1.2em; }
+    .props small { color: var(--muted); display: block; font-size: 12px; margin-left: 1.9em; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#discreta">Matemática Discreta</a>
+      <span class="sep">/</span><span>Relações</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Matemática Discreta</div>
+    <h1>Relações binárias: matriz, grafo e propriedades</h1>
+    <p class="lead">Uma relação $R$ sobre um conjunto $A$ é um subconjunto de $A \times A$. Ela pode ser vista como uma <b>matriz booleana</b> ou como um <b>grafo dirigido</b>. <b>Clique na matriz</b> para ligar e desligar pares e veja as propriedades mudarem.</p>
+
+    <div class="toolbar">
+      <label>A = {1, …, <input id="n" type="number" min="2" max="7" value="5" style="width:56px">}</label>
+      <div class="chips" id="presets">
+        <button class="btn small" data-p="divide">a divide b</button>
+        <button class="btn small" data-p="leq">a ≤ b</button>
+        <button class="btn small" data-p="lt">a &lt; b</button>
+        <button class="btn small" data-p="mod3">a ≡ b (mod 3)</button>
+        <button class="btn small" data-p="succ">b = a + 1</button>
+        <button class="btn small" data-p="random">aleatória</button>
+        <button class="btn small" data-p="empty">vazia</button>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="graph" aria-label="Grafo da relação"></svg></div>
+      <div class="panel"><div class="panel-title">Matriz (linha a, coluna b: a R b)</div><div id="matrix"></div></div>
+      <div class="panel"><div class="panel-title">Propriedades</div><div class="props" id="props"></div></div>
+    </div>
+
+    <h2>Fecho transitivo (algoritmo de Warshall)</h2>
+    <p class="c-muted">Parte da relação acima. Os pares acrescentados aparecem em <span class="c-orange">laranja</span>. Dica: comece com o preset "b = a + 1".</p>
+    <div class="toolbar"><button class="btn primary" id="closure">Calcular o fecho da relação atual</button></div>
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>As propriedades</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Propriedade</th><th>Definição</th><th>No grafo</th><th>Na matriz</th></tr>
+          <tr><td>Reflexiva</td><td>$\forall a:\ aRa$</td><td>laço em todo vértice</td><td>diagonal toda 1</td></tr>
+          <tr><td>Simétrica</td><td>$aRb \Rightarrow bRa$</td><td>toda seta tem volta</td><td>$M = M^T$</td></tr>
+          <tr><td>Antissimétrica</td><td>$aRb \land bRa \Rightarrow a = b$</td><td>nenhum par ida-e-volta</td><td>sem 1 espelhado fora da diagonal</td></tr>
+          <tr><td>Transitiva</td><td>$aRb \land bRc \Rightarrow aRc$</td><td>todo "atalho" de 2 passos existe</td><td>$M^2 \le M$</td></tr>
+        </table>
+      </div>
+      <ul>
+        <li><b>Equivalência</b> = reflexiva + simétrica + transitiva. Ela <b>particiona</b> o conjunto em classes (ex.: "mesmo resto na divisão por 3").</li>
+        <li><b>Ordem parcial</b> = reflexiva + antissimétrica + transitiva (ex.: ≤, divisibilidade, ⊆). É "parcial" porque dois elementos podem ser incomparáveis: 2 e 3 não se dividem.</li>
+        <li>Simétrica e antissimétrica <b>não são opostas</b>: a relação vazia é as duas coisas, e muitas relações não são nenhuma.</li>
+      </ul>
+      <p><b>Onde isso aparece na computação:</b> o fecho transitivo responde "quem alcança quem" num grafo (dependências de pacotes, herança de classes, rotas). Relações de equivalência estão por trás do <i>union-find</i> e da minimização de autômatos. Ordens parciais aparecem na ordenação topológica de tarefas. E um banco de dados relacional é, literalmente, um conjunto de relações.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { StepPlayer } from '../../../engine/player.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, h } from '../../../engine/page.js';
+    import { relationFrom, properties, counterexamples, equivalenceClasses, warshallSteps, WARSHALL_CODE } from './discreta.js';
+
+    let n = 5, M = relationFrom(5, (a, b) => b % a === 0);
+    const PRESETS = {
+      divide: (a, b) => b % a === 0, leq: (a, b) => a <= b, lt: (a, b) => a < b,
+      mod3: (a, b) => (a - b) % 3 === 0, succ: (a, b) => b === a + 1,
+      random: () => Math.random() < 0.3, empty: () => false,
+    };
+
+    // Desenha o grafo dirigido de uma matriz numa cena (vértices num círculo).
+    function drawGraph(s, M, { W, H, added = [], via = null } = {}) {
+      const n = M.length, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 60;
+      const P = i => [cx + R * Math.cos(-Math.PI / 2 + (2 * Math.PI * i) / n), cy + R * Math.sin(-Math.PI / 2 + (2 * Math.PI * i) / n)];
+      const isAdded = (i, j) => added.some(([a, b]) => a === i && b === j);
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+        if (!M[i][j]) continue;
+        const color = via && via[0] === i && via[2] === j ? COLORS.yellow : isAdded(i, j) ? COLORS.orange : COLORS.blue;
+        const [x1, y1] = P(i), [x2, y2] = P(j);
+        if (i === j) {
+          const ang = Math.atan2(y1 - cy, x1 - cx);
+          const lx = x1 + 30 * Math.cos(ang), ly = y1 + 30 * Math.sin(ang);
+          s.path(`e${i}-${j}`, `M ${x1 + 18 * Math.cos(ang - 0.6)} ${y1 + 18 * Math.sin(ang - 0.6)} C ${lx + 30 * Math.cos(ang - 1.2)} ${ly + 30 * Math.sin(ang - 1.2)}, ${lx + 30 * Math.cos(ang + 1.2)} ${ly + 30 * Math.sin(ang + 1.2)}, ${x1 + 18 * Math.cos(ang + 0.6)} ${y1 + 18 * Math.sin(ang + 0.6)}`, { stroke: color, sw: 2, arrow: true });
+          continue;
+        }
+        const both = M[j][i];
+        const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
+        const ux = dx / len, uy = dy / len;
+        const bend = both ? 26 : 0;                          // ida e volta: curva para separar as setas
+        const mx = (x1 + x2) / 2 - uy * bend, my = (y1 + y2) / 2 + ux * bend;
+        s.path(`e${i}-${j}`, `M ${x1 + ux * 22} ${y1 + uy * 22} Q ${mx} ${my} ${x2 - ux * 24} ${y2 - uy * 24}`, { stroke: color, sw: via && (via[0] === i && via[1] === j || via[1] === i && via[2] === j) ? 3.5 : 2, arrow: true });
+      }
+      for (let i = 0; i < n; i++) {
+        const [x, y] = P(i);
+        const hot = via && via[1] === i;
+        s.circle(`v${i}`, { x, y, r: 20, fill: hot ? COLORS.yellow : COLORS.surface2, stroke: hot ? COLORS.yellow : COLORS.muted, sw: 2 });
+        s.text(`vt${i}`, i + 1, { x, y, size: 16, weight: 700, fill: hot ? '#1d1a08' : COLORS.text });
+      }
+    }
+
+    const gscene = new Scene($('#graph'), { width: 460, height: 420 });
+    $('#graph').style.setProperty('--dur', '200ms');
+
+    function update() {
+      gscene.frame(s => drawGraph(s, M, { W: 460, H: 420 }));
+      $('#matrix').innerHTML = `<table class="matrix"><tr><th></th>${M.map((_, j) => `<th>${j + 1}</th>`).join('')}</tr>${
+        M.map((row, i) => `<tr><th>${i + 1}</th>${row.map((v, j) => `<td class="${v ? 'on' : ''}" data-i="${i}" data-j="${j}">${v}</td>`).join('')}</tr>`).join('')}</table>`;
+      const p = properties(M), ce = counterexamples(M);
+      const line = (name, ok, why) => `<div class="p"><b class="${ok ? 'c-green' : 'c-red'}">${ok ? '✓' : '✗'}</b><span>${name}</span></div>${!ok && why ? `<small>${why}</small>` : ''}`;
+      $('#props').innerHTML =
+        line('reflexiva', p.reflexiva, ce.reflexiva) +
+        line('simétrica', p.simetrica, ce.simetrica) +
+        line('antissimétrica', p.antissimetrica, ce.antissimetrica) +
+        line('transitiva', p.transitiva, ce.transitiva) +
+        '<hr style="border:0;border-top:1px solid var(--border);width:100%">' +
+        line('<b>equivalência</b>', p.equivalencia) +
+        (p.equivalencia ? `<small style="margin-left:0">Classes: ${equivalenceClasses(M).map(c => `{${c.join(', ')}}`).join(' ')}</small>` : '') +
+        line('<b>ordem parcial</b>', p.ordemParcial);
+    }
+    $('#matrix').addEventListener('click', e => {
+      const { i, j } = e.target.dataset;
+      if (i == null) return;
+      M[+i][+j] ^= 1;
+      update();
+    });
+    $$('#presets [data-p]').forEach(b => b.addEventListener('click', () => { M = relationFrom(n, PRESETS[b.dataset.p]); update(); }));
+    $('#n').addEventListener('change', e => {
+      n = Math.max(2, Math.min(7, +e.target.value || 5));
+      e.target.value = n;
+      M = relationFrom(n, PRESETS.divide);
+      gscene.clear();
+      update();
+    });
+    update();
+
+    // Warshall
+    const player = new StepPlayer($('#player'), {
+      code: WARSHALL_CODE, lang: 'python', width: 900, height: 440, codeTitle: 'Warshall (Python)',
+      render(step, s) {
+        drawGraph(s, step.M, { W: 500, H: 440, added: step.added, via: step.via });
+        const m = step.M.length, cell = Math.min(44, 300 / m), x0 = 540, y0 = 70;
+        for (let i = 0; i < m; i++) {
+          s.text(`rh${i}`, i + 1, { x: x0 - 16, y: y0 + i * cell + cell / 2, size: 13, mono: true, fill: step.k === i ? COLORS.yellow : COLORS.muted });
+          s.text(`ch${i}`, i + 1, { x: x0 + i * cell + cell / 2, y: y0 - 14, size: 13, mono: true, fill: step.k === i ? COLORS.yellow : COLORS.muted });
+          for (let j = 0; j < m; j++) {
+            const added = step.added.some(([a, b]) => a === i && b === j);
+            const hot = step.i === i && step.j === j;
+            const v = step.M[i][j];
+            s.rect(`mc${i}-${j}`, { x: x0 + j * cell, y: y0 + i * cell, w: cell - 2, h: cell - 2, rx: 4, fill: hot ? '#3d3a22' : added ? 'rgba(255,159,67,.25)' : v ? 'rgba(88,196,221,.2)' : COLORS.surface2, stroke: hot ? COLORS.yellow : step.k === i || step.k === j ? COLORS.muted : 'transparent', sw: 1.5 });
+            s.text(`mt${i}-${j}`, v, { x: x0 + j * cell + cell / 2 - 1, y: y0 + i * cell + cell / 2 - 1, size: 14, mono: true, weight: 700, fill: added ? COLORS.orange : v ? COLORS.blue : COLORS.faint });
+          }
+        }
+        if (step.k != null) s.text('kk', `k = ${step.k + 1}: linha e coluna ${step.k + 1} em destaque`, { x: x0, y: y0 + m * cell + 26, size: 13, anchor: 'start', fill: COLORS.muted });
+      },
+    });
+    $('#closure').addEventListener('click', () => { player.load(warshallSteps(M)); $('#player').scrollIntoView({ behavior: 'smooth' }); });
+    player.load(warshallSteps(relationFrom(5, (a, b) => b === a + 1)));
+
+    mountQuiz($('#quiz'), [
+      { q: 'A relação "a é irmão de b" (entre pessoas) é transitiva?', options: ['Não: se a é irmão de b e b é irmão de a, teríamos a irmão de a', 'Sim, sempre', 'Só se for reflexiva', 'Sim, porque é simétrica'], answer: 0, explain: 'Com a R b e b R a, a transitividade exigiria a R a, mas ninguém é irmão de si mesmo.' },
+      { q: 'Quantas relações existem sobre um conjunto de n elementos?', options: ['$2^{n^2}$', '$n^2$', '$2^n$', '$n!$'], answer: 0, explain: 'Cada uma das $n^2$ células da matriz pode ser 0 ou 1.' },
+      { q: 'A relação ≡ (mod 3) sobre {1, …, 6} tem quantas classes de equivalência?', options: ['3', '2', '6', '1'], answer: 0, explain: '{1, 4}, {2, 5} e {3, 6}: uma para cada resto possível (0, 1, 2).' },
+    ]);
+  </script>
+</body>
+</html>

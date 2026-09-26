@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polimorfismo · PDS II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 520px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds2">PDS II</a>
+      <span class="sep">/</span><span>Polimorfismo</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software II</div>
+    <h1>Polimorfismo por dentro: a vtable</h1>
+    <p class="lead">Como <code>f-&gt;area()</code> sabe se deve calcular a área de um círculo ou de um retângulo, se <code>f</code> é só um <code>Forma*</code>? A resposta é um ponteiro escondido em cada objeto e uma tabela de funções por classe.</p>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>ponteiros do vetor</span>
+      <span><i style="background:var(--purple)"></i>vptr → vtable</span>
+      <span><i style="background:var(--yellow)"></i>caminho da chamada atual</span>
+    </div>
+
+    <section class="prose">
+      <h2>Os três pilares da orientação a objetos</h2>
+      <ul>
+        <li><b>Encapsulamento:</b> dados privados e acesso só por métodos, para que a classe garanta suas próprias invariantes (ex.: um saldo nunca negativo).</li>
+        <li><b>Herança:</b> <code>class Circulo : public Forma</code> significa que um círculo <b>é uma</b> forma e reaproveita a interface dela.</li>
+        <li><b>Polimorfismo:</b> o mesmo código (<code>f-&gt;area()</code>) se comporta de forma diferente conforme o tipo <b>real</b> do objeto.</li>
+      </ul>
+
+      <h2><code>virtual</code> faz toda a diferença</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Método</th><th>Qual versão é chamada em <code>Forma* f = new Circulo;</code></th><th>Decidido em</th></tr>
+          <tr><td>não virtual</td><td>a de <b>Forma</b> (tipo do ponteiro)</td><td>compilação (ligação estática)</td></tr>
+          <tr><td><code>virtual</code></td><td>a de <b>Circulo</b> (tipo do objeto)</td><td>execução (ligação dinâmica, via vtable)</td></tr>
+          <tr><td><code>virtual ... = 0</code></td><td>nenhuma em Forma: a classe é <b>abstrata</b> e não pode ser instanciada</td><td>—</td></tr>
+        </table>
+      </div>
+      <div class="callout warn">
+        <p><b>Regra prática:</b> se uma classe tem algum método <code>virtual</code>, o destrutor também deve ser <code>virtual</code>. Senão, <code>delete</code> por um ponteiro da base chama só o destrutor da base, e o que a filha alocou vaza.</p>
+      </div>
+      <div class="callout tip">
+        <p><b>Use <code>override</code></b> sempre que sobrescrever um método. Se você errar a assinatura (ex.: esquecer o <code>const</code>), o compilador avisa em vez de criar silenciosamente um método novo que nunca é chamado.</p>
+      </div>
+      <p>Em C++ moderno, prefira <code>std::vector&lt;std::unique_ptr&lt;Forma&gt;&gt;</code>: o <code>delete</code> acontece sozinho. O código completo está em <a href="../codigo/formas/README.md"><code>codigo/formas/</code></a>, e o <a href="../tutoriais/projeto-cpp.html">tutorial de projeto C++</a> explica como organizá-lo.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { CODE, VTABLES, polymorphismSteps } from './polimorfismo.js';
+
+    const W = 900, H = 560;
+    const SLOT_X = 30, SLOT_W = 150;
+    const OBJ_X = 280, OBJ_W = 210, OBJ_Y = { c: 70, r: 250 };
+    const VT_X = 620, VT_W = 250, VT_Y = { Circulo: 60, Retangulo: 250 };
+    const HEAD = 30, ROW = 28;
+
+    new StepPlayer($('#player'), {
+      code: CODE, lang: 'cpp', width: W, height: H, codeTitle: 'formas.cpp',
+      render(step, s) {
+        const hl = step.hl;
+        s.text('t-vec', 'vector<Forma*> formas', { x: SLOT_X + SLOT_W / 2, y: 30, size: 13, weight: 700, mono: true, fill: COLORS.muted });
+        s.text('t-heap', 'HEAP (objetos)', { x: OBJ_X + OBJ_W / 2, y: 30, size: 12, weight: 700, fill: COLORS.muted });
+        s.text('t-vt', 'VTABLES (uma por classe)', { x: VT_X + VT_W / 2, y: 30, size: 12, weight: 700, fill: COLORS.muted });
+
+        // vtables
+        for (const [cls, rows] of Object.entries(VTABLES)) {
+          const y0 = VT_Y[cls];
+          s.rect(`vt-${cls}`, { x: VT_X, y: y0, w: VT_W, h: HEAD + rows.length * ROW, fill: COLORS.surface2, stroke: COLORS.purple, sw: 1.5 });
+          s.text(`vth-${cls}`, `vtable de ${cls}`, { x: VT_X + 12, y: y0 + HEAD / 2, size: 13, anchor: 'start', weight: 700, fill: COLORS.purple });
+          rows.forEach(([m, fn], i) => {
+            const y = y0 + HEAD + i * ROW;
+            const on = hl.vt && hl.vt[0] === cls && hl.vt[1] === i;
+            s.rect(`vtr-${cls}-${i}`, { x: VT_X + 4, y: y + 2, w: VT_W - 8, h: ROW - 4, rx: 4, fill: on ? '#3d3a22' : 'transparent', stroke: on ? COLORS.yellow : 'transparent', sw: 1.5 });
+            s.text(`vtm-${cls}-${i}`, m, { x: VT_X + 14, y: y + ROW / 2, size: 12, anchor: 'start', mono: true, fill: COLORS.muted });
+            s.text(`vtf-${cls}-${i}`, `→ ${fn}`, { x: VT_X + 86, y: y + ROW / 2, size: 12, anchor: 'start', mono: true, fill: on ? COLORS.yellow : fn.startsWith('Forma') ? COLORS.orange : COLORS.text });
+          });
+        }
+
+        // slots do vetor
+        step.slots.forEach((sl, i) => {
+          const y = 60 + i * 56;
+          const on = hl.slot === i;
+          const obj = step.objects.find(o => o.id === sl.target);
+          s.rect(`slot${i}`, { x: SLOT_X, y, w: SLOT_W, h: 40, fill: on ? '#1c3640' : COLORS.surface2, stroke: on ? COLORS.yellow : COLORS.blue, sw: on ? 2.5 : 1.5 });
+          s.text(`slott${i}`, `[${i}] ${obj.addr}`, { x: SLOT_X + SLOT_W / 2, y: y + 20, size: 14, mono: true, weight: 600, fill: COLORS.blue });
+          const ty = OBJ_Y[obj.id] + HEAD / 2;
+          const color = obj.state === 'freed' ? COLORS.red : on ? COLORS.yellow : COLORS.blue;
+          s.path(`slota${i}`, `M ${SLOT_X + SLOT_W + 4} ${y + 20} C ${SLOT_X + SLOT_W + 60} ${y + 20}, ${OBJ_X - 60} ${ty}, ${OBJ_X - 6} ${ty}`, { stroke: color, sw: 2.2, arrow: true, dash: obj.state === 'freed' ? '6 5' : null });
+        });
+
+        // objetos
+        for (const o of step.objects) {
+          const y0 = OBJ_Y[o.id];
+          const fields = Object.entries(o.fields);
+          const on = hl.obj === o.id;
+          const freed = o.state === 'freed';
+          const hh = HEAD + (1 + fields.length) * ROW;
+          s.rect(`obj-${o.id}`, { x: OBJ_X, y: y0, w: OBJ_W, h: hh, fill: freed ? '#2a1717' : COLORS.surface2, stroke: freed ? COLORS.red : on ? COLORS.yellow : COLORS.border, sw: on ? 2.5 : 1.5, dash: freed ? '6 4' : null, opacity: freed ? 0.6 : 1 });
+          s.text(`objh-${o.id}`, `${o.cls} @ ${o.addr}${freed ? ' (liberado)' : ''}`, { x: OBJ_X + 12, y: y0 + HEAD / 2, size: 13, anchor: 'start', weight: 700, fill: freed ? COLORS.red : COLORS.text });
+          const vy = y0 + HEAD + ROW / 2;
+          s.text(`objv-${o.id}`, 'vptr', { x: OBJ_X + 14, y: vy, size: 12, anchor: 'start', mono: true, fill: COLORS.purple });
+          s.circle(`objvd-${o.id}`, { x: OBJ_X + OBJ_W - 20, y: vy, r: 5, fill: COLORS.purple, stroke: 'none' });
+          fields.forEach(([k, v], i) => {
+            const fy = y0 + HEAD + (i + 1) * ROW + ROW / 2;
+            s.text(`objf-${o.id}-${k}`, `${k} = ${v}`, { x: OBJ_X + 14, y: fy, size: 13, anchor: 'start', mono: true, fill: COLORS.text });
+          });
+          if (!freed) {
+            const vt = VT_Y[o.cls] + HEAD / 2;
+            const hot = hl.vptr === o.id;
+            s.path(`vptr-${o.id}`, `M ${OBJ_X + OBJ_W - 20} ${vy} C ${OBJ_X + OBJ_W + 50} ${vy}, ${VT_X - 60} ${vt}, ${VT_X - 6} ${vt}`, { stroke: hot ? COLORS.yellow : COLORS.purple, sw: hot ? 3 : 2, arrow: true, opacity: hot ? 1 : 0.7 });
+          }
+        }
+
+        // função chamada
+        if (hl.fn) s.text('fn', `▶ executando ${hl.fn}`, { x: VT_X + VT_W / 2, y: 450, size: 15, weight: 700, mono: true, fill: COLORS.yellow });
+
+        // console
+        s.rect('console', { x: 30, y: 470, w: 560, h: 72, fill: '#0a0c10', stroke: COLORS.border });
+        s.text('console-t', 'saída', { x: 42, y: 484, size: 11, anchor: 'start', fill: COLORS.faint });
+        step.output.forEach((ln, i) => s.text(`out${i}`, ln, { x: 42, y: 504 + i * 20, size: 14, anchor: 'start', mono: true, fill: COLORS.green }));
+      },
+    }).load(polymorphismSteps());
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Se <code>nome()</code> <b>não</b> fosse <code>virtual</code> em Forma, o que <code>f-&gt;nome()</code> imprimiria para o círculo?',
+        options: ['"forma"', '"círculo"', 'Erro de compilação', 'Depende da ordem no vetor'],
+        answer: 0,
+        explain: 'Sem <code>virtual</code> a chamada é resolvida em tempo de compilação pelo tipo do <b>ponteiro</b> (<code>Forma*</code>).',
+      },
+      {
+        q: 'Por que <code>Forma f;</code> não compila?',
+        options: ['Forma tem um método virtual puro (= 0), então é abstrata', 'Porque falta um construtor', 'Porque Forma não tem atributos', 'Porque o destrutor é virtual'],
+        answer: 0,
+        explain: 'Uma classe com método virtual puro não pode ser instanciada. Ela só serve como interface para as filhas.',
+      },
+      {
+        q: 'Quantas vtables existem se criarmos 1000 círculos e 1000 retângulos?',
+        options: ['2 (uma por classe)', '2000 (uma por objeto)', '1', '3 (contando a de Forma)'],
+        answer: 0,
+        explain: 'A vtable pertence à <b>classe</b>. Cada objeto guarda só o vptr (8 bytes) apontando para ela. Forma é abstrata e, na prática, não precisa de uma tabela usada por objetos concretos.',
+      },
+    ]);
+  </script>
+</body>
+</html>

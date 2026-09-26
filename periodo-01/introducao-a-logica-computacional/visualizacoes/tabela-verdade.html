@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tabela-Verdade · Lógica</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    #formula { font-size: 18px; min-width: min(420px, 100%); flex: 1; }
+    .status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 14px; min-height: 26px; }
+    .error { color: var(--red); font-family: var(--mono); font-size: 14px; }
+    .normal-forms { display: grid; gap: 10px; margin-top: 14px; }
+    .normal-forms div { font-family: var(--mono); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; overflow-x: auto; white-space: nowrap; }
+    .normal-forms span { color: var(--muted); font-family: var(--font); margin-right: 8px; }
+    table.data td.result, table.data th.result { background: rgba(88, 196, 221, .06); }
+    #table-wrap { max-height: 420px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#logica">Lógica Computacional</a>
+      <span class="sep">/</span><span>Tabela-verdade</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Lógica Computacional</div>
+    <h1>Tabela-verdade e árvore sintática</h1>
+    <p class="lead">Digite qualquer fórmula da lógica proposicional. O programa monta a <b>árvore sintática</b>, avalia-a de baixo para cima em cada valoração e preenche a <b>tabela-verdade</b>, como um computador faria.</p>
+
+    <div class="toolbar">
+      <input id="formula" type="text" value="((p → q) ∧ p) → q" aria-label="Fórmula" spellcheck="false">
+      <div class="chips" id="symbols" aria-label="Inserir símbolo">
+        <button class="btn small">¬</button><button class="btn small">∧</button><button class="btn small">∨</button>
+        <button class="btn small">→</button><button class="btn small">↔</button><button class="btn small">⊕</button>
+        <button class="btn small">(</button><button class="btn small">)</button>
+      </div>
+      <select id="examples" aria-label="Exemplos">
+        <option value="">Exemplos…</option>
+        <option>((p → q) ∧ p) → q</option>
+        <option>((p → q) ∧ ¬q) → ¬p</option>
+        <option>¬(p ∧ q) ↔ (¬p ∨ ¬q)</option>
+        <option>(p → q) ↔ (¬q → ¬p)</option>
+        <option>((p → q) ∧ (q → r)) → (p → r)</option>
+        <option>p ∧ ¬p</option>
+        <option>(p ∨ q) ∧ ¬r</option>
+        <option>(p → q) → (q → p)</option>
+      </select>
+    </div>
+    <p class="c-muted" style="font-size:14px;margin:-6px 0 12px">Dá para digitar pelo teclado: <code>~</code> ou <code>!</code> (¬), <code>&amp;</code> (∧), <code>|</code> (∨), <code>-&gt;</code> (→), <code>&lt;-&gt;</code> (↔).</p>
+    <div class="status" id="status"></div>
+
+    <div id="player"></div>
+
+    <h2>Tabela-verdade</h2>
+    <div class="table-wrap" id="table-wrap"></div>
+    <div class="normal-forms" id="nf"></div>
+
+    <section class="prose">
+      <h2>Os conectivos</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>p</th><th>q</th><th>¬p</th><th>p ∧ q</th><th>p ∨ q</th><th>p → q</th><th>p ↔ q</th><th>p ⊕ q</th></tr>
+          <tr><td class="t">V</td><td class="t">V</td><td class="f">F</td><td class="t">V</td><td class="t">V</td><td class="t">V</td><td class="t">V</td><td class="f">F</td></tr>
+          <tr><td class="t">V</td><td class="f">F</td><td class="f">F</td><td class="f">F</td><td class="t">V</td><td class="f">F</td><td class="f">F</td><td class="t">V</td></tr>
+          <tr><td class="f">F</td><td class="t">V</td><td class="t">V</td><td class="f">F</td><td class="t">V</td><td class="t">V</td><td class="f">F</td><td class="t">V</td></tr>
+          <tr><td class="f">F</td><td class="f">F</td><td class="t">V</td><td class="f">F</td><td class="f">F</td><td class="t">V</td><td class="t">V</td><td class="f">F</td></tr>
+        </table>
+      </div>
+      <div class="callout warn">
+        <p><b>A implicação que confunde todo mundo:</b> $p \to q$ só é falsa quando $p$ é V e $q$ é F. Pense em uma promessa: "se chover, levo guarda-chuva". Se não choveu, a promessa não foi quebrada, seja qual for o $q$. Por isso $p \to q \equiv \neg p \lor q$.</p>
+      </div>
+
+      <h2>Classificação</h2>
+      <ul>
+        <li><b>Tautologia</b>: verdadeira em <i>todas</i> as valorações (ex.: $p \lor \neg p$). Os argumentos válidos correspondem a tautologias.</li>
+        <li><b>Contradição</b>: falsa em todas (ex.: $p \land \neg p$).</li>
+        <li><b>Contingência</b>: nem uma coisa nem outra.</li>
+        <li><b>Satisfatível</b>: verdadeira em pelo menos uma valoração. Decidir se uma fórmula é satisfatível é o famoso problema <b>SAT</b>, o primeiro problema provado NP-completo (você verá isso em Fundamentos da Teoria da Computação).</li>
+      </ul>
+      <p>Com $n$ variáveis a tabela tem $2^n$ linhas: 10 variáveis dão 1.024 linhas, e 50 variáveis dão mais de um quatrilhão. Por isso métodos como dedução natural, resolução e tableaux são importantes.</p>
+
+      <h2>Equivalências que valem ouro</h2>
+      <p>Duas fórmulas são <b>equivalentes</b> ($\equiv$) quando têm a mesma coluna final na tabela-verdade, ou seja, quando $\varphi \leftrightarrow \psi$ é tautologia. Teste as equivalências abaixo no campo lá em cima!</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Nome</th><th>Equivalência</th></tr>
+          <tr><td>De Morgan</td><td>¬(p ∧ q) ≡ ¬p ∨ ¬q  e  ¬(p ∨ q) ≡ ¬p ∧ ¬q</td></tr>
+          <tr><td>Dupla negação</td><td>¬¬p ≡ p</td></tr>
+          <tr><td>Implicação material</td><td>p → q ≡ ¬p ∨ q</td></tr>
+          <tr><td>Contrapositiva</td><td>p → q ≡ ¬q → ¬p</td></tr>
+          <tr><td>Distributividade</td><td>p ∧ (q ∨ r) ≡ (p ∧ q) ∨ (p ∧ r)</td></tr>
+          <tr><td>Bicondicional</td><td>p ↔ q ≡ (p → q) ∧ (q → p)</td></tr>
+          <tr><td>Exportação</td><td>(p ∧ q) → r ≡ p → (q → r)</td></tr>
+        </table>
+      </div>
+      <p>As <b>formas normais</b> (FND e FNC) mostradas acima da tabela provam que <i>qualquer</i> fórmula pode ser escrita só com ¬, ∧ e ∨: basta ler as linhas verdadeiras (FND) ou falsas (FNC). A FNC é o formato de entrada dos resolvedores SAT.</p>
+
+      <h2>Exercícios gerados automaticamente</h2>
+      <p>Cada clique sorteia uma fórmula nova. Tente responder sem olhar a tabela e depois confira colando a fórmula no campo lá em cima.</p>
+    </section>
+    <div id="gen1" class="prose"></div>
+    <div id="gen2" class="prose" style="margin-top:14px"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, h, pick } from '../../../engine/page.js';
+    import {
+      parse, show, truthTable, classify, canonicalDNF, canonicalCNF, evaluationSteps, EVAL_CODE,
+      SYMBOLS, randomClassified, variables, valuations, evaluate,
+    } from './logica.js';
+
+    const W = 900, H = 420;
+    let formula = null, layout = null, colIndex = null;
+
+    // Layout da árvore: folhas lado a lado, pais centralizados.
+    function layoutTree(f) {
+      const pos = new Map();
+      let leaf = 0, depth = 0;
+      const visit = (n, d) => {
+        depth = Math.max(depth, d);
+        const kids = [n.a, n.b].filter(Boolean);
+        if (!kids.length) { pos.set(n.id, { x: leaf++, d }); return; }
+        kids.forEach(k => visit(k, d + 1));
+        const xs = kids.map(k => pos.get(k.id).x);
+        pos.set(n.id, { x: (Math.min(...xs) + Math.max(...xs)) / 2, d });
+      };
+      visit(f, 0);
+      return { pos, leaves: leaf, depth };
+    }
+
+    const nodesOf = f => { const out = []; const v = n => { out.push(n); n.a && v(n.a); n.b && v(n.b); }; v(f); return out; };
+
+    const player = new StepPlayer($('#player'), {
+      code: EVAL_CODE, lang: 'python', width: W, height: H, codeTitle: 'Avaliação recursiva (Python)',
+      render(step, s) {
+        const { pos, leaves, depth } = layout;
+        const dx = (W - 80) / Math.max(1, leaves);
+        const dy = Math.min(90, (H - 120) / Math.max(1, depth));
+        const r = Math.max(14, Math.min(24, dx * 0.32));
+        const P = id => ({ x: 40 + dx * (pos.get(id).x + 0.5), y: 50 + dy * pos.get(id).d });
+
+        for (const n of nodesOf(formula)) {
+          const p = P(n.id);
+          for (const c of [n.a, n.b].filter(Boolean)) {
+            const q = P(c.id);
+            const known = step.values[c.id] != null;
+            s.line(`e${n.id}-${c.id}`, p.x, p.y + r, q.x, q.y - r, { stroke: known ? (step.values[c.id] ? COLORS.green : COLORS.red) : COLORS.border, sw: 2 });
+          }
+          const val = step.values[n.id];
+          const cur = step.node === n.id;
+          const fill = val == null ? COLORS.surface2 : val ? '#1f3319' : '#3a1b18';
+          const stroke = cur ? COLORS.yellow : val == null ? COLORS.border : val ? COLORS.green : COLORS.red;
+          s.circle(`n${n.id}`, { x: p.x, y: p.y, r, fill, stroke, sw: cur ? 3.5 : 2 });
+          const label = n.type === 'var' ? n.name : n.type === 'const' ? show(n) : SYMBOLS[n.type];
+          s.text(`l${n.id}`, label, { x: p.x, y: p.y, size: r * 0.95, weight: 700, mono: n.type === 'var', fill: n.type === 'var' ? COLORS.blue : COLORS.text });
+          if (val != null) {
+            s.text(`v${n.id}`, val ? 'V' : 'F', { x: p.x + r + 10, y: p.y - r + 4, size: 14, weight: 800, fill: val ? COLORS.green : COLORS.red });
+          }
+        }
+        const row = valuations(variables(formula))[step.row];
+        const txt = Object.entries(row).map(([k, v]) => `${k} = ${v ? 'V' : 'F'}`).join('   ');
+        s.text('valuation', `valoração: ${txt || '—'}`, { x: W / 2, y: H - 22, size: 15, mono: true, fill: COLORS.muted });
+        if (step.done) {
+          const res = step.values[formula.id];
+          s.text('result', `linha ${step.row + 1}: fórmula = ${res ? 'V' : 'F'}`, { x: W / 2, y: H - 50, size: 17, weight: 700, fill: res ? COLORS.green : COLORS.red });
+        }
+      },
+      onStep(step) {
+        $$('#table-wrap tr').forEach((tr, k) => tr.classList.toggle('active', k - 1 === step.row));
+        $$('#table-wrap td.hot').forEach(td => td.classList.remove('hot'));
+        const node = nodesOf(formula).find(n => n.id === step.node);
+        const col = colIndex.get(show(node));
+        const tr = $$('#table-wrap tr')[step.row + 1];
+        tr?.children[col]?.classList.add('hot');
+      },
+    });
+
+    function renderTable(f) {
+      const { vars, cols, rows } = truthTable(f);
+      colIndex = new Map();
+      vars.forEach((v, i) => colIndex.set(v, i));
+      cols.forEach((c, i) => colIndex.set(show(c), vars.length + i));
+      const last = vars.length + cols.length - 1;
+      const cell = (b, i) => `<td class="${b ? 't' : 'f'}${i === last ? ' result' : ''}">${b ? 'V' : 'F'}</td>`;
+      $('#table-wrap').innerHTML = `<table class="data"><tr>${
+        [...vars, ...cols.map(show)].map((x, i) => `<th${i === last ? ' class="result"' : ''}>${x}</th>`).join('')
+      }</tr>${rows.map(r => `<tr>${[...vars.map(v => r.v[v]), ...r.values].map(cell).join('')}</tr>`).join('')}</table>`;
+      $('#nf').innerHTML = `
+        <div><span>FND canônica</span>${canonicalDNF(f)}</div>
+        <div><span>FNC canônica</span>${canonicalCNF(f)}</div>`;
+    }
+
+    function update() {
+      const status = $('#status');
+      try {
+        const f = parse($('#formula').value);
+        const vars = variables(f);
+        if (vars.length > 5) throw new SyntaxError('Use no máximo 5 variáveis (a tabela teria mais de 32 linhas).');
+        formula = f;
+        layout = layoutTree(f);
+        const cls = classify(f);
+        const badge = { tautologia: 'ok', 'contradição': 'bad', 'contingência': 'warn' }[cls];
+        status.innerHTML = `<span class="badge ${badge}">${cls.toUpperCase()}</span>
+          <span class="badge ${cls === 'contradição' ? 'bad' : 'info'}">${cls === 'contradição' ? 'INSATISFATÍVEL' : 'SATISFATÍVEL'}</span>
+          <span class="c-muted" style="font-family:var(--mono);font-size:14px">lida como: ${show(f)}</span>`;
+        renderTable(f);
+        player.load(evaluationSteps(f));
+      } catch (e) {
+        status.innerHTML = `<span class="error">⚠ ${e.message}</span>`;
+      }
+    }
+
+    const input = $('#formula');
+    let debounce;
+    input.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(update, 350); });
+    $('#symbols').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const { selectionStart: a, selectionEnd: z, value } = input;
+      input.value = value.slice(0, a) + b.textContent + value.slice(z);
+      input.focus();
+      input.setSelectionRange(a + 1, a + 1);
+      update();
+    });
+    $('#examples').addEventListener('change', e => { if (e.target.value) { input.value = e.target.value; update(); e.target.value = ''; } });
+    update();
+
+    // --- Exercícios gerados ---
+    mountGenerator($('#gen1'), {
+      label: 'Nova fórmula',
+      generate() {
+        const { text, cls, formula: f } = randomClassified();
+        return {
+          q: `Classifique a fórmula <code style="font-size:1.1em">${text}</code>`,
+          options: ['tautologia', 'contradição', 'contingência'],
+          answer: ['tautologia', 'contradição', 'contingência'].indexOf(cls),
+          shuffle: false,
+          explain: `Ela é <b>${cls}</b>. ${cls === 'contingência' ? `FND: <code>${canonicalDNF(f)}</code>` : 'Confira montando a tabela-verdade acima.'}`,
+        };
+      },
+    });
+
+    mountGenerator($('#gen2'), {
+      label: 'Nova valoração',
+      generate() {
+        const { text, formula: f } = randomClassified();
+        const vars = variables(f);
+        const v = pick(valuations(vars));
+        const res = evaluate(f, v);
+        const val = vars.map(x => `${x} = ${v[x] ? 'V' : 'F'}`).join(', ');
+        return {
+          q: `Qual o valor de <code style="font-size:1.1em">${text}</code> quando ${val}?`,
+          options: ['V (verdadeiro)', 'F (falso)'],
+          answer: res ? 0 : 1,
+          shuffle: false,
+          explain: `O valor é <b>${res ? 'V' : 'F'}</b>. Cole a fórmula no campo acima e avance a animação até essa linha para ver a avaliação nó a nó.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

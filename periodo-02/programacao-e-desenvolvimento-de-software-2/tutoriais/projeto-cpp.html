@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projeto C++ do Zero · PDS II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .pipeline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0; font-family: var(--mono); font-size: 13px; }
+    .pipeline .col { display: flex; flex-direction: column; gap: 6px; }
+    .pipeline .f { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+    .pipeline .src { border-color: var(--blue); color: var(--blue); }
+    .pipeline .obj { border-color: var(--yellow); color: var(--yellow); }
+    .pipeline .exe { border-color: var(--green); color: var(--green); padding: 14px 16px; }
+    .pipeline .arrow { color: var(--muted); font-family: var(--font); font-size: 13px; text-align: center; }
+    .tree { font-family: var(--mono); font-size: 14px; line-height: 1.7; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; white-space: pre; }
+    .tree .d { color: var(--blue); } .tree .c { color: var(--faint); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds2">PDS II</a>
+      <span class="sep">/</span><span>Tutorial: projeto C++</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Tutorial · Programação e Desenvolvimento de Software II</div>
+    <h1>Um projeto C++ de verdade, do zero</h1>
+    <p class="lead">Em PDS I tudo cabia num arquivo só. Em PDS II os trabalhos práticos têm várias classes, vários arquivos, testes e trabalho em grupo. Este tutorial monta, passo a passo, o projeto <a href="../codigo/formas/README.md"><code>codigo/formas</code></a>, e todo código mostrado aqui é carregado direto dos arquivos reais.</p>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>1. A estrutura de pastas</h2>
+        <p>Não existe estrutura obrigatória, mas esta é a convenção mais comum e a que os corretores esperam encontrar:</p>
+<div class="tree"><span class="d">formas/</span>
+├── Makefile              <span class="c"># como compilar tudo</span>
+├── <span class="d">include/</span>              <span class="c"># cabeçalhos (.hpp): a INTERFACE das classes</span>
+│   ├── forma.hpp
+│   ├── circulo.hpp
+│   ├── retangulo.hpp
+│   └── teste.hpp         <span class="c"># mini-framework de testes</span>
+├── <span class="d">src/</span>                  <span class="c"># implementações (.cpp)</span>
+│   ├── forma.cpp
+│   ├── circulo.cpp
+│   ├── retangulo.cpp
+│   └── main.cpp          <span class="c"># só o main: fica FORA dos testes</span>
+├── <span class="d">tests/</span>
+│   └── teste_formas.cpp  <span class="c"># outro main, que roda os testes</span>
+└── <span class="d">build/</span>                <span class="c"># gerado pelo make (.o, executáveis) — não vai para o git</span></div>
+
+        <h2>2. Cabeçalho × implementação</h2>
+        <p>O <b>cabeçalho</b> (<code>.hpp</code>) diz <i>o que</i> a classe oferece: é o "contrato" que os outros arquivos enxergam via <code>#include</code>. O <b>arquivo de implementação</b> (<code>.cpp</code>) diz <i>como</i>. Comece pela classe base abstrata:</p>
+        <pre data-src="../codigo/formas/include/forma.hpp"><code data-lang="cpp"></code></pre>
+        <ul>
+          <li><code>#pragma once</code> impede que o cabeçalho seja incluído duas vezes na mesma unidade de compilação. A forma clássica equivalente é o trio <code>#ifndef FORMA_HPP / #define FORMA_HPP / #endif</code>.</li>
+          <li><code>= 0</code> torna o método <b>virtual puro</b> e a classe <b>abstrata</b>: ninguém cria uma "Forma genérica".</li>
+          <li>O destrutor é <code>virtual</code>. Veja o motivo na <a href="../visualizacoes/polimorfismo.html">visualização de polimorfismo</a>.</li>
+        </ul>
+        <p>Uma classe concreta declara o que sobrescreve e guarda seus dados como <code>private</code>:</p>
+        <pre data-src="../codigo/formas/include/circulo.hpp"><code data-lang="cpp"></code></pre>
+        <pre data-src="../codigo/formas/src/circulo.cpp"><code data-lang="cpp"></code></pre>
+        <div class="callout">
+          <p><b>Invariante de classe:</b> uma propriedade que vale para todo objeto válido (aqui, <code>raio_ &gt; 0</code>). O construtor a <b>estabelece</b>, lançando uma exceção se não conseguir, e os métodos a <b>preservam</b>. Por isso os dados são privados: ninguém de fora consegue quebrá-la.</p>
+        </div>
+        <ul>
+          <li><code>explicit</code> impede conversões implícitas estranhas como <code>Circulo c = 3.0;</code>.</li>
+          <li><code>const</code> no fim do método promete não alterar o objeto, e só métodos <code>const</code> podem ser chamados em objetos <code>const</code>.</li>
+          <li>A lista de inicialização <code>: raio_(raio)</code> inicializa os membros <b>antes</b> do corpo do construtor.</li>
+        </ul>
+
+        <h2>3. Compilação separada</h2>
+        <p>Cada <code>.cpp</code> é compilado <b>sozinho</b> num arquivo objeto (<code>.o</code>). Depois, o <b>ligador</b> (<i>linker</i>) junta os objetos num executável. Se você muda só <code>circulo.cpp</code>, só ele precisa ser recompilado.</p>
+        <div class="pipeline">
+          <div class="col"><span class="f src">forma.cpp</span><span class="f src">circulo.cpp</span><span class="f src">retangulo.cpp</span><span class="f src">main.cpp</span></div>
+          <div class="arrow">g++ -c<br>──────▶<br>compila</div>
+          <div class="col"><span class="f obj">forma.o</span><span class="f obj">circulo.o</span><span class="f obj">retangulo.o</span><span class="f obj">main.o</span></div>
+          <div class="arrow">g++<br>──────▶<br>liga</div>
+          <div class="col"><span class="f exe">programa</span></div>
+        </div>
+        <pre><code data-lang="bash">g++ -std=c++17 -Wall -Iinclude -c src/circulo.cpp -o build/circulo.o   # compila (gera .o)
+g++ build/forma.o build/circulo.o build/retangulo.o build/main.o -o build/programa   # liga</code></pre>
+        <div class="callout warn">
+          <p><b>Decifrando erros:</b> "<i>undefined reference to <code>Circulo::area()</code></i>" é um erro do <b>ligador</b>: o método foi declarado mas nenhum <code>.o</code> o define (você esqueceu de implementar ou de incluir o <code>.cpp</code> na ligação). Já "<i><code>'Circulo' was not declared</code></i>" é erro do <b>compilador</b>: faltou um <code>#include</code>.</p>
+        </div>
+
+        <h2>4. O Makefile, linha a linha</h2>
+        <p>Digitar esses comandos à mão não escala. O <code>make</code> lê regras no formato <code>alvo: dependências</code> e só refaz um alvo se alguma dependência for mais nova que ele.</p>
+        <pre data-src="../codigo/formas/Makefile"><code data-lang="make"></code></pre>
+        <ul>
+          <li><code>$@</code> é o alvo, <code>$&lt;</code> a primeira dependência, <code>$^</code> todas as dependências.</li>
+          <li><code>%</code> é um curinga: a regra <code>$(BUILD)/%.o: src/%.cpp</code> vale para qualquer arquivo.</li>
+          <li><code>| $(BUILD)</code> é uma dependência <i>order-only</i>: a pasta precisa existir, mas mudar a data dela não força recompilar.</li>
+          <li><code>-MMD -MP</code> faz o compilador anotar quais <code>.hpp</code> cada <code>.cpp</code> inclui, e o <code>-include</code> no fim carrega essas anotações. Sem isso, mudar um cabeçalho não recompilaria quem depende dele.</li>
+          <li><b>Atenção:</b> as linhas de comando precisam começar com <b>TAB</b>, não com espaços.</li>
+        </ul>
+        <pre><code data-lang="bash">make          # compila o programa
+make run      # compila (se precisar) e executa
+make test     # compila e roda os testes
+make clean    # apaga build/</code></pre>
+
+        <h2>5. Testes de unidade</h2>
+        <p>Um teste de unidade verifica automaticamente um pedaço pequeno do código. Com testes, você pode refatorar sem medo: se algo quebrar, o <code>make test</code> avisa na hora.</p>
+        <pre data-src="../codigo/formas/tests/teste_formas.cpp"><code data-lang="cpp"></code></pre>
+        <p>O que testar: o caso normal, os <b>casos-limite</b> (zero, vazio, um elemento, valores iguais) e os <b>casos de erro</b> (a exceção é lançada?). A macro <code>TESTE</code> vem de <a href="../codigo/formas/include/teste.hpp"><code>teste.hpp</code></a>, um mini-framework de 50 linhas escrito para este repositório. Em trabalhos maiores, use o <a href="https://github.com/doctest/doctest" target="_blank" rel="noopener">doctest</a>, que tem a mesma cara (<code>TEST_CASE</code>, <code>CHECK</code>, <code>CHECK_THROWS_AS</code>) e é só um arquivo <code>.h</code>.</p>
+        <div class="callout tip">
+          <p><b>TDD (desenvolvimento guiado por testes):</b> 🔴 escreva um teste que falha → 🟢 escreva o mínimo de código para passar → 🔵 refatore. Repita. Parece mais lento, mas você termina com código testado e um design pensado do ponto de vista de quem <i>usa</i> a classe.</p>
+        </div>
+
+        <h2>6. Memória sem sofrimento: RAII</h2>
+        <p><b>RAII</b> (<i>Resource Acquisition Is Initialization</i>): amarre cada recurso (memória, arquivo, lock) à vida de um objeto. O construtor adquire, o destrutor libera, e o C++ garante que o destrutor roda quando o objeto sai de escopo, <b>mesmo se uma exceção for lançada</b>.</p>
+        <pre data-src="../codigo/formas/src/main.cpp"><code data-lang="cpp"></code></pre>
+        <div class="table-wrap">
+          <table class="data">
+            <tr><th>Em vez de</th><th>Use</th></tr>
+            <tr><td><code>new T[n]</code> / <code>delete[]</code></td><td><code>std::vector&lt;T&gt;</code></td></tr>
+            <tr><td><code>T* p = new T;</code> (dono único)</td><td><code>std::unique_ptr&lt;T&gt; p = std::make_unique&lt;T&gt;();</code></td></tr>
+            <tr><td>vários donos</td><td><code>std::shared_ptr&lt;T&gt;</code> (conta referências)</td></tr>
+            <tr><td><code>char*</code></td><td><code>std::string</code></td></tr>
+          </table>
+        </div>
+        <p><b>Regra do zero:</b> se sua classe só usa membros RAII (vector, string, unique_ptr), você não precisa escrever destrutor, construtor de cópia nem atribuição. <b>Regra dos três/cinco:</b> se precisar escrever um deles (porque gerencia memória na mão), escreva todos. Veja <a href="../codigo/vetor.cpp"><code>codigo/vetor.cpp</code></a>.</p>
+
+        <h2>7. Depurando</h2>
+        <pre><code data-lang="bash"># Compile com -g (símbolos de depuração) e, de preferência, com os sanitizers:
+g++ -std=c++17 -g -fsanitize=address,undefined -Iinclude src/*.cpp -o programa
+./programa            # acusa acessos fora do vetor, use-after-free, vazamentos...
+
+# Depurador: pare no erro e inspecione as variáveis
+gdb ./programa
+(gdb) run             # executa até travar
+(gdb) bt              # pilha de chamadas (backtrace)
+(gdb) print raio_     # valor de uma variável
+(gdb) break circulo.cpp:8   # ponto de parada</code></pre>
+        <p>No macOS, use <code>lldb</code> no lugar do <code>gdb</code> (comandos parecidos). O <b>AddressSanitizer</b> (<code>-fsanitize=address</code>) encontra em segundos bugs de memória que levariam horas com <code>cout</code>.</p>
+
+        <h2>8. Git para o trabalho em grupo</h2>
+        <pre><code data-lang="bash">git init                          # uma vez
+git add include/ src/ tests/ Makefile
+git commit -m "Adiciona classe Circulo com testes"
+git switch -c feature/retangulo   # trabalhe em um ramo separado
+# ... edita, testa ...
+git commit -am "Implementa Retangulo"
+git switch main && git merge feature/retangulo</code></pre>
+        <ul>
+          <li>Crie um <code>.gitignore</code> com <code>build/</code>: arquivos gerados não vão para o repositório.</li>
+          <li>Commits pequenos, com mensagem no imperativo que diga <b>o que</b> e <b>por quê</b>.</li>
+          <li>Rode <code>make test</code> antes de cada commit. Melhor ainda: configure a integração contínua (como a deste repositório) para rodar sozinha.</li>
+        </ul>
+
+        <h2>9. Checklist do trabalho prático</h2>
+        <ul>
+          <li>☐ <code>make</code> compila do zero, sem avisos com <code>-Wall -Wextra</code></li>
+          <li>☐ <code>make test</code> passa, e existe teste para os casos-limite e de erro</li>
+          <li>☐ Cada classe tem uma responsabilidade clara e dados <code>private</code></li>
+          <li>☐ Nenhum <code>new</code> sem dono (prefira RAII); o AddressSanitizer não acusa nada</li>
+          <li>☐ Métodos que não alteram o objeto são <code>const</code>; sobrescritas usam <code>override</code></li>
+          <li>☐ README explicando como compilar, executar e as decisões de projeto</li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../engine/page.js';
+    buildToc($('#toc'), $('#content'));
+  </script>
+</body>
+</html>

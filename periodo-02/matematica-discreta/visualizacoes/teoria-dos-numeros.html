@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>De Euclides ao RSA · Matemática Discreta</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .modgrid { display: grid; gap: 2px; font-family: var(--mono); font-size: 12px; }
+    .modgrid div { display: grid; place-items: center; height: 30px; border-radius: 4px; }
+    .modgrid .hd { color: var(--muted); font-weight: 700; }
+    .modgrid .one { outline: 2px solid var(--yellow); outline-offset: -2px; font-weight: 800; }
+    .modgrid .dead { opacity: .35; }
+    .two { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    .rsa-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+    .rsa-grid .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .rsa-grid .l { font-size: 12px; color: var(--muted); } .rsa-grid .v { font: 700 20px var(--mono); }
+    .cipher { font-family: var(--mono); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; overflow-wrap: anywhere; line-height: 1.9; }
+    .cipher span { display: inline-block; margin: 0 4px 4px 0; padding: 0 6px; border-radius: 5px; background: var(--surface-2); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#discreta">Matemática Discreta</a>
+      <span class="sep">/</span><span>De Euclides ao RSA</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Matemática Discreta</div>
+    <h1>De Euclides ao RSA</h1>
+    <p class="lead">Um algoritmo de 2300 anos, uma "aritmética de relógio" e um teorema de Euler: com essas três peças se monta a criptografia que protege o HTTPS até hoje.</p>
+
+    <h2>1. O algoritmo de Euclides (estendido)</h2>
+    <div class="toolbar">
+      <label>a = <input id="a" type="number" value="240" style="width:90px"></label>
+      <label>b = <input id="b" type="number" value="46" style="width:90px"></label>
+      <button class="btn" id="go">Calcular</button>
+      <div class="chips"><button class="btn small" data-ab="21,13">Fibonacci (21, 13)</button><button class="btn small" data-ab="17,3120">inverso de 17 mod 3120</button><button class="btn small" data-ab="1071,462">(1071, 462)</button></div>
+    </div>
+    <div id="player"></div>
+
+    <section class="prose">
+      <p><b>Por que funciona?</b> Se $d$ divide $a$ e $b$, divide também $a - qb = r$. Então $\text{mdc}(a, b) = \text{mdc}(b, r)$, e os números diminuem a cada passo. O pior caso são dois Fibonacci consecutivos (todo quociente é 1), e mesmo assim o número de passos é $O(\log \min(a, b))$.</p>
+      <p><b>Identidade de Bézout:</b> existem inteiros $s, t$ com $as + bt = \text{mdc}(a, b)$. A versão estendida os encontra de graça, mantendo a invariante $r_i = a s_i + b t_i$ em toda linha da tabela.</p>
+    </section>
+
+    <h2>2. Aritmética modular</h2>
+    <div class="two">
+      <div>
+        <div class="toolbar">
+          <label>n = <input id="n" type="range" min="2" max="16" value="10"><span id="n-v" style="font-family:var(--mono);width:2ch"></span></label>
+          <span class="c-muted" style="font-size:13px">tabela de multiplicação mod n</span>
+        </div>
+        <div class="modgrid" id="modgrid"></div>
+      </div>
+      <div class="prose">
+        <p>$a \equiv b \pmod n$ quando $n$ divide $a - b$: é a aritmética do relógio, em que $n$ "dá a volta" para 0. Soma e produto funcionam normalmente.</p>
+        <p>A <b>divisão</b> é mais delicada. Dividir por $a$ é multiplicar pelo <b>inverso</b> $a^{-1}$, o número com $a \cdot a^{-1} \equiv 1$. Na tabela, as linhas com um <span class="c-yellow">1 destacado</span> têm inverso, e as linhas apagadas não.</p>
+        <div class="callout"><p><b>Teorema:</b> $a$ tem inverso mod $n$ $\iff$ $\text{mdc}(a, n) = 1$, e o inverso é o $s$ do Euclides estendido. Se $n$ é <b>primo</b>, todo $a \ne 0$ tem inverso. Quantos têm inverso é a função $\varphi(n)$ de Euler.</p></div>
+        <p id="phi"></p>
+      </div>
+    </div>
+
+    <h2>3. RSA de brinquedo</h2>
+    <div class="toolbar">
+      <label>p = <input id="p" type="number" value="61" style="width:80px"></label>
+      <label>q = <input id="q" type="number" value="53" style="width:80px"></label>
+      <label>e = <input id="e" type="number" value="17" style="width:80px"></label>
+      <label>Mensagem <input id="msg" type="text" value="Oi, UFMG!" size="18"></label>
+      <span class="c-red" id="rsa-err" style="font-size:14px"></span>
+    </div>
+    <div class="rsa-grid" id="rsa-keys"></div>
+    <div class="prose" style="max-width:none">
+      <p><b>Cifrando</b> cada caractere $m$ (código Unicode) com a chave <b>pública</b> $(n, e)$: $c = m^e \bmod n$</p>
+      <div class="cipher" id="cipher"></div>
+      <p style="margin-top:14px"><b>Decifrando</b> com a chave <b>privada</b> $d$: $m = c^d \bmod n$</p>
+      <div class="cipher" id="plain"></div>
+    </div>
+
+    <section class="prose">
+      <h3>Por que dá certo?</h3>
+      <p>Escolhemos $d$ com $e \cdot d \equiv 1 \pmod{\varphi(n)}$, ou seja, $ed = 1 + k\varphi(n)$. Pelo <b>teorema de Euler</b>, $m^{\varphi(n)} \equiv 1 \pmod n$ quando $\text{mdc}(m, n) = 1$. Logo</p>
+      <p>$$ c^d = m^{ed} = m^{1 + k\varphi(n)} = m \cdot \left(m^{\varphi(n)}\right)^k \equiv m \pmod n. $$</p>
+      <p><b>Por que é seguro?</b> Todo mundo conhece $n$ e $e$. Para achar $d$ é preciso saber $\varphi(n) = (p-1)(q-1)$, e para isso é preciso <b>fatorar</b> $n$. Com primos de ~1024 bits, nenhum algoritmo conhecido fatora $n$ em tempo viável. Cifrar é rápido graças à <b>exponenciação por quadrados sucessivos</b>: $O(\log e)$ multiplicações em vez de $e$.</p>
+      <div class="callout warn"><p>Este é um RSA de <b>brinquedo</b>: cifrar caractere por caractere com números pequenos é trivialmente quebrável (basta montar a tabela dos 256 valores possíveis). O RSA real usa números enormes e <i>padding</i> aleatório.</p></div>
+      <p>Implementação em Python: <a href="../codigo/discreta.py"><code>codigo/discreta.py</code></a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, h, renderMath } from '../../../engine/page.js';
+    import { EUCLID_CODE, euclidSteps, gcd, modInverse, modPow, rsaKeys } from './discreta.js';
+
+    // ---------- 1. Euclides ----------
+    const W = 900, H = 460;
+    const PALETTE = [COLORS.blue, COLORS.yellow, COLORS.green, COLORS.pink, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.red];
+    const player = new StepPlayer($('#player'), {
+      code: EUCLID_CODE, lang: 'python', width: W, height: H, codeTitle: 'Euclides estendido (Python)',
+      render(step, s) {
+        const [bw, bh] = [520, 360];
+        const scale = Math.min(bw / step.a, bh / step.b);
+        const ox = 30, oy = 50;
+        s.text('title', `retângulo ${step.a} × ${step.b}`, { x: ox, y: 24, size: 14, anchor: 'start', weight: 700, fill: COLORS.muted });
+        s.rect('outer', { x: ox, y: oy, w: step.a * scale, h: step.b * scale, rx: 0, fill: COLORS.surface, stroke: COLORS.muted, sw: 1.5, layer: 'bg' });
+        step.squares.forEach((q, i) => {
+          const c = PALETTE[q.step % PALETTE.length];
+          const hot = step.hot === q.step;
+          s.rect(`sq${i}`, { x: ox + q.x * scale, y: oy + q.y * scale, w: q.side * scale, h: q.side * scale, rx: 0, fill: c, stroke: COLORS.bg, sw: 1, opacity: hot ? 0.9 : 0.55 });
+          if (q.side * scale > 26) s.text(`sqt${i}`, q.side, { x: ox + (q.x + q.side / 2) * scale, y: oy + (q.y + q.side / 2) * scale, size: Math.min(22, q.side * scale / 3), weight: 700, mono: true, fill: '#0b0e12' });
+        });
+        // tabela de Bézout
+        const tx = 590, ty = 60, rh = Math.min(30, 360 / Math.max(6, step.rows.length));
+        ['q', 'r', 's', 't'].forEach((c, j) => s.text(`th${c}`, c, { x: tx + 20 + j * 70, y: ty - 18, size: 13, weight: 700, fill: COLORS.muted }));
+        step.rows.forEach((r, i) => {
+          const y = ty + i * rh;
+          const last = i === step.rows.length - 1;
+          const fill = step.done && i === step.rows.length - 2 ? COLORS.green : last ? COLORS.yellow : COLORS.text;
+          [r.q ?? '', r.r, r.s, r.t].forEach((v, j) => s.text(`td${i}-${j}`, v, { x: tx + 20 + j * 70, y: y + rh / 2, size: Math.min(15, rh * 0.55), mono: true, fill: j === 0 ? COLORS.faint : fill }));
+        });
+        if (step.done) s.text('res', `mdc = ${step.gcd} = ${step.a}·(${step.s}) + ${step.b}·(${step.t})`, { x: W / 2, y: H - 24, size: 18, weight: 700, mono: true, fill: COLORS.green });
+      },
+    });
+    function run() {
+      const a = Math.max(1, Math.min(5000, Math.round(+$('#a').value || 1)));
+      const b = Math.max(1, Math.min(5000, Math.round(+$('#b').value || 1)));
+      const [x, y] = a >= b ? [a, b] : [b, a];
+      $('#a').value = x; $('#b').value = y;
+      player.load(euclidSteps(x, y));
+    }
+    $('#go').addEventListener('click', run);
+    $$('[data-ab]').forEach(btn => btn.addEventListener('click', () => { const [a, b] = btn.dataset.ab.split(','); $('#a').value = a; $('#b').value = b; run(); }));
+    run();
+
+    // ---------- 2. Tabela mod n ----------
+    function drawMod() {
+      const n = +$('#n').value;
+      $('#n-v').textContent = n;
+      const grid = $('#modgrid');
+      grid.style.gridTemplateColumns = `repeat(${n + 1}, minmax(0, 1fr))`;
+      const cells = [h('div', { class: 'hd' }, '×'), ...[...Array(n).keys()].map(j => h('div', { class: 'hd' }, j))];
+      let phi = 0;
+      for (let i = 0; i < n; i++) {
+        const unit = gcd(i, n) === 1;
+        if (unit) phi++;
+        cells.push(h('div', { class: 'hd' }, i));
+        for (let j = 0; j < n; j++) {
+          const v = (i * j) % n;
+          const hue = 200 + (v / n) * 120;
+          cells.push(h('div', { class: `${v === 1 ? 'one' : ''} ${unit ? '' : 'dead'}`, style: `background: hsl(${hue} 45% ${14 + (v / n) * 22}%)` }, v));
+        }
+      }
+      grid.replaceChildren(...cells);
+      const units = [...Array(n).keys()].filter(a => gcd(a, n) === 1);
+      $('#phi').innerHTML = `Com n = ${n}: $\\varphi(${n}) = ${phi}$. Invertíveis: ${units.map(a => `${a}<sup>−1</sup>=${modInverse(a, n)}`).join(', ')}.`;
+      renderMath($('#phi'));
+    }
+    $('#n').addEventListener('input', drawMod);
+    drawMod();
+
+    // ---------- 3. RSA ----------
+    function drawRSA() {
+      $('#rsa-err').textContent = '';
+      let k;
+      try {
+        k = rsaKeys(+$('#p').value, +$('#q').value, +$('#e').value || null);
+        if (k.n <= 255) throw new RangeError('Use n = p·q > 255 para caber um caractere (ex.: p = 61, q = 53).');
+      } catch (err) { $('#rsa-err').textContent = err.message; return; }
+      const kpi = (l, v, c = '') => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`;
+      $('#rsa-keys').innerHTML = kpi('n = p · q', k.n) + kpi('φ(n) = (p−1)(q−1)', k.phi) + kpi('e (público)', k.e, 'c-blue') + kpi('d = e⁻¹ mod φ(n) (privado)', k.d, 'c-pink');
+      const chars = [...$('#msg').value].slice(0, 40);
+      const codes = chars.map(c => c.codePointAt(0) % k.n);
+      const enc = codes.map(m => modPow(m, k.e, k.n).value);
+      const dec = enc.map(c => modPow(c, k.d, k.n).value);
+      $('#cipher').innerHTML = chars.map((c, i) => `<span title="'${c}' = ${codes[i]}">${codes[i]}<span class="c-muted" style="background:none;padding:0 2px">→</span><b class="c-blue">${enc[i]}</b></span>`).join('');
+      $('#plain').innerHTML = dec.map((m, i) => `<span><b class="c-pink">${enc[i]}</b> → ${m} = '${String.fromCodePoint(m)}'</span>`).join('');
+    }
+    for (const id of ['p', 'q', 'e', 'msg']) $(`#${id}`).addEventListener('input', drawRSA);
+    drawRSA();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quanto é $3^{-1} \\bmod 7$?', options: ['5', '3', '4', '2'], answer: 0, explain: '$3 \\cdot 5 = 15 = 2\\cdot 7 + 1 \\equiv 1$.' },
+      { q: 'Por que 4 não tem inverso módulo 10?', options: ['Porque mdc(4, 10) = 2 ≠ 1', 'Porque 4 é par', 'Porque 10 não é primo', 'Tem sim: é 4'], answer: 0, explain: '$4x$ é sempre par, e $4x \\bmod 10$ também, então nunca vale 1. O critério geral é o mdc.' },
+      { q: 'No RSA, o que precisa ser mantido em segredo?', options: ['d (e, consequentemente, p e q)', 'n', 'e', 'a mensagem cifrada'], answer: 0, explain: 'A chave pública é (n, e). Quem conhece p e q calcula φ(n) e, com ele, d.' },
+    ]);
+  </script>
+</body>
+</html>

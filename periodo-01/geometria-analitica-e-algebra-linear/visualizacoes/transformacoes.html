@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformações Lineares · GAAL</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .matrix-in { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 6px; align-items: center; padding: 12px 14px 14px; }
+    .matrix-in input { width: 100%; text-align: center; font-family: var(--mono); font-size: 18px; }
+    .matrix-in .br { font-size: 64px; line-height: 1; color: var(--muted); font-weight: 200; }
+    .matrix-in .col-a { border-bottom: 3px solid var(--green); }
+    .matrix-in .col-b { border-bottom: 3px solid var(--red); }
+    .readout { padding: 6px 14px 12px; font-size: 15px; }
+    .readout div { margin: 4px 0; }
+    .t-row { display: flex; gap: 10px; align-items: center; padding: 0 14px 12px; }
+    .t-row input { flex: 1; }
+    @media (max-width: 980px) { .lab { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#gaal">GAAL</a>
+      <span class="sep">/</span><span>Transformações lineares</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Geometria Analítica e Álgebra Linear</div>
+    <h1>Matrizes são transformações do espaço</h1>
+    <p class="lead">Uma matriz $2\times 2$ diz para onde vão os vetores da base: a <b class="c-green">1ª coluna</b> é onde $\hat\imath$ vai parar e a <b class="c-red">2ª coluna</b> é onde $\hat\jmath$ vai parar. O resto do plano vem junto, com as retas da grade <b>continuando retas, paralelas e igualmente espaçadas</b>.</p>
+
+    <div class="toolbar">
+      <div class="chips" id="presets">
+        <button class="btn small" data-m="1,0,0,1">Identidade</button>
+        <button class="btn small" data-m="0,-1,1,0">Rotação 90°</button>
+        <button class="btn small" data-m="1,1,0,1">Cisalhamento</button>
+        <button class="btn small" data-m="2,0,0,2">Escala ×2</button>
+        <button class="btn small" data-m="1,0,0,-1">Reflexão (eixo x)</button>
+        <button class="btn small" data-m="3,1,0,2">Autovetores</button>
+        <button class="btn small" data-m="1,2,0.5,1">Achata (det 0)</button>
+        <button class="btn small" data-m="0,1,1,0">Troca eixos (det −1)</button>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plane" aria-label="Plano cartesiano transformado"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Matriz M</div>
+          <div class="matrix-in">
+            <span class="br">[</span>
+            <input id="a" type="number" step="0.5" class="col-a" aria-label="a">
+            <input id="b" type="number" step="0.5" class="col-b" aria-label="b">
+            <span class="br">]</span>
+            <span></span>
+            <input id="c" type="number" step="0.5" class="col-a" aria-label="c">
+            <input id="d" type="number" step="0.5" class="col-b" aria-label="d">
+            <span></span>
+          </div>
+          <div class="t-row">
+            <button class="btn primary" id="play">▶ Aplicar</button>
+            <input id="t" type="range" min="0" max="1" step="0.001" value="1" aria-label="Progresso da transformação">
+          </div>
+          <div class="t-row" style="flex-wrap:wrap;gap:14px">
+            <label><input type="checkbox" id="show-det" checked> área (det)</label>
+            <label><input type="checkbox" id="show-eig"> autovetores</label>
+            <label><input type="checkbox" id="show-v" checked> vetor v</label>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">O que a matriz faz</div>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Rotação por ângulo</div>
+          <div class="t-row"><span>θ</span><input id="theta" type="range" min="-180" max="180" value="45"><span id="theta-v" style="font-family:var(--mono);width:4ch">45°</span></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Por que as colunas bastam?</h2>
+      <p>Todo vetor é uma combinação dos vetores da base: $\vec v = x\,\hat\imath + y\,\hat\jmath$. Uma transformação <b>linear</b> preserva combinações lineares, $T(x\hat\imath + y\hat\jmath) = x\,T(\hat\imath) + y\,T(\hat\jmath)$, então basta saber onde $\hat\imath$ e $\hat\jmath$ caem:</p>
+      <p>$$ \begin{bmatrix} a & b \\ c & d \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = x \begin{bmatrix} a \\ c \end{bmatrix} + y \begin{bmatrix} b \\ d \end{bmatrix} $$</p>
+      <p>Essa é a <b>verdadeira definição</b> do produto matriz-vetor. A regra "linha vezes coluna" é só uma forma de calcular.</p>
+
+      <h2>Determinante = fator de área</h2>
+      <p>O quadrado unitário (amarelo) vira um paralelogramo de área $|\det M| = |ad - bc|$. Se o determinante é <b>negativo</b>, o plano foi "virado do avesso" (a orientação inverteu, e $\hat\jmath$ passa a ficar à direita de $\hat\imath$). Se é <b>zero</b>, o plano foi esmagado numa reta ou num ponto: a transformação perde informação e <b>não tem inversa</b>.</p>
+
+      <h2>Autovetores: quem não sai da própria reta</h2>
+      <p>Um autovetor $\vec v$ satisfaz $M\vec v = \lambda \vec v$: ele só é <b>esticado</b> (por $\lambda$), sem sair da reta que gera. Ligue a opção "autovetores" com o preset <em>Autovetores</em> e assista: enquanto todo o resto gira, as retas roxas ficam paradas. Rotações (exceto 0° e 180°) não têm autovetores reais. Faz sentido, já que todo vetor sai da sua reta!</p>
+
+      <h2>Composição = multiplicação</h2>
+      <p>Aplicar $B$ e depois $A$ é o mesmo que aplicar $AB$ (lê-se da direita para a esquerda, como funções: $A(B\vec v)$). Por isso, em geral, $AB \ne BA$: girar e depois cisalhar não é o mesmo que cisalhar e depois girar.</p>
+      <div class="callout tip"><p>Inspiração direta: a série <a href="https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab" target="_blank" rel="noopener"><i>Essence of Linear Algebra</i></a>, do 3Blue1Brown. Assista junto com a disciplina!</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt, fmt as fmtNum, tex } from '../../../engine/page.js';
+    import { apply, det2, lerpMatrix, eigen2 } from './linalg.js';
+
+    const W = 900, H = 600, U = 50; // U = pixels por unidade
+    const O = [W / 2, H / 2];
+    const scene = new Scene($('#plane'), { width: W, height: H, layers: ['bg', 'grid', 'area', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const P = ([x, y]) => [O[0] + x * U, O[1] - y * U];
+
+    let M = [[1, 1], [0, 1]];
+    let t = 1;
+    const V = [1, 2];
+
+    function arrow(s, key, from, to, color, width = 4) {
+      const [x1, y1] = P(from), [x2, y2] = P(to);
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      if (len < 2) return s.path(key, `M ${x1} ${y1} L ${x1} ${y1}`, { stroke: color, sw: width, layer: 'nodes' });
+      s.path(key, `M ${x1} ${y1} L ${x2} ${y2}`, { stroke: color, sw: width, arrow: true, layer: 'nodes' });
+    }
+
+    function draw() {
+      const Mt = lerpMatrix(M, t);
+      scene.frame(s => {
+        const N = 14;
+        // Grade original (estática, apagada)
+        for (let k = -N; k <= N; k++) {
+          s.line(`og-v${k}`, ...P([k, -N]), ...P([k, N]), { stroke: COLORS.border, sw: 1, layer: 'bg', opacity: 0.5 });
+          s.line(`og-h${k}`, ...P([-N, k]), ...P([N, k]), { stroke: COLORS.border, sw: 1, layer: 'bg', opacity: 0.5 });
+        }
+        // Grade transformada
+        for (let k = -N; k <= N; k++) {
+          const axis = k === 0;
+          const col = axis ? COLORS.text : COLORS.blue;
+          s.line(`g-v${k}`, ...P(apply(Mt, [k, -N])), ...P(apply(Mt, [k, N])), { stroke: col, sw: axis ? 2 : 1, opacity: axis ? 0.9 : 0.55, layer: 'grid' });
+          s.line(`g-h${k}`, ...P(apply(Mt, [-N, k])), ...P(apply(Mt, [N, k])), { stroke: col, sw: axis ? 2 : 1, opacity: axis ? 0.9 : 0.55, layer: 'grid' });
+        }
+        // Quadrado unitário → paralelogramo
+        const dt = det2(Mt);
+        if ($('#show-det').checked) {
+          const pts = [[0, 0], [1, 0], [1, 1], [0, 1]].map(p => P(apply(Mt, p)));
+          s.path('area', `M ${pts.map(p => p.join(' ')).join(' L ')} Z`, { stroke: COLORS.yellow, sw: 1.5, fill: dt < 0 ? 'rgba(252,98,85,.28)' : 'rgba(244,211,94,.28)', layer: 'area' });
+          const c = P(apply(Mt, [0.5, 0.5]));
+          s.text('area-l', `área ${fmt(Math.abs(dt))}`, { x: c[0], y: c[1], size: 14, weight: 700, fill: COLORS.yellow });
+        }
+        // Autovetores
+        if ($('#show-eig').checked) {
+          const eg = eigen2(M);
+          eg.vectors.forEach((v, i) => {
+            s.line(`eig-l${i}`, ...P([-20 * v[0], -20 * v[1]]), ...P([20 * v[0], 20 * v[1]]), { stroke: COLORS.purple, sw: 2, dash: '8 6', layer: 'area' });
+            const w = apply(Mt, [2 * v[0], 2 * v[1]]);
+            arrow(s, `eig-v${i}`, [0, 0], w, COLORS.purple, 3.5);
+            const [lx, ly] = P([w[0] * 1.08, w[1] * 1.08]);
+            s.text(`eig-t${i}`, `λ=${fmt(eg.values[i])}`, { x: lx + 18, y: ly - 12, size: 14, weight: 700, fill: COLORS.purple });
+          });
+          if (!eg.real) s.text('eig-none', 'sem autovetores reais', { x: 20, y: 24, size: 15, anchor: 'start', fill: COLORS.purple });
+        }
+        // Base e vetor v
+        arrow(s, 'i-hat', [0, 0], apply(Mt, [1, 0]), COLORS.green);
+        arrow(s, 'j-hat', [0, 0], apply(Mt, [0, 1]), COLORS.red);
+        const [ix, iy] = P(apply(Mt, [1.15, 0])), [jx, jy] = P(apply(Mt, [0, 1.15]));
+        s.text('i-l', 'î', { x: ix + 8, y: iy + 12, size: 20, weight: 800, fill: COLORS.green });
+        s.text('j-l', 'ĵ', { x: jx - 12, y: jy - 6, size: 20, weight: 800, fill: COLORS.red });
+        if ($('#show-v').checked) {
+          const w = apply(Mt, V);
+          arrow(s, 'v', [0, 0], w, COLORS.yellow, 3.5);
+          const [vx, vy] = P(w);
+          s.text('v-l', `v = (${fmt(w[0], 1)}, ${fmt(w[1], 1)})`, { x: vx + 10, y: vy - 14, size: 14, anchor: 'start', weight: 600, fill: COLORS.yellow });
+        }
+        s.text('t-l', `t = ${fmt(t, 2)}`, { x: W - 16, y: H - 16, size: 13, anchor: 'end', fill: COLORS.faint, mono: true });
+      });
+    }
+
+    function readout() {
+      const dt = det2(M);
+      const eg = eigen2(M);
+      const [[a, b], [c, d]] = M;
+      let kind = 'transformação linear geral';
+      if (Math.abs(b - (-c)) < 1e-9 && Math.abs(a - d) < 1e-9 && Math.abs(dt - 1) < 1e-9) kind = 'rotação (preserva distâncias e ângulos)';
+      else if (Math.abs(dt) < 1e-9) kind = 'achatamento: o plano colapsa numa reta ou ponto';
+      else if (dt < 0) kind = 'inverte a orientação (como um espelho)';
+      else if (Math.abs(b) < 1e-9 && Math.abs(c) < 1e-9) kind = 'escala ao longo dos eixos';
+      else if ((Math.abs(c) < 1e-9 && a === 1 && d === 1) || (Math.abs(b) < 1e-9 && a === 1 && d === 1)) kind = 'cisalhamento';
+      const fmt = x => fmtNum(x).replace(',', '{,}'); // vírgula decimal dentro do TeX
+      const el = $('#readout');
+      el.innerHTML = `<div id="r-mv"></div><div id="r-det"></div><div id="r-eig" class="c-purple" style="font-size:14px"></div><div class="c-muted" style="font-size:14px">${kind}</div>`;
+      tex($('#r-mv'), `M\\hat\\imath = \\color{#83c167}{\\begin{bmatrix}${fmt(a)}\\\\${fmt(c)}\\end{bmatrix}}\\quad M\\hat\\jmath = \\color{#fc6255}{\\begin{bmatrix}${fmt(b)}\\\\${fmt(d)}\\end{bmatrix}}`);
+      tex($('#r-det'), `\\det M = ${fmt(a)}\\cdot ${fmt(d)} - ${fmt(b)}\\cdot ${fmt(c)} = \\mathbf{${fmt(dt)}}`);
+      $('#r-eig').textContent = eg.real
+        ? `autovalores: ${[...new Set(eg.values.map(v => fmtNum(v)))].join(' e ')}`
+        : 'autovalores complexos: nenhum vetor real fica na sua reta';
+    }
+
+    function syncInputs() {
+      $('#a').value = fmt(M[0][0], 3).replace(',', '.'); $('#b').value = fmt(M[0][1], 3).replace(',', '.');
+      $('#c').value = fmt(M[1][0], 3).replace(',', '.'); $('#d').value = fmt(M[1][1], 3).replace(',', '.');
+    }
+
+    let anim = null;
+    function play() {
+      anim?.cancel();
+      anim = tween(1800, k => { t = k; $('#t').value = k; draw(); }, ease.smooth);
+    }
+
+    function setMatrix(m, animate = true) {
+      M = m;
+      syncInputs();
+      readout();
+      if (animate) play(); else draw();
+    }
+
+    for (const id of ['a', 'b', 'c', 'd']) {
+      $(`#${id}`).addEventListener('input', () => {
+        const v = k => +$(`#${k}`).value || 0;
+        M = [[v('a'), v('b')], [v('c'), v('d')]];
+        readout(); t = 1; $('#t').value = 1; draw();
+      });
+    }
+    $$('#presets [data-m]').forEach(b => b.addEventListener('click', () => {
+      const [a, bb, c, d] = b.dataset.m.split(',').map(Number);
+      if (b.textContent === 'Autovetores') $('#show-eig').checked = true;
+      setMatrix([[a, bb], [c, d]]);
+    }));
+    $('#play').addEventListener('click', play);
+    $('#t').addEventListener('input', e => { anim?.cancel(); t = +e.target.value; draw(); });
+    for (const id of ['show-det', 'show-eig', 'show-v']) $(`#${id}`).addEventListener('change', draw);
+    $('#theta').addEventListener('input', e => {
+      const th = (+e.target.value * Math.PI) / 180;
+      $('#theta-v').textContent = `${e.target.value}°`;
+      anim?.cancel();
+      M = [[Math.cos(th), -Math.sin(th)], [Math.sin(th), Math.cos(th)]];
+      syncInputs(); readout(); t = 1; $('#t').value = 1; draw();
+    });
+
+    setMatrix(M);
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'A matriz $\\begin{bmatrix} 0 & -1 \\\\ 1 & 0 \\end{bmatrix}$ leva $\\hat\\imath = (1, 0)$ para onde?',
+        options: ['$(0, 1)$', '$(0, -1)$', '$(-1, 0)$', '$(1, 0)$'],
+        answer: 0,
+        explain: 'A imagem de $\\hat\\imath$ é a primeira coluna: $(0, 1)$. É a rotação de 90° no sentido anti-horário.',
+      },
+      {
+        q: 'Se $\\det M = 0$, o que podemos afirmar?',
+        options: ['M não tem inversa e achata o plano numa reta ou ponto', 'M é uma rotação', 'M é a identidade', 'M dobra as áreas'],
+        answer: 0,
+        explain: 'Área final zero significa que o plano colapsou; pontos diferentes vão para o mesmo lugar, então não dá para desfazer.',
+      },
+      {
+        q: 'A transformação dobra todas as áreas e inverte a orientação. Qual é o determinante?',
+        options: ['−2', '2', '1/2', '−1/2'],
+        answer: 0,
+        explain: '$|\\det| = 2$ (fator de área) e o sinal negativo indica a inversão da orientação.',
+      },
+    ]);
+  </script>
+</body>
+</html>
