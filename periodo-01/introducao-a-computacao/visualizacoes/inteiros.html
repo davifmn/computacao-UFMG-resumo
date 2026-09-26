@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Complemento de Dois · Intro à Computação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .register { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .bit { display: grid; justify-items: center; gap: 4px; }
+    .bit button {
+      width: 44px; height: 54px; border-radius: 8px; cursor: pointer;
+      font: 700 24px var(--mono); border: 2px solid var(--border);
+      background: var(--surface-2); color: var(--faint);
+      transition: background .25s, color .25s, border-color .25s, transform .25s;
+    }
+    .bit button.on { background: rgba(88, 196, 221, .16); color: var(--blue); border-color: var(--blue); }
+    .bit button.flip { transform: rotateX(180deg); }
+    .bit.msb button.on { background: rgba(252, 98, 85, .15); color: var(--red); border-color: var(--red); }
+    .bit small { font: 11px var(--mono); color: var(--faint); white-space: nowrap; }
+    .bit.msb small.w2 { color: var(--red); }
+    .register.n16 .bit button { width: 30px; height: 44px; font-size: 18px; }
+    .register.n16 .bit small { font-size: 9px; }
+    .interp td:first-child { text-align: left; color: var(--muted); font-family: var(--font); }
+    .interp td:last-child { font-weight: 700; }
+    .wheel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .grid-add { font-family: var(--mono); font-size: 20px; display: inline-grid; gap: 2px 0; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; max-width: 100%; }
+    .grid-add .r { display: flex; align-items: center; }
+    .grid-add .r span { width: 1.6em; text-align: center; }
+    .grid-add .lbl { width: 7.5em !important; text-align: right !important; color: var(--muted); font-size: 13px; padding-right: 10px; font-family: var(--font); }
+    .grid-add .carry span { color: var(--orange); font-size: 14px; }
+    .grid-add .sum { border-top: 2px solid var(--muted); padding-top: 2px; }
+    .grid-add .sum span { color: var(--yellow); font-weight: 700; }
+    .flags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    @media (max-width: 900px) { .lab { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#intro-comp">Intro. à Computação</a>
+      <span class="sep">/</span><span>Inteiros com sinal</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Computação</div>
+    <h1>Inteiros negativos e complemento de dois</h1>
+    <p class="lead">Um registrador de $n$ bits só guarda zeros e uns. É a <b>interpretação</b> que decide se <code>1111 1111</code> vale 255 ou −1. Clique nos bits e veja cada interpretação mudar.</p>
+
+    <div class="toolbar">
+      <label>Tamanho <select id="nbits"><option>4</option><option selected>8</option><option>16</option></select> bits</label>
+      <label>Valor (compl. de 2) <input id="dec" type="number" style="width:110px"></label>
+      <button class="btn" id="neg">−x (negar)</button>
+      <button class="btn" id="dec1">−1</button>
+      <button class="btn" id="inc1">+1</button>
+      <button class="btn" id="clear">zerar</button>
+    </div>
+
+    <div class="lab">
+      <div>
+        <div class="register" id="register"></div>
+        <p class="c-muted" style="font-size:13px;margin:6px 2px 14px">Embaixo de cada bit: o peso sem sinal e, em <span class="c-red">vermelho</span>, o peso em complemento de 2. O bit mais significativo vale <b>negativo</b>.</p>
+        <div class="table-wrap">
+          <table class="data interp" id="interp"></table>
+        </div>
+        <h3>Como obter −x: inverter tudo e somar 1</h3>
+        <div id="negbox"></div>
+      </div>
+      <div>
+        <svg class="wheel" id="wheel" aria-label="Roda dos números"></svg>
+        <p class="c-muted" style="font-size:13px;margin:6px 2px">A roda mostra por que o complemento de 2 funciona: somar é <b>girar no sentido horário</b>. Passar de <span class="c-green">max</span> para <span class="c-red">min</span> (embaixo) é o <b>overflow com sinal</b>; passar pelo topo é o <b>vai-um</b> sem sinal.</p>
+      </div>
+    </div>
+
+    <h2>Soma e overflow</h2>
+    <div class="toolbar">
+      <label>A = <input id="a" type="number" value="100" style="width:90px"></label>
+      <label>B = <input id="b" type="number" value="50" style="width:90px"></label>
+      <span class="c-muted" style="font-size:13px">(em complemento de 2 com o tamanho escolhido acima)</span>
+    </div>
+    <div id="addbox"></div>
+
+    <section class="prose">
+      <h2>As quatro representações</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Representação</th><th>Negativo de x</th><th>Faixa com n bits</th><th>Zeros</th></tr>
+          <tr><td>Sem sinal</td><td>—</td><td>$0$ a $2^n-1$</td><td>1</td></tr>
+          <tr><td>Sinal-magnitude</td><td>liga o bit de sinal</td><td>$-(2^{n-1}-1)$ a $2^{n-1}-1$</td><td>2 (+0 e −0)</td></tr>
+          <tr><td>Complemento de 1</td><td>inverte todos os bits</td><td>$-(2^{n-1}-1)$ a $2^{n-1}-1$</td><td>2</td></tr>
+          <tr><td>Complemento de 2</td><td>inverte e soma 1</td><td>$-2^{n-1}$ a $2^{n-1}-1$</td><td>1</td></tr>
+        </table>
+      </div>
+      <p>O complemento de 2 venceu porque <b>o mesmo circuito somador serve para números com e sem sinal</b>, e porque existe um único zero. Matematicamente, um número negativo $-x$ é guardado como $2^n - x$: estamos fazendo aritmética <b>módulo $2^n$</b>, que é exatamente a roda ao lado.</p>
+      <div class="callout warn">
+        <p><b>No mundo real:</b> em C/C++, <code>int</code> tem 32 bits e vai de $-2^{31}$ a $2^{31}-1$. Somar 1 a <code>INT_MAX</code> é <i>comportamento indefinido</i>, e muitos bugs de segurança vêm daí. Já em <code>unsigned</code>, a volta pela roda é garantida pela linguagem.</p>
+      </div>
+      <p>Um detalhe curioso: $-(-2^{n-1})$ não cabe em $n$ bits. Negue o menor valor (<code>1000 0000</code> com 8 bits) e veja o resultado ser ele mesmo!</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { $, h, renderMath } from '../../../engine/page.js';
+    import { toBits, interpretations, negateTwos, addBits, range } from './numeros.js';
+
+    let n = 8;
+    let bits = toBits(42, n);
+
+    // ---------- Roda ----------
+    const WS = 460, C = WS / 2, R = 170;
+    const wheel = new Scene($('#wheel'), { width: WS, height: WS });
+    const angle = u => -Math.PI / 2 + (2 * Math.PI * u) / 2 ** n;
+    const at = (u, r) => [C + r * Math.cos(angle(u)), C + r * Math.sin(angle(u))];
+
+    function drawWheel() {
+      const total = 2 ** n, half = total / 2;
+      const step = total / 16;
+      const u = interpretations(bits).unsigned;
+      wheel.frame(s => {
+        // Arcos: não negativos (verde) e negativos (vermelho)
+        const arc = (from, to, color, key) => {
+          const [x1, y1] = at(from, R), [x2, y2] = at(to, R);
+          s.path(key, `M ${x1} ${y1} A ${R} ${R} 0 ${(to - from) / total > 0.5 ? 1 : 0} 1 ${x2} ${y2}`, { stroke: color, sw: 10, opacity: 0.35, layer: 'bg' });
+        };
+        arc(0, half - 0.5, COLORS.green, 'arc-pos');
+        arc(half - 0.5 + 0.0001, total - 0.0001, COLORS.red, 'arc-neg');
+        for (let k = 0; k < 16; k++) {
+          const v = k * step;
+          const [ox, oy] = at(v, R + 26), [ix, iy] = at(v, R - 30);
+          const [t1x, t1y] = at(v, R - 8), [t2x, t2y] = at(v, R + 8);
+          s.line(`tick${k}`, t1x, t1y, t2x, t2y, { stroke: COLORS.muted, sw: 1.5 });
+          s.text(`uo${k}`, v, { x: ox, y: oy, size: n === 16 ? 10 : 12, mono: true, fill: COLORS.muted });
+          const signed = v >= half ? v - total : v;
+          s.text(`si${k}`, signed, { x: ix, y: iy, size: n === 16 ? 10 : 12, mono: true, weight: 600, fill: signed < 0 ? COLORS.red : COLORS.green });
+        }
+        // Fronteiras
+        const [bx, by] = at(half - 0.5, R + 50);
+        s.text('ovf', 'overflow', { x: bx, y: by + 6, size: 12, weight: 700, fill: COLORS.red });
+        const [tx, ty] = at(total - 0.5, R + 50);
+        s.text('carry', 'vai-um', { x: tx + 30, y: ty - 4, size: 12, weight: 700, fill: COLORS.orange });
+        // Ponteiro
+        const [px, py] = at(u, R);
+        s.line('hand', C, C, px, py, { stroke: COLORS.yellow, sw: 3 });
+        s.circle('dot', { x: px, y: py, r: 9, fill: COLORS.yellow, stroke: 'none' });
+        s.circle('hub', { x: C, y: C, r: 5, fill: COLORS.yellow, stroke: 'none' });
+        const it = interpretations(bits);
+        s.text('center1', it.twosComplement, { x: C, y: C + 34, size: 28, weight: 800, mono: true, fill: COLORS.yellow });
+        s.text('center2', `sem sinal: ${it.unsigned}`, { x: C, y: C + 62, size: 12, fill: COLORS.muted });
+        s.text('lbl-out', 'fora: sem sinal · dentro: complemento de 2', { x: C, y: 16, size: 11, fill: COLORS.faint });
+      });
+    }
+
+    // ---------- Registrador ----------
+    function drawRegister() {
+      const reg = $('#register');
+      reg.className = `register n${n}`;
+      reg.replaceChildren(...bits.map((b, i) => {
+        const p = n - 1 - i;
+        const btn = h('button', { class: b ? 'on' : '', 'aria-label': `bit ${p}`, 'aria-pressed': String(!!b) }, String(b));
+        btn.addEventListener('click', () => { bits[i] = 1 - bits[i]; update(); });
+        return h('div', { class: `bit${i === 0 ? ' msb' : ''}` },
+          btn,
+          h('small', {}, `2^${p}`),
+          h('small', { class: 'w2' }, i === 0 ? `−${2 ** p}` : String(2 ** p)));
+      }));
+    }
+
+    function drawInterp() {
+      const it = interpretations(bits);
+      const rg = range(n);
+      const show = v => (Object.is(v, -0) ? '−0' : String(v).replace('-', '−'));
+      $('#interp').innerHTML = `
+        <tr><th>Interpretação</th><th>Faixa (${n} bits)</th><th>Valor</th></tr>
+        <tr><td>Sem sinal</td><td>${rg.unsigned.join(' … ')}</td><td class="c-blue">${it.unsigned}</td></tr>
+        <tr><td>Sinal-magnitude</td><td>${rg.signMagnitude.map(show).join(' … ')}</td><td>${show(it.signMagnitude)}</td></tr>
+        <tr><td>Complemento de 1</td><td>${rg.signMagnitude.map(show).join(' … ')}</td><td>${show(it.onesComplement)}</td></tr>
+        <tr><td>Complemento de 2</td><td>${rg.twosComplement.map(show).join(' … ')}</td><td class="c-yellow">${show(it.twosComplement)}</td></tr>
+        <tr><td>Hexadecimal</td><td>—</td><td>0x${it.hex}</td></tr>`;
+    }
+
+    function addGrid(rows) {
+      // rows: [{label, cells, cls}]
+      return h('div', { class: 'grid-add' }, ...rows.map(r => h('div', { class: `r ${r.cls ?? ''}` },
+        h('span', { class: 'lbl' }, r.label), ...r.cells.map(c => h('span', {}, c)), h('span', { class: 'lbl', style: 'text-align:left!important;padding-left:14px' }, r.note ?? ''))));
+    }
+
+    function drawNeg() {
+      const r = negateTwos(bits);
+      const it = interpretations(bits).twosComplement;
+      const res = interpretations(r.sum).twosComplement;
+      const note = it === -(2 ** (n - 1)) ? ' ⚠ o menor valor não tem oposto em n bits!' : '';
+      $('#negbox').replaceChildren(addGrid([
+        { label: 'x', cells: bits, note: String(it) },
+        { label: 'inverte', cells: r.inverted, note: 'complemento de 1' },
+        { label: 'vai-um', cells: r.carries.slice(1).map(c => (c ? '1' : '')), cls: 'carry' },
+        { label: '+ 1', cells: r.inverted.map((_, i) => (i === n - 1 ? 1 : '')) },
+        { label: '−x', cells: r.sum, cls: 'sum', note: `${res}${note}` },
+      ]));
+    }
+
+    function drawAdd() {
+      const clampSigned = v => { const lo = -(2 ** (n - 1)), hi = 2 ** (n - 1) - 1; return Math.max(lo, Math.min(hi, Math.round(+v || 0))); };
+      const A = clampSigned($('#a').value), B = clampSigned($('#b').value);
+      $('#a').value = A; $('#b').value = B;
+      const a = toBits(A, n), b = toBits(B, n);
+      const r = addBits(a, b);
+      const got = interpretations(r.sum).twosComplement;
+      $('#addbox').replaceChildren(
+        addGrid([
+          { label: 'vai-um', cells: r.carries.slice(1).map(c => (c ? '1' : '')), cls: 'carry', note: r.carryOut ? `vai-um final: 1` : '' },
+          { label: 'A', cells: a, note: String(A) },
+          { label: '+ B', cells: b, note: String(B) },
+          { label: 'A + B', cells: r.sum, cls: 'sum', note: String(got) },
+        ]),
+        h('div', { class: 'flags' },
+          h('span', { class: `badge ${r.overflow ? 'bad' : 'ok'}` }, r.overflow ? `OVERFLOW com sinal: ${A} + ${B} = ${A + B} não cabe; deu ${got}` : `sem overflow com sinal: ${A} + ${B} = ${got}`),
+          h('span', { class: `badge ${r.carryOut ? 'warn' : 'info'}` }, r.carryOut ? 'vai-um final = 1 (overflow se fossem sem sinal)' : 'vai-um final = 0'),
+        ),
+        h('p', { class: 'c-muted', style: 'font-size:14px;max-width:760px' },
+          'Regra do overflow em complemento de 2: só acontece quando os dois operandos têm o mesmo sinal e o resultado tem sinal diferente. Somar números de sinais opostos nunca dá overflow.'),
+      );
+    }
+
+    function update() {
+      $('#dec').value = interpretations(bits).twosComplement;
+      drawRegister(); drawInterp(); drawNeg(); drawWheel(); drawAdd();
+    }
+
+    const setValue = v => { bits = toBits(v, n); update(); };
+    $('#nbits').addEventListener('change', e => {
+      const v = interpretations(bits).twosComplement;
+      n = +e.target.value;
+      wheel.clear();
+      setValue(v);
+    });
+    $('#dec').addEventListener('change', e => setValue(Math.round(+e.target.value || 0)));
+    $('#neg').addEventListener('click', () => {
+      $$flip();
+      setTimeout(() => { bits = negateTwos(bits).sum; update(); }, 250);
+    });
+    function $$flip() { document.querySelectorAll('.bit button').forEach(b => b.classList.add('flip')); }
+    $('#inc1').addEventListener('click', () => setValue(interpretations(bits).unsigned + 1));
+    $('#dec1').addEventListener('click', () => setValue(interpretations(bits).unsigned - 1));
+    $('#clear').addEventListener('click', () => setValue(0));
+    $('#a').addEventListener('change', drawAdd);
+    $('#b').addEventListener('change', drawAdd);
+    update();
+  </script>
+</body>
+</html>

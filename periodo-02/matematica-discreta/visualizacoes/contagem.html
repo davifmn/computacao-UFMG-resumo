@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contagem · Matemática Discreta</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .quad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .quad button { text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+    .quad button[aria-pressed=true] { border-color: var(--blue); background: rgba(88, 196, 221, .08); }
+    .quad b { display: block; } .quad span { color: var(--muted); font-size: 13px; }
+    .count-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin: 6px 0 12px; font-size: 20px; }
+    .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow: auto; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .list span { font-family: var(--mono); font-size: 14px; padding: 3px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+    .pascal-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    #pascal-info { padding: 10px 14px 14px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#discreta">Matemática Discreta</a>
+      <span class="sep">/</span><span>Contagem</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Matemática Discreta</div>
+    <h1>Contagem: de quantas formas?</h1>
+    <p class="lead">Quase todo problema de contagem se reduz a duas perguntas: <b>a ordem importa?</b> e <b>pode repetir?</b> Escolha as respostas e veja a fórmula e <b>todas</b> as possibilidades listadas.</p>
+
+    <div class="toolbar">
+      <label>n (itens) <input id="n" type="range" min="1" max="7" value="4"><span id="n-v" style="font-family:var(--mono);width:2ch"></span></label>
+      <label>k (escolhas) <input id="k" type="range" min="0" max="5" value="2"><span id="k-v" style="font-family:var(--mono);width:2ch"></span></label>
+    </div>
+    <div class="quad" id="quad">
+      <button data-o="1" data-r="1"><b>Ordem importa, com repetição</b><span>senhas, placas, strings de k bits</span></button>
+      <button data-o="1" data-r="0"><b>Ordem importa, sem repetição (arranjos)</b><span>pódio de uma corrida, permutações quando k = n</span></button>
+      <button data-o="0" data-r="0"><b>Ordem não importa, sem repetição (combinações)</b><span>comissões, mãos de pôquer, subconjuntos</span></button>
+      <button data-o="0" data-r="1"><b>Ordem não importa, com repetição</b><span>sabores de sorvete, "estrelas e barras"</span></button>
+    </div>
+    <div class="count-row"><span id="formula"></span><span id="value" class="c-yellow" style="font:800 28px var(--mono)"></span></div>
+    <div class="list" id="list"></div>
+
+    <h2>Triângulo de Pascal</h2>
+    <div class="toolbar">
+      <span class="c-muted" style="font-size:14px">Passe o mouse sobre um número.</span>
+      <span class="spacer"></span>
+      <label>colorir por resto da divisão por <select id="modsel"><option value="0">(não colorir)</option><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+    </div>
+    <div class="pascal-wrap">
+      <div class="stage"><svg id="pascal" aria-label="Triângulo de Pascal"></svg></div>
+      <div class="panel"><div class="panel-title">O número em destaque</div><div id="pascal-info">—</div></div>
+    </div>
+
+    <section class="prose">
+      <h2>As ferramentas</h2>
+      <ul>
+        <li><b>Princípio multiplicativo:</b> se uma tarefa tem etapas com $a$ e $b$ opções independentes, há $a \cdot b$ formas. As quatro fórmulas acima saem daí.</li>
+        <li><b>Princípio aditivo:</b> casos <i>disjuntos</i> se somam. Se não forem disjuntos, use <b>inclusão-exclusão</b>: $|A \cup B| = |A| + |B| - |A \cap B|$.</li>
+        <li><b>Complemento:</b> às vezes é mais fácil contar o que <i>não</i> queremos e subtrair do total ("pelo menos um" = total − "nenhum").</li>
+        <li><b>Casa dos pombos:</b> $n + 1$ pombos em $n$ casas ⇒ alguma casa tem dois. Com 367 pessoas, duas fazem aniversário no mesmo dia; e nenhum compressor sem perdas consegue encurtar <i>todos</i> os arquivos.</li>
+        <li><b>Estrelas e barras:</b> escolher $k$ itens de $n$ tipos com repetição é arrumar $k$ estrelas e $n-1$ barras numa fila: $\binom{n+k-1}{k}$.</li>
+      </ul>
+      <h3>Identidades do triângulo</h3>
+      <ul>
+        <li><b>Pascal:</b> $\binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}$ (cada número é a soma dos dois acima). Prova combinatória: o elemento $n$ está ou não está no subconjunto.</li>
+        <li><b>Simetria:</b> $\binom{n}{k} = \binom{n}{n-k}$ (escolher quem entra = escolher quem fica de fora).</li>
+        <li><b>Soma da linha:</b> $\sum_k \binom{n}{k} = 2^n$ (todos os subconjuntos).</li>
+        <li><b>Binômio de Newton:</b> $(x + y)^n = \sum_k \binom{n}{k} x^k y^{n-k}$.</li>
+      </ul>
+      <p>Colorindo os ímpares (resto por 2) aparece o <b>triângulo de Sierpinski</b>, um fractal escondido na aritmética.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, h, tex, randInt, pick } from '../../../engine/page.js';
+    import { enumerate, countFormula, binom, factorial } from './discreta.js';
+
+    // ---------- Quatro modos ----------
+    let order = true, repeat = false;
+    const ITEMS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    function drawCount() {
+      const n = +$('#n').value;
+      const kIn = $('#k');
+      kIn.max = repeat ? 5 : Math.min(5, n);
+      const k = Math.min(+kIn.value, +kIn.max);
+      kIn.value = k;
+      $('#n-v').textContent = n; $('#k-v').textContent = k;
+      $$('#quad button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.o === '1') === order && (b.dataset.r === '1') === repeat));
+      const f = countFormula(n, k, { order, repeat });
+      tex($('#formula'), f.tex);
+      $('#value').textContent = `= ${f.value}`;
+      const all = enumerate(ITEMS.slice(0, n), k, { order, repeat });
+      const shown = all.slice(0, 300);
+      $('#list').replaceChildren(...shown.map(x => h('span', {}, x.join('') || '∅')),
+        ...(all.length > shown.length ? [h('span', { class: 'c-muted' }, `… e mais ${all.length - shown.length}`)] : []));
+    }
+    $$('#quad button').forEach(b => b.addEventListener('click', () => { order = b.dataset.o === '1'; repeat = b.dataset.r === '1'; drawCount(); }));
+    $('#n').addEventListener('input', drawCount);
+    $('#k').addEventListener('input', drawCount);
+    drawCount();
+
+    // ---------- Pascal ----------
+    const ROWS = 16, W = 900, H = 560, CW = 52, RH = 33;
+    const scene = new Scene($('#pascal'), { width: W, height: H });
+    $('#pascal').style.setProperty('--dur', '200ms');
+    let hover = null;
+    const MODCOL = [COLORS.surface2, COLORS.blue, COLORS.yellow, COLORS.green, COLORS.pink];
+    function drawPascal() {
+      const m = +$('#modsel').value;
+      scene.frame(s => {
+        for (let n = 0; n < ROWS; n++) {
+          for (let k = 0; k <= n; k++) {
+            const x = W / 2 + (k - n / 2) * CW, y = 22 + n * RH;
+            const v = binom(n, k);
+            const isHover = hover && hover[0] === n && hover[1] === k;
+            const isParent = hover && hover[0] - 1 === n && (k === hover[1] || k === hover[1] - 1);
+            let fill = COLORS.surface2;
+            if (m) fill = v % m === 0 ? COLORS.surface2 : MODCOL[v % m] ?? COLORS.purple;
+            if (isParent) fill = COLORS.teal;
+            if (isHover) fill = COLORS.yellow;
+            const c = s.rect(`p${n}-${k}`, { x: x - CW / 2 + 2, y: y - RH / 2 + 2, w: CW - 4, h: RH - 4, rx: 6, fill, stroke: 'none', opacity: m && v % m === 0 && !isHover && !isParent ? 0.5 : 1 });
+            c.dataset.nk = `${n},${k}`;
+            s.text(`pt${n}-${k}`, v, { x, y, size: v > 9999 ? 9 : v > 999 ? 11 : 13, mono: true, weight: 600, fill: isHover || isParent || (m && v % m) ? '#0b0e12' : COLORS.text }).style.pointerEvents = 'none';
+          }
+        }
+      });
+    }
+    $('#pascal').addEventListener('mousemove', e => {
+      const nk = e.target.dataset?.nk;
+      if (!nk) return;
+      const [n, k] = nk.split(',').map(Number);
+      if (hover && hover[0] === n && hover[1] === k) return;
+      hover = [n, k];
+      drawPascal();
+      const info = $('#pascal-info');
+      info.innerHTML = `<div id="pi1"></div><p class="c-muted" style="margin:6px 0">formas de escolher ${k} de ${n} elementos</p><div id="pi2"></div><div id="pi3" style="margin-top:6px"></div>`;
+      tex($('#pi1'), `\\binom{${n}}{${k}} = \\frac{${n}!}{${k}!\\,${n - k}!} = ${binom(n, k)}`);
+      if (n > 0 && k > 0 && k < n) tex($('#pi2'), `\\color{#5cd0b3}{\\binom{${n - 1}}{${k - 1}} + \\binom{${n - 1}}{${k}}} = ${binom(n - 1, k - 1)} + ${binom(n - 1, k)}`);
+      tex($('#pi3'), `\\text{soma da linha } ${n} = 2^{${n}} = ${2 ** n}`);
+    });
+    $('#modsel').addEventListener('change', drawPascal);
+    drawPascal();
+
+    // ---------- Exercícios ----------
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['senha', 'comissao', 'podio', 'sorvete', 'anagrama']);
+        if (kind === 'senha') {
+          const k = randInt(3, 5), n = pick([10, 26]);
+          return { q: `Quantas senhas de ${k} ${n === 10 ? 'dígitos' : 'letras minúsculas'} existem (pode repetir)?`, input: true, answer: String(n ** k), explain: `Ordem importa, com repetição: $${n}^{${k}} = ${n ** k}$.` };
+        }
+        if (kind === 'comissao') {
+          const n = randInt(6, 12), k = randInt(2, 4);
+          return { q: `De quantas formas escolher uma comissão de ${k} pessoas entre ${n}?`, input: true, answer: String(binom(n, k)), explain: `Ordem não importa, sem repetição: $\\binom{${n}}{${k}} = ${binom(n, k)}$.` };
+        }
+        if (kind === 'podio') {
+          const n = randInt(5, 10);
+          const v = n * (n - 1) * (n - 2);
+          return { q: `Uma corrida tem ${n} atletas. Quantos pódios (1º, 2º e 3º) são possíveis?`, input: true, answer: String(v), explain: `Ordem importa, sem repetição: $${n} \\cdot ${n - 1} \\cdot ${n - 2} = ${v}$.` };
+        }
+        if (kind === 'sorvete') {
+          const n = randInt(3, 6), k = randInt(2, 4);
+          return { q: `Uma sorveteria tem ${n} sabores. Quantas taças de ${k} bolas existem (sabores podem repetir, a ordem não importa)?`, input: true, answer: String(binom(n + k - 1, k)), explain: `Estrelas e barras: $\\binom{${n}+${k}-1}{${k}} = ${binom(n + k - 1, k)}$.` };
+        }
+        const word = pick(['ARARA', 'BANANA', 'CASA', 'UFMG', 'PAPAI']);
+        const counts = {};
+        for (const c of word) counts[c] = (counts[c] ?? 0) + 1;
+        const v = Object.values(counts).reduce((acc, c) => acc / factorial(c), factorial(word.length));
+        return { q: `Quantos anagramas tem a palavra <b>${word}</b>?`, input: true, answer: String(v), explain: `Permutação com repetição: $\\frac{${word.length}!}{${Object.values(counts).map(c => `${c}!`).join('\\,')}} = ${v}$.` };
+      },
+    });
+  </script>
+</body>
+</html>

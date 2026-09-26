@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ordenação · PDS I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-01">1º período</a>
+      <span class="sep">/</span><a href="../../../index.html#pds1">PDS I</a>
+      <span class="sep">/</span><span>Ordenação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Programação e Desenvolvimento de Software I</div>
+    <h1>Algoritmos de ordenação</h1>
+    <p class="lead">Três jeitos simples de colocar um vetor em ordem. Acompanhe cada comparação e cada troca no código e veja as barras se moverem.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="bubble">Bubble</button>
+        <button class="btn" data-alg="selection">Selection</button>
+        <button class="btn" data-alg="insertion">Insertion</button>
+      </div>
+      <label>Vetor <input id="arr" type="text" size="26" value="38, 27, 43, 3, 9, 82, 10, 21"></label>
+      <button class="btn" id="rnd">Aleatório</button>
+      <button class="btn" id="worst">Pior caso</button>
+      <button class="btn" id="almost">Quase ordenado</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>não processado</span>
+      <span><i style="background:var(--yellow)"></i>comparando</span>
+      <span><i style="background:var(--red)"></i>trocando / movendo</span>
+      <span><i style="background:var(--pink)"></i>menor encontrado</span>
+      <span><i style="background:var(--purple)"></i>chave (insertion)</span>
+      <span><i style="background:var(--green)"></i>na posição final</span>
+    </div>
+
+    <section class="prose">
+      <h2>Qual escolher?</h2>
+      <p>Os três são $O(n^2)$ no pior caso, mas se comportam de maneira bem diferente. Experimente o botão <b>Quase ordenado</b> em cada um e compare o número de comparações.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Algoritmo</th><th>Melhor caso</th><th>Pior caso</th><th>Trocas (pior)</th><th>Estável?</th></tr>
+          <tr><td>Bubble</td><td>$O(n)$ (com <code>trocou</code>)</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>sim</td></tr>
+          <tr><td>Selection</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>$O(n)$</td><td>não</td></tr>
+          <tr><td>Insertion</td><td>$O(n)$</td><td>$O(n^2)$</td><td>$O(n^2)$</td><td>sim</td></tr>
+        </table>
+      </div>
+      <p>Um algoritmo é <b>estável</b> quando elementos iguais mantêm a ordem relativa original, o que importa quando ordenamos registros por mais de um critério.</p>
+      <div class="callout tip">
+        <p><b>Por que $n^2$?</b> No Bubble e no Selection, o laço interno roda $(n-1) + (n-2) + \dots + 1 = \frac{n(n-1)}{2}$ vezes. Para $n = 1000$ isso dá cerca de 500 mil comparações. Em Estruturas de Dados você verá o Merge Sort e o Quick Sort, que fazem $O(n \log n)$.</p>
+      </div>
+      <p>O código completo, que compila e tem testes, está em <a href="../codigo/ordenacao.cpp"><code>codigo/ordenacao.cpp</code></a>.</p>
+
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt, shuffle } from '../../../engine/page.js';
+    import { CODES, GENERATORS } from './ordenacao.js';
+
+    const W = 900, H = 440, PAD = 40, BASE = 350, MAXH = 270;
+    const MARK = { cmp: COLORS.yellow, swap: COLORS.red, min: COLORS.pink, cur: COLORS.teal, key: COLORS.purple };
+
+    let alg = 'bubble';
+    let max = 1;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H,
+      render(step, s) {
+        const n = step.items.length;
+        const slot = (W - 2 * PAD) / n;
+        const bw = Math.min(64, slot * 0.72);
+        const cx = k => PAD + slot * k + slot / 2;
+        const height = v => 18 + (v / max) * (MAXH - 18);
+        s.line('base', PAD - 10, BASE, W - PAD + 10, BASE, { stroke: COLORS.border, sw: 2, layer: 'bg' });
+
+        const bar = (it, k, color, lift = 0) => {
+          const hh = height(it.v);
+          s.rect(`bar${it.id}`, { x: cx(k) - bw / 2, y: BASE - hh - lift, w: bw, h: hh, rx: 5, fill: color, stroke: 'none' });
+          s.text(`val${it.id}`, it.v, { x: cx(k), y: BASE - hh - lift - 14, size: n > 12 ? 12 : 15, mono: true, fill: COLORS.text });
+        };
+        step.items.forEach((it, k) => {
+          if (!it) return;
+          const color = MARK[step.marks[k]] ?? (step.sorted.includes(k) ? COLORS.green : COLORS.blue);
+          bar(it, k, color);
+        });
+        if (step.float) {
+          bar(step.float, step.float.pos, COLORS.purple, 24);
+          s.text('chave-lbl', 'chave', { x: cx(step.float.pos), y: BASE - height(step.float.v) - 64, size: 13, fill: COLORS.purple });
+        }
+        for (let k = 0; k < n; k++) s.text(`idx${k}`, k, { x: cx(k), y: BASE + 18, size: 12, fill: COLORS.faint, mono: true });
+
+        // Marcadores das variáveis de índice (i, j, menor)
+        const ptrs = [['i', COLORS.teal], ['j', COLORS.yellow], ['menor', COLORS.pink]];
+        let row = 0;
+        for (const [name, color] of ptrs) {
+          const k = step.vars[name];
+          if (typeof k !== 'number' || k < 0 || k >= n) continue;
+          const y = BASE + 44 + row++ * 22;
+          s.text(`ptr-${name}`, `▲ ${name}`, { x: cx(k), y, size: 13, fill: color, weight: 600 });
+        }
+      },
+    });
+
+    function parse() {
+      const nums = $('#arr').value.split(/[,\s;]+/).map(Number).filter(x => Number.isFinite(x) && x >= 0).slice(0, 16);
+      return nums.length >= 2 ? nums.map(Math.round) : [5, 3, 8, 1];
+    }
+
+    function run() {
+      const values = parse();
+      max = Math.max(...values, 1);
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      player.setCode(CODES[alg], 'cpp');
+      player.load(GENERATORS[alg](values));
+    }
+
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.alg; run(); }));
+    $('#arr').addEventListener('change', run);
+    const setArr = a => { $('#arr').value = a.join(', '); run(); };
+    $('#rnd').addEventListener('click', () => setArr(Array.from({ length: 8 }, () => randInt(1, 99))));
+    $('#worst').addEventListener('click', () => setArr([90, 80, 70, 60, 50, 40, 30, 20]));
+    $('#almost').addEventListener('click', () => setArr([10, 20, 30, 50, 40, 60, 70, 80]));
+    run();
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Depois da <b>primeira passada</b> do Bubble Sort (crescente), o que é garantido?',
+        options: ['O maior elemento está na última posição', 'O menor elemento está na primeira posição', 'O vetor está ordenado', 'Metade do vetor está ordenada'],
+        answer: 0,
+        explain: 'Cada comparação carrega o maior visto até agora para a direita, então ao fim da passada ele "borbulhou" até o final.',
+      },
+      {
+        q: 'Qual algoritmo faz <b>no máximo n − 1 trocas</b>, independentemente da entrada?',
+        options: ['Selection Sort', 'Bubble Sort', 'Insertion Sort'],
+        answer: 0,
+        explain: 'O Selection faz exatamente uma troca por posição i. Isso é útil quando mover dados é caro.',
+      },
+      {
+        q: 'Para um vetor <b>já ordenado</b> com n elementos, quantas comparações o Insertion Sort faz?',
+        options: ['n − 1', 'n(n − 1)/2', 'n log n', '0'],
+        answer: 0,
+        explain: 'Cada chave é comparada uma única vez com seu vizinho da esquerda, que já é menor, e o <code>while</code> para imediatamente.',
+      },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Circuitos · Sistemas Lógicos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    #desc { color: var(--muted); margin: 0 0 14px; min-height: 26px; max-width: 900px; }
+    #tt-wrap { max-height: 430px; overflow: auto; }
+    #tt tr { cursor: pointer; }
+    #tt tr:hover td { background: var(--surface-3); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 14px 14px; }
+    .stat { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+    .stat .l { font-size: 12px; color: var(--muted); } .stat .v { font: 700 20px var(--mono); }
+    svg .clickable { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#sistemas-logicos">Sistemas Lógicos</a>
+      <span class="sep">/</span><span>Simulador de circuitos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução a Sistemas Lógicos</div>
+    <h1>Simulador de circuitos combinacionais</h1>
+    <p class="lead"><b>Clique nas entradas</b> (os interruptores à esquerda) e veja o sinal atravessar as portas. Fios em <span class="c-green">verde</span> carregam 1; os apagados carregam 0.</p>
+
+    <div class="toolbar"><div class="chips" id="presets"></div>
+      <span class="spacer"></span>
+      <label><input type="checkbox" id="slow" checked> propagação lenta</label>
+    </div>
+    <p id="desc"></p>
+
+    <div class="lab">
+      <div class="stage"><svg id="board" aria-label="Circuito"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title" id="tt-title">Tabela-verdade (clique numa linha)</div>
+          <div class="panel-body" id="tt-wrap"><table class="data" id="tt"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Custo do circuito</div>
+          <div class="stats">
+            <div class="stat"><div class="l">portas</div><div class="v" id="st-gates"></div></div>
+            <div class="stat"><div class="l">profundidade (atraso)</div><div class="v" id="st-depth"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>De transistores a somadores</h2>
+      <p>Um transistor funciona como um interruptor controlado por tensão. Combinando alguns deles montamos <b>portas lógicas</b>, que calculam funções booleanas. Com portas montamos <b>somadores, multiplexadores e decodificadores</b>, e com eles a <b>ULA</b> (unidade lógica e aritmética) de um processador. Cada nível esconde os detalhes do anterior: é a <b>abstração</b>, a ideia mais importante da computação.</p>
+
+      <h2>Álgebra booleana</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Lei</th><th>Forma do produto (E)</th><th>Forma da soma (OU)</th></tr>
+          <tr><td>Identidade</td><td>A · 1 = A</td><td>A + 0 = A</td></tr>
+          <tr><td>Nulo</td><td>A · 0 = 0</td><td>A + 1 = 1</td></tr>
+          <tr><td>Idempotência</td><td>A · A = A</td><td>A + A = A</td></tr>
+          <tr><td>Complemento</td><td>A · Ā = 0</td><td>A + Ā = 1</td></tr>
+          <tr><td>Absorção</td><td>A · (A + B) = A</td><td>A + A·B = A</td></tr>
+          <tr><td>De Morgan</td><td>(A·B)‾ = Ā + B̄</td><td>(A+B)‾ = Ā · B̄</td></tr>
+          <tr><td>Distributiva</td><td>A·(B + C) = A·B + A·C</td><td>A + B·C = (A+B)·(A+C) ⚠</td></tr>
+        </table>
+      </div>
+      <p>A notação muda em relação à Lógica Computacional: $A \cdot B$ (ou $AB$) é o E, $A + B$ é o OU e $\bar A$ (ou $A'$) é o NÃO. Cuidado com a segunda distributiva, que <b>não</b> vale na aritmética comum!</p>
+
+      <h2>Atraso e o somador de 4 bits</h2>
+      <p>Cada porta leva alguns picossegundos para responder. A <b>profundidade</b> do circuito (o maior número de portas entre uma entrada e uma saída) determina o atraso total, e com ele a frequência máxima do relógio do processador. No somador <i>ripple-carry</i> o vai-um precisa atravessar todos os bits, então o atraso cresce com $n$. Somadores com <b>carry-lookahead</b> calculam os vai-uns em paralelo e reduzem o atraso para $O(\log n)$. Ligue a "propagação lenta", faça $0111 + 0001$ e veja o vai-um atravessar a cadeia.</p>
+      <p>Para simplificar expressões e usar menos portas, veja o <a href="karnaugh.html">mapa de Karnaugh</a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h } from '../../../engine/page.js';
+    import { PRESETS, GATES, evaluate, truthTable, inputIds, outputIds, gateCount } from './circuitos.js';
+
+    const W = 900, H = 520;
+    const svg = $('#board');
+    const scene = new Scene(svg, { width: W, height: H, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    svg.style.setProperty('--dur', '160ms');
+
+    let circuit = null, inputs = {}, shown = null, target = null, level = null, animLevel = Infinity, timer = null;
+
+    // ---------- Geometria das peças ----------
+    const BUB = 5;
+    const SHAPES = {
+      AND: 'M -32 -24 H 0 A 24 24 0 0 1 0 24 H -32 Z',
+      OR: 'M -34 -24 Q -18 0 -34 24 Q 6 24 28 0 Q 6 -24 -34 -24 Z',
+      NOT: 'M -26 -20 L 14 0 L -26 20 Z',
+    };
+    SHAPES.NAND = SHAPES.AND; SHAPES.NOR = SHAPES.OR; SHAPES.XOR = SHAPES.OR; SHAPES.XNOR = SHAPES.OR;
+    const OUT_X = { AND: 24, OR: 28, NOT: 14, NAND: 24 + 2 * BUB, NOR: 28 + 2 * BUB, XOR: 28, XNOR: 28 + 2 * BUB };
+    const HAS_BUBBLE = new Set(['NOT', 'NAND', 'NOR', 'XNOR']);
+
+    function portPos(n, dir, p) {
+      const { x, y } = n;
+      if (n.type === 'IN') {
+        const side = n.port ?? 'right';
+        return side === 'bottom' ? [x, y + 17] : side === 'left' ? [x - 24, y] : [x + 24, y];
+      }
+      if (n.type === 'OUT') return (n.port ?? 'left') === 'top' ? [x, y - 16] : [x - 16, y];
+      if (n.type === 'FA') {
+        if (dir === 'in') return [[x - 20, y - 50], [x + 20, y - 50], [x + 45, y + 20]][p];
+        return [[x, y + 50], [x - 45, y + 20]][p];
+      }
+      if (dir === 'out') return [x + OUT_X[n.type], y];
+      const ins = GATES[n.type].ins;
+      const inX = n.type === 'NOT' ? x - 26 : ['AND', 'NAND'].includes(n.type) ? x - 32 : x - 30;
+      return [inX - (n.type.includes('X') ? 8 : 0), ins === 1 ? y : y + (p === 0 ? -12 : 12)];
+    }
+
+    function wirePath(w, a, b) {
+      const [x1, y1] = a, [x2, y2] = b;
+      if (w.via === 'v') { const ym = y1 + Math.max(14, (y2 - y1) * 0.35); return `M ${x1} ${y1} V ${ym} H ${x2} V ${y2}`; }
+      if (w.via === 'h') return `M ${x1} ${y1} H ${x2} V ${y2}`;
+      const xm = w.mid ?? (x1 + x2) / 2;
+      return `M ${x1} ${y1} H ${xm} V ${y2} H ${x2}`;
+    }
+
+    // ---------- Desenho ----------
+    function draw() {
+      const byId = new Map(circuit.nodes.map(n => [n.id, n]));
+      const val = key => {
+        const [id] = key.split(':');
+        return (level.get(id) ?? 0) <= animLevel ? target.get(key) : shown.get(key);
+      };
+      scene.frame(s => {
+        for (const [i, w] of circuit.wires.entries()) {
+          const from = byId.get(w.from[0]), to = byId.get(w.to[0]);
+          const v = val(`${w.from[0]}:${w.from[1]}`);
+          const d = wirePath(w, portPos(from, 'out', w.from[1]), portPos(to, 'in', w.to[1]));
+          s.path(`w${i}`, d, { stroke: v ? COLORS.green : '#3a4250', sw: v ? 3.2 : 2.4, layer: 'edges' });
+        }
+        for (const n of circuit.nodes) {
+          if (n.type === 'IN') {
+            const v = inputs[n.id] ? 1 : 0;
+            const r = s.rect(`in-${n.id}`, { x: n.x - 22, y: n.y - 15, w: 44, h: 30, rx: 15, fill: v ? '#27401f' : COLORS.surface2, stroke: v ? COLORS.green : COLORS.border, sw: 2 });
+            r.classList.add('clickable'); r.dataset.input = n.id;
+            const k = s.circle(`ink-${n.id}`, { x: n.x + (v ? 8 : -8), y: n.y, r: 10, fill: v ? COLORS.green : COLORS.muted, stroke: 'none' });
+            k.classList.add('clickable'); k.dataset.input = n.id; k.style.pointerEvents = 'none';
+            const above = n.port === 'bottom' || n.port === 'left';  // rótulo acima quando o fio não sai pela direita
+            s.text(`inl-${n.id}`, `${n.label ?? n.id} = ${v}`, {
+              x: above ? n.x : n.x - 32, y: above ? n.y - 26 : n.y, size: 14,
+              anchor: above ? 'middle' : 'end', weight: 700, mono: true, fill: v ? COLORS.green : COLORS.muted,
+            });
+          } else if (n.type === 'OUT') {
+            const v = val(`${n.id}:in`);
+            s.circle(`led-${n.id}`, { x: n.x, y: n.y, r: 16, fill: v ? COLORS.yellow : COLORS.surface2, stroke: v ? COLORS.yellow : COLORS.border, sw: 2 });
+            s.text(`ledv-${n.id}`, v, { x: n.x, y: n.y, size: 14, weight: 800, mono: true, fill: v ? '#1d1a08' : COLORS.muted });
+            const top = n.port === 'top';
+            s.text(`ledl-${n.id}`, n.label ?? n.id, { x: top ? n.x : n.x + 24, y: top ? n.y + 30 : n.y, size: 14, anchor: top ? 'middle' : 'start', weight: 600, fill: v ? COLORS.yellow : COLORS.muted });
+          } else if (n.type === 'FA') {
+            const [sv, cv] = [val(`${n.id}:0`), val(`${n.id}:1`)];
+            s.rect(`fa-${n.id}`, { x: n.x - 45, y: n.y - 50, w: 90, h: 100, rx: 10, fill: COLORS.surface2, stroke: COLORS.blue, sw: 2 });
+            s.text(`fal-${n.id}`, 'FA', { x: n.x, y: n.y - 8, size: 18, weight: 800, fill: COLORS.blue });
+            s.text(`fas-${n.id}`, `s=${sv} c=${cv}`, { x: n.x, y: n.y + 16, size: 12, mono: true, fill: COLORS.muted });
+          } else {
+            const v = val(`${n.id}:0`);
+            const stroke = v ? COLORS.green : COLORS.muted;
+            s.add(`g-${n.id}`, 'path', { d: SHAPES[n.type], fill: COLORS.surface2, stroke, 'stroke-width': 2.2 }, { x: n.x, y: n.y, layer: 'nodes' });
+            if (n.type.includes('X')) s.add(`gx-${n.id}`, 'path', { d: 'M -42 -24 Q -26 0 -42 24', fill: 'none', stroke, 'stroke-width': 2.2 }, { x: n.x, y: n.y, layer: 'nodes' });
+            if (HAS_BUBBLE.has(n.type)) s.circle(`gb-${n.id}`, { x: n.x + OUT_X[n.type] - BUB, y: n.y, r: BUB, fill: COLORS.surface2, stroke, sw: 2 });
+            s.text(`gl-${n.id}`, n.type, { x: n.x - 6, y: n.y, size: 10, weight: 700, fill: COLORS.faint });
+          }
+        }
+      });
+    }
+
+    // ---------- Simulação com propagação por níveis ----------
+    function recompute(animate) {
+      const res = evaluate(circuit, inputs);
+      clearTimeout(timer);
+      shown = target ?? res.out;
+      target = res.out;
+      level = res.level;
+      const maxL = Math.max(...level.values());
+      if (!animate || !$('#slow').checked) { animLevel = Infinity; shown = target; draw(); highlightRow(); return; }
+      animLevel = 0;
+      const tick = () => {
+        draw();
+        if (animLevel >= maxL) { shown = target; animLevel = Infinity; return; }
+        animLevel++;
+        timer = setTimeout(tick, 260);
+      };
+      tick();
+      highlightRow();
+    }
+
+    function renderTable() {
+      if (circuit.readout) {
+        $('#tt-title').textContent = 'Conta em binário e decimal';
+        $('#tt-wrap').innerHTML = '<div id="readout" style="font-family:var(--mono);font-size:18px;line-height:1.9"></div><p class="c-muted" style="font-size:13px;margin:8px 0 0">Com 9 entradas, a tabela-verdade teria 2⁹ = 512 linhas.</p>';
+        $('#st-gates').textContent = '4 × 5 = 20';
+        $('#st-depth').textContent = Math.max(...evaluate(circuit, {}).level.values()) - 1 + ' FA';
+        return;
+      }
+      $('#tt-title').textContent = 'Tabela-verdade (clique numa linha)';
+      if (!$('#tt')) $('#tt-wrap').innerHTML = '<table class="data" id="tt"></table>';
+      const t = truthTable(circuit);
+      const name = id => circuit.nodes.find(n => n.id === id).label ?? id;
+      $('#tt').innerHTML = `<tr>${t.ins.map(i => `<th>${name(i)}</th>`).join('')}${t.outs.map(o => `<th class="result">${name(o)}</th>`).join('')}</tr>` +
+        t.rows.map((r, k) => `<tr data-row="${k}">${t.ins.map(i => `<td>${r.inputs[i]}</td>`).join('')}${t.outs.map(o => `<td class="result ${r.outputs[o] ? 't' : 'f'}">${r.outputs[o]}</td>`).join('')}</tr>`).join('');
+      $('#tt').onclick = e => {
+        const tr = e.target.closest('tr[data-row]');
+        if (!tr) return;
+        inputs = { ...t.rows[+tr.dataset.row].inputs };
+        recompute(true);
+      };
+      $('#st-gates').textContent = gateCount(circuit);
+      $('#st-depth').textContent = Math.max(...evaluate(circuit, {}).level.values()) - 1;
+    }
+
+    function highlightRow() {
+      if (circuit.readout) {
+        const outs = Object.fromEntries(outputIds(circuit).map(id => [id, target.get(`${id}:in`)]));
+        const r = circuit.readout(inputs, outs);
+        $('#readout').innerHTML = `<div class="c-blue">${r.text}</div><div class="c-yellow">${r.dec}</div>`;
+        return;
+      }
+      const ins = inputIds(circuit);
+      const k = ins.reduce((acc, id) => acc * 2 + (inputs[id] ? 1 : 0), 0);
+      document.querySelectorAll('#tt tr[data-row]').forEach(tr => tr.classList.toggle('active', +tr.dataset.row === k));
+      document.querySelector(`#tt tr[data-row="${k}"]`)?.scrollIntoView({ block: 'nearest' });
+    }
+
+    function load(key) {
+      circuit = PRESETS[key];
+      inputs = Object.fromEntries(inputIds(circuit).map(id => [id, 0]));
+      target = null;
+      scene.clear();
+      $('#desc').textContent = circuit.descricao;
+      document.querySelectorAll('#presets .btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === key));
+      renderTable();
+      recompute(false);
+    }
+
+    svg.addEventListener('click', e => {
+      const id = e.target.dataset?.input;
+      if (!id) return;
+      inputs[id] = inputs[id] ? 0 : 1;
+      recompute(true);
+    });
+
+    $('#presets').append(...Object.entries(PRESETS).map(([k, p]) => {
+      const b = h('button', { class: 'btn small', 'data-k': k }, p.titulo);
+      b.addEventListener('click', () => load(k));
+      return b;
+    }));
+    load('completo');
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'No somador completo, quais entradas produzem S = 1 e Cout = 1?',
+        options: ['A = B = Cin = 1', 'Exatamente duas entradas em 1', 'Exatamente uma entrada em 1', 'Nenhuma: é impossível'],
+        answer: 0,
+        explain: '1 + 1 + 1 = 3 = 11₂: bit da soma 1 e vai-um 1. Confira na última linha da tabela.',
+      },
+      {
+        q: 'Como construir uma porta NOT usando apenas uma NAND?',
+        options: ['Ligar a mesma entrada A nos dois terminais: NAND(A, A) = Ā', 'Ligar uma entrada em 0', 'É impossível', 'Usar duas NAND em série'],
+        answer: 0,
+        explain: 'NAND(A, A) = (A·A)‾ = Ā. Veja o circuito "Tudo com NAND".',
+      },
+      {
+        q: 'Um somador ripple-carry de 32 bits é lento porque:',
+        options: ['O vai-um precisa atravessar os 32 somadores em sequência', 'Usa muitas portas XOR', 'Cada bit é somado em um ciclo de relógio diferente', 'Os bits mais altos têm portas mais lentas'],
+        answer: 0,
+        explain: 'O atraso cresce linearmente com o número de bits. Somadores carry-lookahead antecipam os vai-uns e têm atraso logarítmico.',
+      },
+    ]);
+  </script>
+</body>
+</html>

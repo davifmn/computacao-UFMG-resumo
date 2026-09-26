@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Derivada · Cálculo I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    #fx { font-size: 17px; width: 260px; }
+    .readout { padding: 6px 14px 14px; display: grid; gap: 8px; font-size: 15px; overflow-x: auto; }
+    .ctl { display: grid; grid-template-columns: 4em 1fr 6em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    #plot { cursor: crosshair; touch-action: none; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo1">Cálculo I</a>
+      <span class="sep">/</span><span>Derivada</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral I</div>
+    <h1>A derivada: da secante à tangente</h1>
+    <p class="lead">A inclinação da reta que passa por dois pontos do gráfico é fácil de calcular. A derivada é o que essa inclinação vira quando os dois pontos se aproximam infinitamente. <b>Arraste no gráfico</b> para mover o ponto e diminua o $h$.</p>
+
+    <div class="toolbar">
+      <label>f(x) = <input id="fx" type="text" value="x^3 - 3x" spellcheck="false"></label>
+      <div class="chips" id="presets">
+        <button class="btn small">x^2</button><button class="btn small">x^3 - 3x</button><button class="btn small">sin(x)</button>
+        <button class="btn small">e^x</button><button class="btn small">ln(x)</button><button class="btn small">1/x</button>
+        <button class="btn small">abs(x)</button><button class="btn small">x^(1/3)</button><button class="btn small">x^2 sin(x)</button>
+      </div>
+      <span class="c-red" id="err" style="font-size:14px"></span>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Gráfico da função com secante e tangente"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Controles</div>
+          <div class="ctl">
+            <span>x₀</span><input id="x0" type="range" min="-4" max="4" step="0.01" value="1.5"><output id="x0-o"></output>
+            <span>h</span><input id="h" type="range" min="-3" max="0.5" step="0.01" value="-0.1"><output id="h-o"></output>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="shrink">h → 0</button>
+            <button class="btn" id="trace">Traçar f′ ao longo de x</button>
+            <label style="font-size:14px;color:var(--muted)"><input type="checkbox" id="show-d"> mostrar f′</label>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Números</div><div class="readout" id="readout"></div></div>
+        <div class="panel"><div class="panel-title">Derivada simbólica</div><div class="readout" id="symbolic"></div></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>f</span>
+      <span><i style="background:var(--green)"></i>reta secante (por x₀ e x₀ + h)</span>
+      <span><i style="background:var(--yellow)"></i>reta tangente em x₀</span>
+      <span><i style="background:var(--pink)"></i>f′ (a inclinação, ponto a ponto)</span>
+    </div>
+
+    <section class="prose">
+      <h2>A definição</h2>
+      <p>$$ f'(x_0) = \lim_{h \to 0} \frac{f(x_0 + h) - f(x_0)}{h} $$</p>
+      <p>A fração é a inclinação da secante (<span class="c-green">verde</span>): quanto $f$ sobe para cada unidade andada. Quando $h$ encolhe, a secante gira até coincidir com a tangente (<span class="c-yellow">amarela</span>). A derivada é a <b>taxa de variação instantânea</b>: velocidade é a derivada da posição, aceleração é a derivada da velocidade.</p>
+
+      <h2>Quando a derivada não existe</h2>
+      <ul>
+        <li><b>Bico</b> — <code>abs(x)</code> em 0: a secante pela esquerda tem inclinação −1 e pela direita, +1. Os limites laterais diferem.</li>
+        <li><b>Tangente vertical</b> — <code>x^(1/3)</code> em 0: a inclinação cresce sem limite.</li>
+        <li><b>Descontinuidade</b> — <code>1/x</code> em 0: nem há ponto para tangenciar. Toda função derivável é contínua, mas não o contrário.</li>
+      </ul>
+
+      <h2>As regras (e por que o computador sabe derivar)</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Regra</th><th>Fórmula</th></tr>
+          <tr><td>Potência</td><td>$(x^n)' = n\,x^{n-1}$</td></tr>
+          <tr><td>Soma</td><td>$(u + v)' = u' + v'$</td></tr>
+          <tr><td>Produto</td><td>$(uv)' = u'v + uv'$</td></tr>
+          <tr><td>Quociente</td><td>$\left(\frac{u}{v}\right)' = \frac{u'v - uv'}{v^2}$</td></tr>
+          <tr><td>Cadeia</td><td>$(f(g(x)))' = f'(g(x)) \cdot g'(x)$</td></tr>
+          <tr><td>Tabela</td><td>$(\sin x)' = \cos x,\ (\cos x)' = -\sin x,\ (e^x)' = e^x,\ (\ln x)' = \frac1x$</td></tr>
+        </table>
+      </div>
+      <p>O painel "Derivada simbólica" aplica exatamente essas regras, recursivamente, sobre a árvore sintática da expressão (veja <a href="expr.js"><code>expr.js</code></a>). É o mesmo padrão da avaliação de fórmulas em Lógica Computacional: <b>uma regra por tipo de nó</b>. A regra da cadeia é a razão de o <i>backpropagation</i> treinar redes neurais.</p>
+
+      <h2>Aplicações que você vai usar</h2>
+      <ul>
+        <li><b>Máximos e mínimos:</b> nos pontos críticos $f'(x) = 0$. Com "mostrar f′" ligado, veja que f′ cruza o zero exatamente onde f tem picos e vales.</li>
+        <li><b>Crescimento:</b> $f' > 0$ ⇒ $f$ crescente; $f' < 0$ ⇒ decrescente. $f''$ indica a concavidade.</li>
+        <li><b>Aproximação linear:</b> perto de $x_0$, $f(x) \approx f(x_0) + f'(x_0)(x - x_0)$, que é a reta tangente. É a base do <b>método de Newton</b> para achar raízes (em <a href="../codigo/calculo.py"><code>codigo/calculo.py</code></a>).</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt, tex } from '../../../engine/page.js';
+    import { parse, compile, derive, simplify, toTex } from './expr.js';
+
+    const W = 900, H = 560;
+    const svg = $('#plot');
+    const scene = new Scene(svg, { width: W, height: H, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { x: [-4.5, 4.5], y: [-4, 4], box: [20, 20, W - 20, H - 20] });
+    plot.clip(['edges', 'nodes']);
+
+    let f = null, df = null, tree = null, dtree = null, trace = [];
+    const x0 = () => +$('#x0').value;
+    const h = () => 10 ** +$('#h').value;
+
+    function autoView() {
+      // janela vertical a partir dos valores de f em [-4.5, 4.5] (ignorando explosões)
+      const ys = [];
+      for (let x = -4.5; x <= 4.5; x += 0.05) { const y = f(x); if (Number.isFinite(y)) ys.push(y); }
+      ys.sort((a, b) => a - b);
+      let lo = ys[Math.floor(ys.length * 0.1)] ?? -4, hi = ys[Math.floor(ys.length * 0.9)] ?? 4;
+      lo = Math.min(lo, -1); hi = Math.max(hi, 1);
+      const pad = (hi - lo) * 0.25;
+      plot.setView([-4.5, 4.5], [Math.max(lo - pad, -12), Math.min(hi + pad, 12)]);
+    }
+
+    function draw() {
+      const a = x0(), hh = h();
+      const fa = f(a), fb = f(a + hh), slope = (fb - fa) / hh, d = df(a);
+      scene.frame(s => {
+        plot.axes(s);
+        if ($('#show-d').checked) plot.fn(s, 'df', df, { stroke: COLORS.pink, sw: 2, opacity: 0.8 });
+        if (trace.length > 1) s.path('trace', `M ${trace.map(([x, y]) => `${plot.X(x)} ${plot.Y(y)}`).join(' L ')}`, { stroke: COLORS.pink, sw: 3 });
+        plot.fn(s, 'f', f, { stroke: COLORS.blue, sw: 3.5 });
+        const L = 20;
+        if (Number.isFinite(slope)) s.line('sec', plot.X(a - L), plot.Y(fa - slope * L), plot.X(a + L), plot.Y(fa + slope * L), { stroke: COLORS.green, sw: 2.2 });
+        if (Number.isFinite(d)) s.line('tan', plot.X(a - L), plot.Y(fa - d * L), plot.X(a + L), plot.Y(fa + d * L), { stroke: COLORS.yellow, sw: 2.2, dash: '8 6' });
+        if (Number.isFinite(fb) && Number.isFinite(fa)) {
+          s.path('run', `M ${plot.X(a)} ${plot.Y(fa)} H ${plot.X(a + hh)}`, { stroke: COLORS.green, sw: 1.5, dash: '3 4' });
+          s.path('rise', `M ${plot.X(a + hh)} ${plot.Y(fa)} V ${plot.Y(fb)}`, { stroke: COLORS.green, sw: 1.5, dash: '3 4' });
+          s.circle('q', { x: plot.X(a + hh), y: plot.Y(fb), r: 6, fill: COLORS.green, stroke: 'none' });
+          s.text('hl', 'h', { x: plot.X(a + hh / 2), y: plot.Y(fa) + 14, size: 14, weight: 700, fill: COLORS.green });
+        }
+        if (Number.isFinite(fa)) s.circle('p', { x: plot.X(a), y: plot.Y(fa), r: 8, fill: COLORS.yellow, stroke: COLORS.bg, sw: 2 });
+      });
+      const r = $('#readout');
+      r.innerHTML = '<div id="r1"></div><div id="r2"></div><div id="r3"></div>';
+      const n = v => (Number.isFinite(v) ? fmt(v, 5).replace(',', '{,}') : '\\text{indefinido}');
+      tex($('#r1'), `x_0 = ${n(a)},\\ \\ h = ${n(hh)}`);
+      tex($('#r2'), `\\color{#83c167}{\\frac{f(x_0+h)-f(x_0)}{h} = ${n(slope)}}`);
+      tex($('#r3'), `\\color{#f4d35e}{f'(x_0) = ${n(d)}}`);
+      $('#x0-o').value = fmt(a, 2);
+      $('#h-o').value = hh < 0.01 ? hh.toExponential(1) : fmt(hh, 3);
+    }
+
+    function setFunction(src) {
+      try {
+        tree = parse(src);
+        dtree = simplify(derive(tree));
+        f = compile(tree); df = compile(dtree);
+        $('#err').textContent = '';
+      } catch (e) { $('#err').textContent = e.message; return; }
+      trace = [];
+      autoView();
+      const sym = $('#symbolic');
+      sym.innerHTML = '<div id="s1"></div><div id="s2"></div>';
+      tex($('#s1'), `f(x) = ${toTex(simplify(tree))}`);
+      tex($('#s2'), `f'(x) = ${toTex(dtree)}`);
+      draw();
+    }
+
+    $('#fx').addEventListener('change', e => setFunction(e.target.value));
+    $$('#presets button').forEach(b => b.addEventListener('click', () => { $('#fx').value = b.textContent; setFunction(b.textContent); }));
+    $('#x0').addEventListener('input', draw);
+    $('#h').addEventListener('input', draw);
+    $('#show-d').addEventListener('change', draw);
+
+    // arrastar no gráfico move x0
+    let dragging = false;
+    const moveTo = e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      $('#x0').value = Math.max(-4, Math.min(4, plot.invX(p.x)));
+      draw();
+    };
+    svg.addEventListener('pointerdown', e => { dragging = true; svg.setPointerCapture(e.pointerId); moveTo(e); });
+    svg.addEventListener('pointermove', e => { if (dragging) moveTo(e); });
+    svg.addEventListener('pointerup', () => { dragging = false; });
+
+    let anim = null;
+    $('#shrink').addEventListener('click', () => {
+      anim?.cancel();
+      const from = 0, to = -3;
+      $('#h').value = from;
+      anim = tween(2600, t => { $('#h').value = from + (to - from) * t; draw(); }, ease.smooth);
+    });
+    $('#trace').addEventListener('click', () => {
+      anim?.cancel();
+      trace = [];
+      $('#h').value = -3;
+      anim = tween(4500, t => {
+        const x = -4 + 8 * t;
+        $('#x0').value = x;
+        const d = df(x);
+        if (Number.isFinite(d)) trace.push([x, d]);
+        draw();
+      }, ease.linear);
+    });
+
+    setFunction($('#fx').value);
+
+    mountQuiz($('#quiz'), [
+      { q: 'Se $f(x) = x^3$, quanto vale $f\'(2)$?', options: ['12', '8', '6', '4'], answer: 0, explain: '$f\'(x) = 3x^2$, logo $f\'(2) = 12$.' },
+      { q: 'Qual a derivada de $\\sin(x^2)$?', options: ['$2x\\cos(x^2)$', '$\\cos(x^2)$', '$\\cos(2x)$', '$2\\sin x \\cos x$'], answer: 0, explain: 'Regra da cadeia: a derivada de fora ($\\cos$), aplicada em $x^2$, vezes a derivada de dentro ($2x$).' },
+      { q: 'Uma função contínua em todo ponto é sempre derivável?', options: ['Não: |x| é contínua mas não é derivável em 0', 'Sim, sempre', 'Só se for polinomial', 'Sim, exceto em pontos isolados'], answer: 0, explain: 'Derivável ⇒ contínua, mas a recíproca é falsa. Existem até funções contínuas que não são deriváveis em <b>nenhum</b> ponto (Weierstrass).' },
+    ]);
+  </script>
+</body>
+</html>

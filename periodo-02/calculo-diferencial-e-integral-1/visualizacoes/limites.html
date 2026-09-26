@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Limites · Cálculo I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 2em 1fr 5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    #verdict { padding: 8px 14px 14px; font-size: 15px; }
+    #table td, #table th { padding: 3px 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo1">Cálculo I</a>
+      <span class="sep">/</span><span>Limites</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral I</div>
+    <h1>Limites: o jogo do ε e do δ</h1>
+    <p class="lead">"$\lim_{x\to a} f(x) = L$" é um desafio: um adversário escolhe uma tolerância $\varepsilon$ (a faixa <span class="c-yellow">amarela</span> em volta de $L$), e você precisa achar um $\delta$ (a faixa <span class="c-blue">azul</span> em volta de $a$) tal que o gráfico, dentro da faixa azul, não saia da amarela. Se você <b>sempre</b> consegue, o limite existe.</p>
+
+    <div class="toolbar">
+      <div class="chips" id="presets"></div>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Gráfico com faixas épsilon e delta"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">O jogo</div>
+          <div class="ctl">
+            <span class="c-yellow">ε</span><input id="eps" type="range" min="-2" max="0" step="0.01" value="-0.3"><output id="eps-o"></output>
+            <span class="c-blue">δ</span><input id="delta" type="range" min="-3" max="0" step="0.01" value="-0.2"><output id="delta-o"></output>
+          </div>
+          <div id="verdict"></div>
+          <div style="padding:0 14px 14px"><button class="btn" id="auto">Achar um δ para mim</button></div>
+        </div>
+        <div class="panel"><div class="panel-title">Aproximando numericamente</div><div class="panel-body"><table class="data" id="table"></table></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>A definição formal</h2>
+      <p>$$ \lim_{x \to a} f(x) = L \iff \forall \varepsilon > 0\ \ \exists \delta > 0 :\ \ 0 < |x - a| < \delta \Rightarrow |f(x) - L| < \varepsilon $$</p>
+      <p>Repare no $0 < |x - a|$: o valor de $f$ <b>no próprio ponto</b> $a$ não importa (pode nem existir). É por isso que $\frac{x^2 - 1}{x - 1}$ tem limite 2 em $x = 1$, mesmo sendo indefinida ali. O "buraco" no gráfico não atrapalha.</p>
+      <h2>Quando o limite não existe</h2>
+      <ul>
+        <li><b>Salto</b> (degrau): os limites laterais são diferentes. Com $\varepsilon$ menor que metade do salto, nenhum $\delta$ funciona.</li>
+        <li><b>Oscilação</b> ($\sin(1/x)$ perto de 0): o gráfico oscila entre −1 e 1 em qualquer intervalo em torno de 0, por menor que seja.</li>
+        <li><b>Explosão</b> ($1/x^2$ em 0): os valores crescem sem limite ($\lim = +\infty$ é notação, não um número).</li>
+      </ul>
+      <h2>Limites que você vai usar muito</h2>
+      <ul>
+        <li>$\lim_{x \to 0} \frac{\sin x}{x} = 1$: é o que faz $(\sin x)' = \cos x$.</li>
+        <li>$\lim_{n \to \infty} \left(1 + \frac1n\right)^n = e$: juros compostos contínuos.</li>
+        <li>$\lim_{x \to \infty} \frac{\ln x}{x} = 0$: todo polinômio cresce mais rápido que o log, o que é a base da notação assintótica ($O$, $\Theta$) de Algoritmos.</li>
+      </ul>
+      <p><b>Continuidade:</b> $f$ é contínua em $a$ quando $\lim_{x \to a} f(x) = f(a)$, isto é, o limite existe e coincide com o valor. Sem buracos, saltos ou explosões.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt, tex } from '../../../engine/page.js';
+
+    // Cada caso: f, ponto a, limite L (null se não existe), janela, e o valor "no ponto" (para desenhar o buraco/ponto)
+    const CASES = [
+      { name: '(x² − 1)/(x − 1) em 1', f: x => (x * x - 1) / (x - 1), a: 1, L: 2, x: [-1, 3], y: [-0.5, 4.5], hole: true, tex: '\\frac{x^2-1}{x-1}' },
+      { name: 'sin(x)/x em 0', f: x => Math.sin(x) / x, a: 0, L: 1, x: [-8, 8], y: [-0.5, 1.5], hole: true, tex: '\\frac{\\sin x}{x}' },
+      { name: 'x² em 1', f: x => x * x, a: 1, L: 1, x: [-1, 3], y: [-0.5, 4], tex: 'x^2' },
+      { name: 'degrau em 0', f: x => (x < 0 ? 0 : 1), a: 0, L: null, x: [-2, 2], y: [-0.5, 1.5], jump: true, tex: '\\text{degrau}(x)' },
+      { name: 'sin(1/x) em 0', f: x => Math.sin(1 / x), a: 0, L: null, x: [-0.6, 0.6], y: [-1.5, 1.5], tex: '\\sin\\frac1x' },
+      { name: 'x·sin(1/x) em 0', f: x => x * Math.sin(1 / x), a: 0, L: 0, x: [-0.6, 0.6], y: [-0.6, 0.6], hole: true, tex: 'x\\sin\\frac1x' },
+    ];
+    let c = CASES[0];
+
+    const W = 900, H = 560;
+    const scene = new Scene($('#plot'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { box: [20, 20, W - 20, H - 20] });
+    plot.clip(['areas', 'edges', 'nodes']);
+
+    const eps = () => 10 ** +$('#eps').value;
+    const delta = () => 10 ** +$('#delta').value;
+    const Lguess = () => c.L ?? c.f(c.a + 1e-9);   // para casos sem limite, usa o valor à direita como "candidato"
+
+    /** Verifica (por amostragem densa) se o gráfico em (a−δ, a+δ)\{a} fica dentro de (L−ε, L+ε). */
+    function check(d, e) {
+      const L = Lguess();
+      let worst = 0, bad = null;
+      for (let i = 1; i <= 4000; i++) {
+        for (const sgn of [-1, 1]) {
+          const x = c.a + sgn * d * (i / 4000);
+          const y = c.f(x);
+          if (!Number.isFinite(y)) continue;
+          const dev = Math.abs(y - L);
+          if (dev > worst) { worst = dev; bad = x; }
+        }
+      }
+      return { ok: worst < e, worst, bad };
+    }
+
+    function draw() {
+      const e = eps(), d = delta(), L = Lguess();
+      const res = check(d, e);
+      $('#eps-o').value = fmt(e, 3);
+      $('#delta-o').value = d < 0.01 ? d.toExponential(1) : fmt(d, 3);
+      scene.frame(s => {
+        plot.axes(s);
+        const [l, t, r, b] = plot.box;
+        s.rect('epsband', { x: l, y: plot.Y(L + e), w: r - l, h: plot.Y(L - e) - plot.Y(L + e), rx: 0, fill: 'rgba(244,211,94,.14)', stroke: 'none', layer: 'areas' });
+        s.line('Lline', l, plot.Y(L), r, plot.Y(L), { stroke: COLORS.yellow, sw: 1.2, dash: '6 5', layer: 'areas' });
+        s.rect('dband', { x: plot.X(c.a - d), y: t, w: plot.X(c.a + d) - plot.X(c.a - d), h: b - t, rx: 0, fill: 'rgba(88,196,221,.12)', stroke: 'none', layer: 'areas' });
+        // o gráfico: parte dentro da faixa δ destacada em verde/vermelho
+        const inside = x => Math.abs(x - c.a) < d;
+        const steps = 1400;
+        let dOut = '', dIn = '';
+        let prevIn = null, prevY = null;
+        for (let i = 0; i <= steps; i++) {
+          const x = plot.xr[0] + (plot.xr[1] - plot.xr[0]) * (i / steps);
+          if (Math.abs(x - c.a) < 1e-12) { prevIn = null; continue; }
+          const y = c.f(x);
+          if (!Number.isFinite(y)) { prevIn = null; continue; }
+          const inn = inside(x);
+          const jump = prevY != null && Math.abs(y - prevY) > (plot.yr[1] - plot.yr[0]) * 0.6;
+          const seg = `${prevIn === inn && !jump ? 'L' : 'M'} ${plot.X(x).toFixed(1)} ${plot.Y(y).toFixed(1)} `;
+          if (inn) dIn += seg; else dOut += seg;
+          prevIn = inn; prevY = y;
+        }
+        s.path('fout', dOut || 'M 0 0', { stroke: COLORS.muted, sw: 2.5 });
+        s.path('fin', dIn || 'M 0 0', { stroke: res.ok ? COLORS.green : COLORS.red, sw: 3.5 });
+        if (c.hole) s.circle('hole', { x: plot.X(c.a), y: plot.Y(c.L), r: 6, fill: COLORS.bg, stroke: COLORS.text, sw: 2 });
+        if (!res.ok && res.bad != null) s.circle('bad', { x: plot.X(res.bad), y: plot.Y(c.f(res.bad)), r: 7, fill: 'none', stroke: COLORS.red, sw: 2.5 });
+        s.text('Ll', `L = ${fmt(L, 3)}`, { x: r - 8, y: plot.Y(L) - 12, size: 13, anchor: 'end', weight: 700, fill: COLORS.yellow });
+        s.text('al', `a = ${fmt(c.a, 2)}`, { x: plot.X(c.a) + 6, y: b - 12, size: 13, anchor: 'start', weight: 700, fill: COLORS.blue });
+      });
+      $('#verdict').innerHTML = res.ok
+        ? `<b class="c-green">✓ Funcionou!</b> Para todo x com 0 &lt; |x − a| &lt; δ, |f(x) − L| &lt; ε (maior desvio: ${fmt(res.worst, 4)}).`
+        : `<b class="c-red">✗ Falhou.</b> Há x na faixa azul com |f(x) − L| = ${fmt(res.worst, 3)} ≥ ε (círculo vermelho). ${c.L == null ? '<br><span class="c-muted">Aqui o limite não existe: para ε pequeno, nenhum δ funciona.</span>' : 'Diminua o δ.'}`;
+      const rows = [1, 0.1, 0.01, 0.001, 0.0001].map(hh => `<tr><td>${fmt(c.a - hh, 4)}</td><td>${fmt(c.f(c.a - hh), 5)}</td><td>${fmt(c.a + hh, 4)}</td><td>${fmt(c.f(c.a + hh), 5)}</td></tr>`).join('');
+      $('#table').innerHTML = `<tr><th>x → a⁻</th><th>f(x)</th><th>x → a⁺</th><th>f(x)</th></tr>${rows}`;
+    }
+
+    function setCase(k) {
+      c = CASES[k];
+      plot.setView(c.x, c.y);
+      [...$('#presets').children].forEach((b, i) => b.setAttribute('aria-pressed', i === k));
+      scene.clear();
+      draw();
+    }
+    $('#presets').append(...CASES.map((cc, k) => { const b = h('button', { class: 'btn small' }, cc.name); b.addEventListener('click', () => setCase(k)); return b; }));
+    $('#eps').addEventListener('input', draw);
+    $('#delta').addEventListener('input', draw);
+    $('#auto').addEventListener('click', () => {
+      // busca o maior δ (em escala log) que funciona para o ε atual
+      for (let v = 0; v >= -3; v -= 0.02) {
+        if (check(10 ** v, eps()).ok) { $('#delta').value = v; draw(); return; }
+      }
+      $('#delta').value = -3; draw();
+    });
+    setCase(0);
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quanto vale $\\lim_{x\\to 2} \\frac{x^2 - 4}{x - 2}$?', options: ['4', '0', 'não existe', '2'], answer: 0, explain: '$\\frac{(x-2)(x+2)}{x-2} = x + 2 \\to 4$ (para $x \\ne 2$).' },
+      { q: 'Para $f(x) = 3x$ em $a = 1$ ($L = 3$), qual δ garante $|f(x) - 3| < \\varepsilon$?', options: ['$\\delta = \\varepsilon/3$', '$\\delta = 3\\varepsilon$', '$\\delta = \\varepsilon$', '$\\delta = \\varepsilon^2$'], answer: 0, explain: '$|3x - 3| = 3|x - 1| < 3\\delta = \\varepsilon$.' },
+      { q: 'Se $\\lim_{x\\to a^-} f = 1$ e $\\lim_{x\\to a^+} f = 2$, então:', options: ['$\\lim_{x\\to a} f$ não existe', 'o limite é 1,5', 'o limite é 2', 'f não está definida em a'], answer: 0, explain: 'O limite (bilateral) existe se e somente se os dois limites laterais existem e são iguais.' },
+    ]);
+  </script>
+</body>
+</html>

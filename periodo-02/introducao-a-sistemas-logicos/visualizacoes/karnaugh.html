@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa de Karnaugh · Sistemas Lógicos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: 560px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    #map svg { display: block; width: 100%; }
+    #map .cell { cursor: pointer; }
+    .expr { font-size: 26px; padding: 10px 14px 14px; overflow-x: auto; }
+    .terms { display: flex; flex-direction: column; gap: 6px; padding: 4px 14px 14px; }
+    .term { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+    .term i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+    .term .c-muted { font-size: 13px; }
+    #tt-wrap { max-height: 300px; overflow: auto; }
+    #tt td { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-02">2º período</a>
+      <span class="sep">/</span><a href="../../../index.html#sistemas-logicos">Sistemas Lógicos</a>
+      <span class="sep">/</span><span>Mapa de Karnaugh</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução a Sistemas Lógicos</div>
+    <h1>Mapa de Karnaugh</h1>
+    <p class="lead">A tabela-verdade reorganizada para que termos "vizinhos" (que diferem em uma variável só) fiquem lado a lado. <b>Clique nas células</b> para alternar entre 0, 1 e X (irrelevante) e veja os agrupamentos e a expressão mínima aparecerem.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Número de variáveis">
+        <button class="btn" data-n="2">2 variáveis</button>
+        <button class="btn" data-n="3">3 variáveis</button>
+        <button class="btn" data-n="4">4 variáveis</button>
+      </div>
+      <button class="btn" id="random">Aleatória</button>
+      <button class="btn" id="random-dc">Aleatória com X</button>
+      <button class="btn" id="clear">Zerar</button>
+    </div>
+
+    <div class="lab">
+      <div class="stage" id="map"><svg aria-label="Mapa de Karnaugh"></svg></div>
+      <div class="side">
+        <div class="panel"><div class="panel-title">Expressão mínima (soma de produtos)</div><div class="expr" id="expr"></div></div>
+        <div class="panel"><div class="panel-title">Grupos escolhidos</div><div class="terms" id="terms"></div></div>
+        <div class="panel"><div class="panel-title">Tabela-verdade</div><div class="panel-body" id="tt-wrap"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Por que a ordem 00, 01, 11, 10?</h2>
+      <p>É o <b>código de Gray</b>: entre duas posições vizinhas muda um único bit, <b>inclusive</b> entre a última e a primeira. O mapa se comporta como um toro, e por isso grupos podem "dar a volta" pelas bordas (tente os quatro cantos com 4 variáveis!).</p>
+      <p>Dois 1s vizinhos diferem em uma única variável $X$, e $P\,X + P\,\overline X = P$: a variável some. É exatamente a simplificação algébrica, só que feita com os olhos.</p>
+
+      <h2>Regras de agrupamento</h2>
+      <ol>
+        <li>Grupos são retângulos com $1, 2, 4, 8$ ou $16$ células (potências de 2).</li>
+        <li>Cada grupo deve ser o <b>maior possível</b> (grupo maior = termo com menos variáveis).</li>
+        <li>Use o <b>menor número</b> de grupos que cubra todos os 1s. Grupos podem se sobrepor.</li>
+        <li>Células <b>X</b> (irrelevantes, <i>don't care</i>) podem entrar num grupo se ajudarem, mas não precisam ser cobertas.</li>
+      </ol>
+      <p>Um grupo que não cabe dentro de outro maior é um <b>implicante primo</b>. Se ele é o único a cobrir algum 1, é <b>essencial</b> e obrigatoriamente faz parte da resposta. Esta página calcula a resposta com o algoritmo de <b>Quine–McCluskey</b> (a versão tabular e programável do mapa) seguido de uma busca exata pela menor cobertura, então a expressão mostrada é sempre ótima.</p>
+      <div class="callout tip"><p><b>Produto de somas:</b> agrupe os <b>0s</b> para obter $\overline F$ como soma de produtos e aplique De Morgan. Dá a forma mínima de $F$ como produto de somas.</p></div>
+
+      <h2>Exercícios gerados automaticamente</h2>
+      <p>Digite a soma de produtos mínima usando <code>'</code> para negação (ex.: <code>A'B + AC</code>). A correção confere se a expressão é equivalente <b>e</b> se é mínima.</p>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, h, tex, pick } from '../../../engine/page.js';
+    import { layout, minimize, rectsOf, termText, termTex, sopText, mintermsOf, parseSOP, sopCost, randomFunction, NAMES } from './karnaugh.js';
+
+    const PALETTE = [COLORS.blue, COLORS.yellow, COLORS.green, COLORS.pink, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.red];
+    const SIZE = 560, CELL = 96;
+    const svg = $('#map svg');
+    const scene = new Scene(svg, { width: SIZE, height: SIZE - 60, layers: ['bg', 'nodes', 'labels', 'edges'] });
+    svg.style.setProperty('--dur', '250ms');
+
+    let n = 4;
+    let cells = Array(16).fill(0);
+
+    function draw() {
+      const L = layout(n);
+      const ones = [], dcs = [];
+      cells.forEach((c, i) => (c === 1 ? ones.push(i) : c === 'x' && dcs.push(i)));
+      const res = minimize(n, ones, dcs);
+      const x0 = 140, y0 = 110;
+      const colLbl = b => b.toString(2).padStart(L.colBits, '0');
+      const rowLbl = b => b.toString(2).padStart(L.rowBits, '0');
+
+      scene.frame(s => {
+        s.text('rv', L.rowVars.join(''), { x: x0 - 44, y: y0 - 30, size: 16, weight: 700, fill: COLORS.purple });
+        s.text('cv', L.colVars.join(''), { x: x0 - 8, y: y0 - 52, size: 16, weight: 700, anchor: 'start', fill: COLORS.teal });
+        s.line('diag', x0 - 60, y0 - 60, x0, y0, { stroke: COLORS.muted, sw: 1.2 });
+        L.cols.forEach((g, c) => s.text(`ch${c}`, colLbl(g), { x: x0 + c * CELL + CELL / 2, y: y0 - 18, size: 15, mono: true, fill: COLORS.teal }));
+        L.rows.forEach((g, r) => s.text(`rh${r}`, rowLbl(g), { x: x0 - 22, y: y0 + r * CELL + CELL / 2, size: 15, mono: true, fill: COLORS.purple }));
+        for (let r = 0; r < L.rows.length; r++) {
+          for (let c = 0; c < L.cols.length; c++) {
+            const m = L.minterm(r, c);
+            const v = cells[m];
+            const rc = s.rect(`cell${r}-${c}`, { x: x0 + c * CELL, y: y0 + r * CELL, w: CELL, h: CELL, rx: 0, fill: v === 1 ? '#1c3640' : COLORS.surface2, stroke: COLORS.border, sw: 1.5, layer: 'bg' });
+            rc.classList.add('cell'); rc.dataset.m = m;
+            s.text(`cv${r}-${c}`, v === 'x' ? 'X' : v, { x: x0 + c * CELL + CELL / 2, y: y0 + r * CELL + CELL / 2, size: 30, weight: 700, mono: true, fill: v === 1 ? COLORS.text : v === 'x' ? COLORS.orange : COLORS.faint });
+            s.text(`cm${r}-${c}`, m, { x: x0 + c * CELL + CELL - 12, y: y0 + r * CELL + 14, size: 11, mono: true, fill: COLORS.faint });
+          }
+        }
+        res.terms.forEach((t, gi) => {
+          const color = PALETTE[gi % PALETTE.length];
+          const inset = 7 + (gi % 4) * 5;
+          rectsOf(t, n).forEach((q, k) => {
+            const x = x0 + q.c0 * CELL + inset, y = y0 + q.r0 * CELL + inset;
+            const w = (q.c1 - q.c0 + 1) * CELL - 2 * inset, hh = (q.r1 - q.r0 + 1) * CELL - 2 * inset;
+            s.rect(`grp${gi}-${k}`, { x, y, w, h: hh, rx: 18, fill: 'none', stroke: color, sw: 3.5, layer: 'edges' });
+          });
+        });
+      });
+
+      // Expressão
+      const texExpr = res.terms.length ? res.terms.map(t => termTex(t, n)).join(' + ') : '0';
+      tex($('#expr'), `F = ${texExpr}`);
+      $('#terms').replaceChildren(...(res.terms.length ? res.terms.map((t, gi) => h('div', { class: 'term' },
+        h('i', { style: `background:${PALETTE[gi % PALETTE.length]}` }),
+        h('code', {}, termText(t, n)),
+        h('span', { class: 'c-muted' }, `cobre ${mintermsOf(t, n).join(', ')} · ${mintermsOf(t, n).length} célula(s)${res.essential.has(res.key(t)) ? ' · essencial' : ''}`),
+      )) : [h('span', { class: 'c-muted' }, 'Nenhum 1 no mapa: F = 0.')]));
+
+      // Tabela-verdade
+      $('#tt-wrap').innerHTML = `<table class="data" id="tt"><tr><th>#</th>${NAMES.slice(0, n).map(v => `<th>${v}</th>`).join('')}<th class="result">F</th></tr>${
+        cells.slice(0, 2 ** n).map((c, i) => `<tr><td class="c-muted">${i}</td>${[...i.toString(2).padStart(n, '0')].map(b => `<td>${b}</td>`).join('')}<td class="result ${c === 1 ? 't' : c === 0 ? 'f' : 'c-orange'}" data-m="${i}">${c === 'x' ? 'X' : c}</td></tr>`).join('')}</table>`;
+    }
+
+    const cycle = v => (v === 0 ? 1 : v === 1 ? 'x' : 0);
+    svg.addEventListener('click', e => {
+      const m = e.target.dataset?.m;
+      if (m == null) return;
+      cells[+m] = cycle(cells[+m]);
+      draw();
+    });
+    $('#tt-wrap').addEventListener('click', e => {
+      const m = e.target.dataset?.m;
+      if (m == null) return;
+      cells[+m] = cycle(cells[+m]);
+      draw();
+    });
+
+    function setN(k) {
+      n = k;
+      cells = Array(2 ** n).fill(0);
+      $$('[data-n]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.n === n));
+      scene.clear();
+      draw();
+    }
+    $$('[data-n]').forEach(b => b.addEventListener('click', () => setN(+b.dataset.n)));
+    $('#random').addEventListener('click', () => { cells = randomFunction(n); draw(); });
+    $('#random-dc').addEventListener('click', () => { cells = randomFunction(n, { dc: true }); draw(); });
+    $('#clear').addEventListener('click', () => { cells = Array(2 ** n).fill(0); draw(); });
+
+    setN(4);
+    cells = Array(16).fill(0);
+    [4, 8, 10, 11, 12, 15].forEach(m => { cells[m] = 1; });
+    [9, 14].forEach(m => { cells[m] = 'x'; });
+    draw();
+
+    // ---------- Exercícios ----------
+    mountGenerator($('#gen'), {
+      generate() {
+        const k = pick([3, 3, 4]);
+        const f = randomFunction(k);
+        const ones = f.flatMap((c, i) => (c === 1 ? [i] : []));
+        const res = minimize(k, ones);
+        const answer = sopText(res, k);
+        const best = [res.terms.length, res.terms.reduce((s, t) => s + (k - t.m.toString(2).replace(/0/g, '').length), 0)];
+        return {
+          q: `Minimize $F(${NAMES.slice(0, k).join(',')}) = \\sum m(${ones.join(', ')})$. <span class="c-muted">(Dica: monte o mapa acima com ${k} variáveis.)</span>`,
+          input: true,
+          answer,
+          check(v) {
+            try {
+              const tab = parseSOP(v, k);
+              const equiv = f.every((c, i) => tab[i] === c);
+              const [t, l] = sopCost(v, k);
+              return equiv && (t < best[0] || (t === best[0] && l <= best[1]));
+            } catch { return false; }
+          },
+          explain: `Uma resposta mínima é <code>${answer}</code> (${best[0]} termo(s), ${best[1]} literal(is)). Pode haver outras igualmente mínimas.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>
