@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compressão com SVD · Álgebra Linear Computacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .imgs figure { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+    .imgs canvas { width: 100%; max-width: 420px; image-rendering: pixelated; border-radius: 6px; }
+    .imgs figcaption { color: var(--muted); font-size: 14px; margin-top: 6px; }
+    .comps { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .comps figure { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+    .comps canvas { width: 96px; height: 96px; image-rendering: pixelated; border-radius: 4px; border: 1px solid var(--border); }
+    .ctl { display: grid; grid-template-columns: 7em 1fr 3em; gap: 10px; align-items: center; padding: 10px 14px; font-size: 15px; color: var(--muted); }
+    .ctl output { font: 700 18px var(--mono); color: var(--yellow); text-align: right; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .kpi .l { font-size: 12px; color: var(--muted); } .kpi .v { font: 700 20px var(--mono); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alc">Álgebra Linear Computacional</a>
+      <span class="sep">/</span><span>Compressão com SVD</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra Linear Computacional</div>
+    <h1>SVD: uma imagem como soma de camadas</h1>
+    <p class="lead">Uma imagem em tons de cinza é uma matriz. A <b>decomposição em valores singulares</b> a escreve como uma soma de matrizes de posto 1, da mais importante para a menos importante. Guardando só as $k$ primeiras camadas, temos uma imagem comprimida.</p>
+
+    <div class="toolbar">
+      <span class="c-muted" style="font-size:14px">Imagem:</span>
+      <div class="chips" id="imgs"></div>
+      <label class="btn small" style="cursor:pointer">Enviar a sua… <input type="file" id="file" accept="image/*" hidden></label>
+      <span class="c-muted" id="status" style="font-size:13px"></span>
+    </div>
+
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ctl"><span>k camadas</span><input id="k" type="range" min="1" max="128" value="10"><output id="k-o"></output></div>
+    </div>
+
+    <div class="imgs">
+      <figure><canvas id="orig" width="128" height="128"></canvas><figcaption>original (128 × 128 = 16.384 números)</figcaption></figure>
+      <figure><canvas id="approx" width="128" height="128"></canvas><figcaption id="cap"></figcaption></figure>
+    </div>
+    <div class="kpis" style="margin-top:14px">
+      <div class="kpi"><div class="l">números guardados</div><div class="v" id="store"></div></div>
+      <div class="kpi"><div class="l">taxa de compressão</div><div class="v" id="ratio"></div></div>
+      <div class="kpi"><div class="l">erro relativo ‖A − Aₖ‖ / ‖A‖</div><div class="v" id="err"></div></div>
+    </div>
+
+    <h2>Os valores singulares</h2>
+    <div class="stage"><svg id="spectrum" aria-label="Valores singulares em escala log"></svg></div>
+    <h3>As primeiras camadas $\sigma_i\, \vec u_i \vec v_i^T$</h3>
+    <div class="comps" id="comps"></div>
+
+    <section class="prose">
+      <h2>A decomposição</h2>
+      <p>Toda matriz $A$ ($m \times n$) pode ser escrita como</p>
+      <p>$$ A = U \Sigma V^T = \sum_{i=1}^{r} \sigma_i\, \vec u_i\, \vec v_i^T, \qquad \sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_r > 0 $$</p>
+      <p>onde $U$ e $V$ têm colunas ortonormais e os $\sigma_i$ são os <b>valores singulares</b>. Geometricamente (lembra das transformações de GAAL?), toda matriz é uma <b>rotação</b> ($V^T$), seguida de um <b>esticamento</b> nos eixos ($\Sigma$), seguido de outra <b>rotação</b> ($U$).</p>
+      <p>Cada camada $\sigma_i \vec u_i \vec v_i^T$ é uma matriz de <b>posto 1</b>: um produto de uma coluna por uma linha, ou seja, uma "imagem listrada". O <b>Teorema de Eckart–Young</b> garante que truncar a soma nos $k$ primeiros termos dá a <b>melhor</b> aproximação de posto $k$ possível. Guardar $A_k$ custa $k(m + n + 1)$ números em vez de $mn$.</p>
+      <div class="callout"><p><b>Onde a SVD aparece:</b> análise de componentes principais (<b>PCA</b>), sistemas de recomendação (o prêmio Netflix), busca semântica em textos (LSA), mínimos quadrados estáveis (pseudo-inversa), redução de ruído e compressão de modelos de IA (<i>low-rank adaptation</i>, LoRA). O JPEG usa outra transformada (DCT), mas a ideia de "guardar só os componentes importantes" é a mesma.</p></div>
+      <p>A SVD desta página é calculada no seu navegador pelo <b>método de Jacobi unilateral</b> (<a href="numerico.js"><code>numerico.js</code></a>), que aplica rotações de Givens até as colunas ficarem ortogonais. Uma imagem enviada por você não sai do seu computador.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt } from '../../../engine/page.js';
+    import { svd, lowRank } from './numerico.js';
+
+    const N = 128;
+    let A = null, D = null;
+
+    // ---------- imagens geradas (sem depender de arquivos) ----------
+    function fromCanvas(draw) {
+      const c = document.createElement('canvas'); c.width = N; c.height = N;
+      const g = c.getContext('2d');
+      draw(g);
+      return toMatrix(g.getImageData(0, 0, N, N));
+    }
+    function toMatrix(img) {
+      const M = Array.from({ length: N }, () => new Float64Array(N));
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const p = (i * N + j) * 4;
+        M[i][j] = (0.299 * img.data[p] + 0.587 * img.data[p + 1] + 0.114 * img.data[p + 2]) / 255;
+      }
+      return M;
+    }
+    const IMAGES = {
+      ufmg: () => fromCanvas(g => {
+        const grd = g.createLinearGradient(0, 0, N, N); grd.addColorStop(0, '#222'); grd.addColorStop(1, '#888');
+        g.fillStyle = grd; g.fillRect(0, 0, N, N);
+        g.fillStyle = '#fff'; g.font = 'bold 40px Inter, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('UFMG', N / 2, N / 2 - 6);
+        g.font = '10px Inter, Arial, sans-serif'; g.fillText('Ciência da Computação', N / 2, N / 2 + 28);
+      }),
+      formas: () => fromCanvas(g => {
+        g.fillStyle = '#111'; g.fillRect(0, 0, N, N);
+        g.fillStyle = '#eee'; g.beginPath(); g.arc(40, 44, 26, 0, 2 * Math.PI); g.fill();
+        g.fillStyle = '#999'; g.fillRect(70, 20, 44, 44);
+        g.fillStyle = '#ccc'; g.beginPath(); g.moveTo(20, 116); g.lineTo(64, 70); g.lineTo(108, 116); g.fill();
+      }),
+      xadrez: () => fromCanvas(g => {
+        for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? '#ddd' : '#222'; g.fillRect(i * 16, j * 16, 16, 16); }
+      }),
+      ruido: () => fromCanvas(g => {
+        const img = g.createImageData(N, N);
+        for (let p = 0; p < N * N; p++) { const v = Math.random() * 255; img.data.set([v, v, v, 255], p * 4); }
+        g.putImageData(img, 0, 0);
+      }),
+    };
+    const LABELS = { ufmg: 'Texto', formas: 'Formas', xadrez: 'Xadrez (posto 2!)', ruido: 'Ruído' };
+
+    function paint(canvas, M) {
+      const g = canvas.getContext('2d'), img = g.createImageData(N, N);
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const v = Math.max(0, Math.min(255, Math.round(M[i][j] * 255)));
+        img.data.set([v, v, v, 255], (i * N + j) * 4);
+      }
+      g.putImageData(img, 0, 0);
+    }
+
+    function load(M) {
+      A = M;
+      $('#status').textContent = 'calculando a SVD…';
+      setTimeout(() => {
+        const t0 = performance.now();
+        D = svd(A);
+        $('#status').textContent = `SVD calculada em ${Math.round(performance.now() - t0)} ms`;
+        paint($('#orig'), A);
+        drawComps();
+        update();
+      }, 20);
+    }
+
+    function update() {
+      const k = +$('#k').value;
+      $('#k-o').value = k;
+      paint($('#approx'), lowRank(D, k, N, N));
+      const total = D.S.reduce((s, v) => s + v * v, 0), kept = D.S.slice(0, k).reduce((s, v) => s + v * v, 0);
+      const store = k * (2 * N + 1);
+      $('#store').textContent = `${store.toLocaleString('pt-BR')}`;
+      $('#ratio').textContent = store < N * N ? `${fmt((N * N) / store, 1)} : 1` : 'sem ganho';
+      $('#err').textContent = `${fmt(100 * Math.sqrt(Math.max(0, 1 - kept / total)), 2)}%`;
+      $('#cap').textContent = `posto ${k}: soma das ${k} primeiras camadas`;
+      drawSpectrum(k);
+    }
+
+    const spec = new Scene($('#spectrum'), { width: 900, height: 220 });
+    spec.setAnimated(false);
+    function drawSpectrum(k) {
+      const S = D.S, lo = Math.log10(Math.max(S[S.length - 1], S[0] * 1e-6)), hi = Math.log10(S[0]);
+      const X = i => 50 + (i * 830) / (S.length - 1), Y = v => 190 - (170 * (Math.log10(Math.max(v, 10 ** lo)) - lo)) / (hi - lo || 1);
+      spec.frame(s => {
+        s.line('ax', 50, 190, 880, 190, { stroke: COLORS.border, sw: 1 });
+        s.text('ylbl', 'log σᵢ', { x: 10, y: 14, size: 12, anchor: 'start', fill: COLORS.faint });
+        s.path('curve', `M ${S.map((v, i) => `${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' L ')}`, { stroke: COLORS.blue, sw: 2 });
+        s.rect('kept', { x: 50, y: 10, w: X(k - 1) - 50, h: 180, rx: 0, fill: 'rgba(244,211,94,.10)', stroke: 'none' });
+        s.line('kline', X(k - 1), 10, X(k - 1), 190, { stroke: COLORS.yellow, sw: 2 });
+        s.text('ktxt', `k = ${k}`, { x: X(k - 1) + 6, y: 22, size: 13, anchor: 'start', weight: 700, fill: COLORS.yellow });
+        s.text('xl', 'índice i (1 a 128)', { x: 880, y: 208, size: 12, anchor: 'end', fill: COLORS.faint });
+      });
+    }
+
+    function drawComps() {
+      $('#comps').replaceChildren(...[0, 1, 2, 3, 4, 5].map(i => {
+        const c = h('canvas', { width: N, height: N });
+        // cinza médio ± o padrão da camada
+        const M = Array.from({ length: N }, (_, r) => new Float64Array(N).map((_, j) => 0.5 + 20 * D.U[i][r] * D.V[i][j]));
+        paint(c, M);
+        return h('figure', {}, c, h('div', {}, `σ${'₁₂₃₄₅₆'[i]} = ${fmt(D.S[i], 1)}`));
+      }));
+    }
+
+    $('#imgs').append(...Object.keys(IMAGES).map(k => {
+      const b = h('button', { class: 'btn small' }, LABELS[k]);
+      b.addEventListener('click', () => { [...$('#imgs').children].forEach(x => x.setAttribute('aria-pressed', x === b)); load(IMAGES[k]()); });
+      return b;
+    }));
+    $('#imgs').children[0].setAttribute('aria-pressed', 'true');
+    $('#file').addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const img = new Image();
+      img.onload = () => load(fromCanvas(g => {
+        const s = Math.min(img.width, img.height);   // recorte quadrado central
+        g.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, N, N);
+      }));
+      img.src = URL.createObjectURL(f);
+    });
+    $('#k').addEventListener('input', update);
+    load(IMAGES.ufmg());
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que o tabuleiro de xadrez fica perfeito com apenas k = 2?', options: ['Suas linhas só têm dois padrões distintos (p e 1 − p): a matriz tem posto 2', 'Porque é preto e branco', 'Porque é pequeno', 'Por coincidência'], answer: 0, explain: 'Posto = número máximo de linhas linearmente independentes. Toda linha é p ou 1 − p, que geram o mesmo espaço que {p, 1}: dimensão 2.' },
+      { q: 'Por que o ruído aleatório quase não comprime?', options: ['Os valores singulares decaem devagar: não há camadas muito mais importantes que as outras', 'Porque tem muitas cores', 'Porque a SVD falha', 'Porque é grande'], answer: 0, explain: 'Compressão explora estrutura (redundância). Ruído puro não tem estrutura, e o espectro é praticamente plano.' },
+      { q: 'Guardar $A_k$ de uma imagem 1000 × 1000 com k = 50 custa quantos números (aproximadamente)?', options: ['≈ 100 mil', '1 milhão', '50 mil', '2,5 mil'], answer: 0, explain: '$k(m + n + 1) = 50 \\cdot 2001 \\approx 100{.}050$, contra $10^6$ da imagem original: 10 vezes menos.' },
+    ]);
+  </script>
+</body>
+</html>

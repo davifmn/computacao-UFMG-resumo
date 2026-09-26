@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Séries de Taylor · Cálculo II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 4.5em 1fr 3.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo2">Cálculo II</a>
+      <span class="sep">/</span><span>Séries de Taylor</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral II</div>
+    <h1>Séries de Taylor: imitando uma função com polinômios</h1>
+    <p class="lead">Um polinômio que tem, num ponto $a$, o mesmo valor, a mesma derivada, a mesma segunda derivada… que $f$. Quanto mais termos, mais longe de $a$ ele "gruda" na função. Aumente o grau e veja.</p>
+
+    <div class="toolbar"><div class="chips" id="fns"></div></div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Função e polinômio de Taylor"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Controles</div>
+          <div class="ctl">
+            <span>grau n</span><input id="n" type="range" min="0" max="25" value="3"><output id="n-o"></output>
+            <span>centro a</span><input id="a" type="range" min="-3" max="3" step="0.05" value="0"><output id="a-o"></output>
+          </div>
+          <div style="padding:0 14px 14px;display:flex;gap:8px"><button class="btn primary" id="anim">▶ n = 0 → 25</button></div>
+        </div>
+        <div class="panel"><div class="panel-title">O polinômio</div><div class="readout" id="poly"></div></div>
+        <div class="panel"><div class="panel-title">Convergência</div><div class="readout" id="conv"></div></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>f(x)</span>
+      <span><i style="background:var(--yellow)"></i>polinômio de Taylor de grau n</span>
+      <span><i style="background:rgba(131,193,103,.35)"></i>intervalo de convergência</span>
+    </div>
+
+    <section class="prose">
+      <h2>A fórmula</h2>
+      <p>$$ f(x) = \sum_{k=0}^{\infty} \frac{f^{(k)}(a)}{k!}(x - a)^k = f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2 + \cdots $$</p>
+      <p>Cada termo corrige o anterior: grau 1 é a reta tangente (Cálculo I!), grau 2 acerta a curvatura, e assim por diante. O $k!$ no denominador compensa o fato de que derivar $(x-a)^k$ $k$ vezes dá $k!$.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Função</th><th>Série em torno de 0 (Maclaurin)</th><th>Converge para</th></tr>
+          <tr><td>$e^x$</td><td>$1 + x + \frac{x^2}{2!} + \frac{x^3}{3!} + \cdots$</td><td>todo $x$</td></tr>
+          <tr><td>$\sin x$</td><td>$x - \frac{x^3}{3!} + \frac{x^5}{5!} - \cdots$</td><td>todo $x$</td></tr>
+          <tr><td>$\cos x$</td><td>$1 - \frac{x^2}{2!} + \frac{x^4}{4!} - \cdots$</td><td>todo $x$</td></tr>
+          <tr><td>$\frac{1}{1-x}$</td><td>$1 + x + x^2 + x^3 + \cdots$ (série geométrica)</td><td>$|x| &lt; 1$</td></tr>
+          <tr><td>$\ln(1+x)$</td><td>$x - \frac{x^2}{2} + \frac{x^3}{3} - \cdots$</td><td>$-1 &lt; x \le 1$</td></tr>
+        </table>
+      </div>
+      <h2>Raio de convergência</h2>
+      <p>Com $\frac{1}{1-x}$ ou $\ln(1+x)$, aumentar o grau melhora a aproximação <b>dentro</b> de um intervalo, mas <b>piora</b> fora dele: os polinômios explodem. O raio de convergência é a distância de $a$ até o "problema" mais próximo da função (aqui, a singularidade em $x = 1$ ou $x = -1$). Mude o centro $a$ e veja o intervalo verde acompanhar.</p>
+      <p>Critérios para decidir se uma série converge (da razão, da raiz, da integral, da comparação, das alternadas) são a outra metade do assunto.</p>
+      <div class="callout"><p><b>Como a calculadora sabe o seno?</b> Com polinômios! Bibliotecas matemáticas reduzem o argumento a um intervalo pequeno e avaliam um polinômio (de Taylor ou, melhor ainda, de Chebyshev/minimax) pelo método de Horner. É o mesmo cálculo desta página. Em física e engenharia, "para ângulos pequenos, $\sin\theta \approx \theta$" é uma série de Taylor de grau 1.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt, tex } from '../../../engine/page.js';
+    import { TAYLOR, taylorCoeffs, taylorEval } from './multivar.js';
+
+    const W = 900, H = 520;
+    const scene = new Scene($('#plot'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { box: [20, 20, W - 20, H - 20] });
+    plot.clip(['areas', 'edges', 'nodes']);
+    let fn = 'sin';
+
+    const texNum = v => {
+      const r = Math.round(v * 1e4) / 1e4;
+      if (Math.abs(r - Math.round(r)) < 1e-9) return String(Math.round(r));
+      // tenta frações 1/k! simples
+      for (let q = 2; q <= 5040; q++) { const p = r * q; if (Math.abs(p - Math.round(p)) < 1e-6 && Math.abs(Math.round(p)) < 50) return `${Math.round(p) < 0 ? '-' : ''}\\frac{${Math.abs(Math.round(p))}}{${q}}`; }
+      return fmt(r, 4).replace(',', '{,}');
+    };
+
+    function draw() {
+      const T = TAYLOR[fn], n = +$('#n').value, a = +$('#a').value;
+      $('#n-o').value = n; $('#a-o').value = fmt(a, 2);
+      plot.setView(...T.view);
+      const c = taylorCoeffs(fn, a, n);
+      const R = T.raio ? T.raio(a) : Infinity;
+      scene.frame(s => {
+        plot.axes(s);
+        if (Number.isFinite(R) && R > 0) {
+          const x0 = plot.X(Math.max(a - R, plot.xr[0])), x1 = plot.X(Math.min(a + R, plot.xr[1]));
+          s.rect('conv', { x: x0, y: plot.box[1], w: Math.max(0, x1 - x0), h: plot.box[3] - plot.box[1], rx: 0, fill: 'rgba(131,193,103,.10)', stroke: 'none', layer: 'areas' });
+        }
+        plot.fn(s, 'f', T.f, { stroke: COLORS.blue, sw: 4 });
+        plot.fn(s, 'p', x => taylorEval(c, a, x), { stroke: COLORS.yellow, sw: 2.8, samples: 900 });
+        if (Number.isFinite(T.f(a))) s.circle('a', { x: plot.X(a), y: plot.Y(T.f(a)), r: 7, fill: COLORS.yellow, stroke: COLORS.bg, sw: 2 });
+      });
+      // polinômio em TeX (até 6 termos visíveis)
+      const aStr = Math.abs(a) < 1e-9 ? 'x' : `(x ${a > 0 ? '-' : '+'} ${fmt(Math.abs(a), 2).replace(',', '{,}')})`;
+      const terms = c.map((ck, k) => ({ ck, k })).filter(t => Math.abs(t.ck) > 1e-10);
+      const shown = terms.slice(0, 6).map(({ ck, k }, i) => {
+        const coef = texNum(ck), pw = k === 0 ? '' : k === 1 ? aStr : `${aStr}^{${k}}`;
+        const body = k === 0 ? coef : coef === '1' ? pw : coef === '-1' ? `-${pw}` : `${coef}${pw}`;
+        return i > 0 && !body.startsWith('-') ? `+ ${body}` : body;
+      });
+      const poly = $('#poly');
+      poly.innerHTML = '<div id="p1"></div><div id="p2" class="c-muted" style="font-size:13px"></div>';
+      tex($('#p1'), `P_{${n}}(x) = ${shown.join(' ') || '0'}${terms.length > 6 ? ' + \\cdots' : ''}`);
+      $('#p2').textContent = `f(x) = ${T.nome}, centro a = ${fmt(a, 2)}`;
+      const probe = a + (Number.isFinite(R) ? R * 0.5 : 1.5);
+      const err = Math.abs(T.f(probe) - taylorEval(c, a, probe));
+      $('#conv').innerHTML = `<div>${Number.isFinite(R)
+        ? `Raio de convergência: <b>${fmt(R, 2)}</b>. Fora do intervalo verde, aumentar n <b>piora</b> a aproximação.`
+        : 'Esta série converge para <b>todo x</b>: para qualquer x, basta aumentar n o suficiente.'}</div><div class="c-muted">Erro em x = ${fmt(probe, 2)}: ${err.toExponential(2)}</div>`;
+    }
+
+    $('#fns').append(...Object.entries(TAYLOR).map(([k, T]) => {
+      const b = h('button', { class: 'btn small', 'data-k': k }, T.nome);
+      b.addEventListener('click', () => { fn = k; $('#a').value = 0; [...$('#fns').children].forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); });
+      return b;
+    }));
+    $('#fns').children[0].setAttribute('aria-pressed', 'true');
+    $('#n').addEventListener('input', draw);
+    $('#a').addEventListener('input', draw);
+    let anim = null;
+    $('#anim').addEventListener('click', () => { anim?.cancel(); anim = tween(6000, t => { $('#n').value = Math.round(25 * t); draw(); }, ease.linear); });
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o polinômio de Taylor de grau 2 de $e^x$ em torno de 0?', options: ['$1 + x + \\frac{x^2}{2}$', '$1 + x + x^2$', '$x + \\frac{x^2}{2}$', '$1 + 2x + x^2$'], answer: 0, explain: 'Todas as derivadas de $e^x$ valem 1 em 0, então $c_k = 1/k!$.' },
+      { q: 'Usando Taylor, $\\sin(0{,}1) \\approx$ ?', options: ['$0{,}1 - 0{,}000167 \\approx 0{,}09983$', '$0{,}1$ exatamente', '$0{,}01$', '$1$'], answer: 0, explain: '$x - x^3/6$ com $x = 0{,}1$. O valor real é 0,0998334…' },
+      { q: 'A série $1 + x + x^2 + x^3 + \\cdots$ em $x = 2$:', options: ['diverge', 'vale −1', 'vale 1/(1−2)', 'vale 2'], answer: 0, explain: 'A fórmula $\\frac{1}{1-x}$ só vale para $|x| &lt; 1$. Em $x = 2$ as somas parciais crescem sem limite.' },
+    ]);
+  </script>
+</body>
+</html>

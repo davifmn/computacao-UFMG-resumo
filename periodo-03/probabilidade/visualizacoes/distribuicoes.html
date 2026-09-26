@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distribuições · Probabilidade</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 7.5em 1fr 4em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; display: grid; gap: 8px; font-size: 15px; overflow-x: auto; }
+    .big { font: 800 28px var(--mono); color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#probabilidade">Probabilidade</a>
+      <span class="sep">/</span><span>Distribuições</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Probabilidade</div>
+    <h1>O zoológico das distribuições</h1>
+    <p class="lead">Cada distribuição é um modelo para um tipo de fenômeno aleatório. Mexa nos parâmetros, escolha um intervalo e veja a probabilidade como <b>área</b> (ou soma de barras). Depois clique em <b>Amostrar</b>: o histograma dos dados simulados cola na curva teórica.</p>
+
+    <div class="toolbar"><div class="chips" id="dists"></div></div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Gráfico da distribuição"></svg></div>
+      <div class="side">
+        <div class="panel"><div class="panel-title">Parâmetros</div><div class="ctl" id="params"></div></div>
+        <div class="panel">
+          <div class="panel-title">Intervalo</div>
+          <div class="ctl" id="interval"></div>
+          <div class="readout"><div id="pab"></div><div class="big" id="pval"></div></div>
+        </div>
+        <div class="panel"><div class="panel-title">Fórmula e momentos</div><div class="readout" id="info"></div></div>
+        <div class="panel"><div class="panel-title">Simulação</div>
+          <div style="display:flex;gap:8px;padding:8px 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="sample">Amostrar 2000</button>
+            <button class="btn" id="clear-s">Limpar</button>
+          </div>
+          <div class="readout" id="sinfo" style="padding-top:0"></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Discretas × contínuas</h2>
+      <p>Numa variável <b>discreta</b>, cada valor tem uma probabilidade $P(X = k)$ (a <b>função de massa</b>, as barras). Numa <b>contínua</b>, $P(X = x) = 0$ para qualquer $x$ exato. Só intervalos têm probabilidade, dada pela <b>área</b> sob a <b>função densidade</b>: $P(a \le X \le b) = \int_a^b f(x)\,dx$. (Sim, Cálculo I serve para alguma coisa!)</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Distribuição</th><th>Modela</th><th>$E[X]$</th><th>$\text{Var}(X)$</th></tr>
+          <tr><td>Binomial(n, p)</td><td>nº de sucessos em n tentativas independentes</td><td>$np$</td><td>$np(1-p)$</td></tr>
+          <tr><td>Geométrica(p)</td><td>nº de tentativas até o 1º sucesso</td><td>$1/p$</td><td>$(1-p)/p^2$</td></tr>
+          <tr><td>Poisson(λ)</td><td>nº de eventos raros num intervalo</td><td>$\lambda$</td><td>$\lambda$</td></tr>
+          <tr><td>Uniforme(a, b)</td><td>"qualquer valor" em [a, b]</td><td>$(a+b)/2$</td><td>$(b-a)^2/12$</td></tr>
+          <tr><td>Exponencial(λ)</td><td>tempo até o próximo evento</td><td>$1/\lambda$</td><td>$1/\lambda^2$</td></tr>
+          <tr><td>Normal(μ, σ)</td><td>somas e médias de muitas coisas</td><td>$\mu$</td><td>$\sigma^2$</td></tr>
+        </table>
+      </div>
+      <ul>
+        <li><b>Binomial → Poisson:</b> com $n$ grande e $p$ pequeno, $\text{Bin}(n, p) \approx \text{Poisson}(np)$. Compare Binomial(60; 0,05) com Poisson(3).</li>
+        <li><b>Falta de memória:</b> a geométrica e a exponencial "esquecem o passado": $P(X > s + t \mid X > s) = P(X > t)$. Esperar 10 minutos pelo ônibus não diminui a espera que resta.</li>
+        <li><b>Regra 68-95-99,7:</b> na normal, ±1σ contém 68% da probabilidade, ±2σ contém 95% e ±3σ, 99,7%. Teste com o intervalo!</li>
+      </ul>
+      <p>Implementação com <code>scipy.stats</code> e simulação em Python: <a href="../codigo/probabilidade.py"><code>codigo/probabilidade.py</code></a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt, tex } from '../../../engine/page.js';
+    import { rng, histogram, mean, variance } from '../../../engine/random.js';
+    import { DISTS, defaults, prob } from './prob.js';
+
+    const W = 900, H = 520;
+    const scene = new Scene($('#plot'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { box: [50, 30, W - 20, H - 40] });
+    plot.clip(['areas', 'edges', 'nodes']);
+    const r = rng(2024);
+
+    let d = 'binomial', params = defaults('binomial'), a = 4, b = 8, samples = null;
+
+    function slider(label, min, max, step, value, onInput) {
+      const out = h('output', {}, fmt(value, 2));
+      const inp = h('input', { type: 'range', min, max, step, value });
+      inp.addEventListener('input', () => { out.value = fmt(+inp.value, 2); onInput(+inp.value); });
+      return [h('span', {}, label), inp, out];
+    }
+
+    function buildControls() {
+      const D = DISTS[d];
+      $('#params').replaceChildren(...D.params.flatMap(p => slider(p.nome, p.min, p.max, p.step, params[p.k], v => { params[p.k] = v; samples = null; draw(); })));
+      const [lo, hi] = D.suporte(params);
+      const step = D.discreta ? 1 : 0.05;
+      $('#interval').replaceChildren(
+        ...slider('a', lo - (D.discreta ? 0 : 2), hi + 5, step, a, v => { a = v; draw(); }),
+        ...slider('b', lo - (D.discreta ? 0 : 2), hi + 5, step, b, v => { b = v; draw(); }),
+      );
+      $('#info').innerHTML = '<div id="f1"></div><div id="f2"></div><div class="c-muted" style="font-size:13px" id="f3"></div>';
+      tex($('#f1'), D.tex);
+      $('#f3').textContent = `Exemplo: ${D.exemplo}.`;
+    }
+
+    function draw() {
+      const D = DISTS[d];
+      const [lo, hi] = D.suporte(params);
+      const lo2 = D.discreta ? lo - 0.8 : lo, hi2 = D.discreta ? hi + 0.8 : hi;
+      let ymax = 0;
+      if (D.discreta) for (let k = lo; k <= hi; k++) ymax = Math.max(ymax, D.f(k, params));
+      else for (let i = 0; i <= 200; i++) ymax = Math.max(ymax, D.f(lo + ((hi - lo) * i) / 200, params));
+      if (samples) ymax = Math.max(ymax, ...samples.counts.map(c => c / (samples.n * samples.width)));
+      plot.setView([lo2, hi2], [0, ymax * 1.15 || 1]);
+      const [A, B] = [Math.min(a, b), Math.max(a, b)];
+      scene.frame(s => {
+        plot.axes(s, { xLabel: 'x', yLabel: D.discreta ? 'P(X = x)' : 'f(x)' });
+        if (samples) {
+          samples.counts.forEach((c, i) => {
+            const x0 = samples.lo + i * samples.width, dens = c / (samples.n * samples.width);
+            s.rect(`h${i}`, { x: plot.X(x0), y: plot.Y(dens), w: Math.max(1, plot.X(x0 + samples.width) - plot.X(x0) - 1), h: plot.Y(0) - plot.Y(dens), rx: 0, fill: 'rgba(247,143,179,.35)', stroke: 'none', layer: 'areas' });
+          });
+        }
+        if (D.discreta) {
+          const bw = Math.min(26, (plot.X(1) - plot.X(0)) * 0.7);
+          for (let k = lo; k <= hi; k++) {
+            const p = D.f(k, params);
+            const inside = k >= A && k <= B;
+            s.rect(`b${k}`, { x: plot.X(k) - bw / 2, y: plot.Y(p), w: bw, h: plot.Y(0) - plot.Y(p), rx: 2, fill: inside ? COLORS.yellow : COLORS.blue, stroke: 'none', opacity: inside ? 0.95 : 0.7 });
+          }
+        } else {
+          const aa = Math.max(A, plot.xr[0]), bb = Math.min(B, plot.xr[1]);
+          if (bb > aa) {
+            let path = `M ${plot.X(aa)} ${plot.Y(0)}`;
+            for (let i = 0; i <= 120; i++) { const x = aa + ((bb - aa) * i) / 120; path += ` L ${plot.X(x)} ${plot.Y(D.f(x, params))}`; }
+            path += ` L ${plot.X(bb)} ${plot.Y(0)} Z`;
+            s.path('area', path, { fill: 'rgba(244,211,94,.4)', stroke: 'none', layer: 'areas' });
+          }
+          plot.fn(s, 'pdf', x => D.f(x, params), { stroke: COLORS.blue, sw: 3 });
+        }
+        const m = D.media(params);
+        s.line('mean', plot.X(m), plot.Y(0), plot.X(m), plot.Y(ymax * 1.08), { stroke: COLORS.green, sw: 1.5, dash: '6 5' });
+        s.text('mean-l', `E[X] = ${fmt(m, 2)}`, { x: plot.X(m) + 6, y: plot.Y(ymax * 1.08), size: 13, anchor: 'start', weight: 700, fill: COLORS.green });
+      });
+      tex($('#pab'), `P(${fmt(A, 2).replace(',', '{,}')} \\le X \\le ${fmt(B, 2).replace(',', '{,}')})`);
+      $('#pval').textContent = `= ${fmt(prob(d, params, A, B), 4)}`;
+      if (!$('#f2')) return;
+      tex($('#f2'), `E[X] = ${fmt(D.media(params), 3).replace(',', '{,}')},\\ \\ \\text{Var}(X) = ${fmt(D.variancia(params), 3).replace(',', '{,}')},\\ \\ \\sigma = ${fmt(Math.sqrt(D.variancia(params)), 3).replace(',', '{,}')}`);
+      $('#sinfo').innerHTML = samples ? `média amostral <b>${fmt(samples.mean, 3)}</b> · variância amostral <b>${fmt(samples.variance, 3)}</b> <span class="c-muted">(${samples.n} amostras, em rosa)</span>` : '<span class="c-muted">Sorteia valores com esta distribuição e desenha o histograma normalizado.</span>';
+    }
+
+    function setDist(k) {
+      d = k; params = defaults(k); samples = null;
+      const [lo, hi] = DISTS[k].suporte(params);
+      const m = DISTS[k].media(params), sd = Math.sqrt(DISTS[k].variancia(params));
+      a = DISTS[k].discreta ? Math.max(lo, Math.round(m - sd)) : +(m - sd).toFixed(2);
+      b = DISTS[k].discreta ? Math.min(hi, Math.round(m + sd)) : +(m + sd).toFixed(2);
+      [...$('#dists').children].forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.k === k));
+      buildControls();
+      draw();
+    }
+    $('#dists').append(...Object.entries(DISTS).map(([k, D]) => { const btn = h('button', { class: 'btn small', 'data-k': k }, D.nome); btn.addEventListener('click', () => setDist(k)); return btn; }));
+    $('#sample').addEventListener('click', () => {
+      const D = DISTS[d];
+      const xs = Array.from({ length: 2000 }, () => D.amostra(r, params));
+      const [lo, hi] = D.suporte(params);
+      const hist = D.discreta ? histogram(xs, lo - 0.5, hi + 0.5, hi - lo + 1) : histogram(xs, lo, hi, 40);
+      samples = { ...hist, n: xs.length, mean: mean(xs), variance: variance(xs) };
+      draw();
+    });
+    $('#clear-s').addEventListener('click', () => { samples = null; draw(); });
+    setDist('binomial');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Um servidor recebe em média 3 requisições por segundo (Poisson). Qual a probabilidade de <b>nenhuma</b> requisição num segundo?', options: ['$e^{-3} \\approx 0{,}05$', '$0$', '$1/3$', '$3e^{-3}$'], answer: 0, explain: '$P(X=0) = \\frac{3^0 e^{-3}}{0!} = e^{-3} \\approx 0{,}0498$.' },
+      { q: 'Se $X \\sim N(\\mu, \\sigma)$, qual a probabilidade aproximada de $X$ cair a mais de 2σ da média?', options: ['5%', '32%', '0,3%', '50%'], answer: 0, explain: 'Cerca de 95% fica dentro de ±2σ; sobram ≈ 5% nas duas caudas.' },
+      { q: 'Lançamos uma moeda honesta até sair cara. Qual o número esperado de lançamentos?', options: ['2', '1', '1,5', 'infinito'], answer: 0, explain: 'Geométrica com p = 1/2: $E[X] = 1/p = 2$.' },
+    ]);
+  </script>
+</body>
+</html>

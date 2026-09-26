@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ordenação Avançada · Estruturas de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 480px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ed">Estruturas de Dados</a>
+      <span class="sep">/</span><span>Ordenação avançada</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Estruturas de Dados</div>
+    <h1>Ordenação em $O(n \log n)$</h1>
+    <p class="lead">Os três algoritmos que você precisa conhecer. Dois usam <b>divisão e conquista</b> (merge sort e quicksort) e um usa uma estrutura de dados esperta, o <b>heap</b>.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="merge">Merge Sort</button>
+        <button class="btn" data-alg="quick">Quicksort</button>
+        <button class="btn" data-alg="heap">Heapsort</button>
+      </div>
+      <label>Vetor <input id="arr" type="text" size="30" value="38, 27, 43, 3, 9, 82, 10, 21, 55, 16"></label>
+      <button class="btn small" id="rnd">Aleatório</button>
+      <button class="btn small" id="sorted">Já ordenado</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--yellow)"></i>comparando</span>
+      <span><i style="background:var(--red)"></i>trocando</span>
+      <span><i style="background:var(--purple)"></i>pivô / nó sendo consertado</span>
+      <span><i style="background:var(--teal)"></i>≤ pivô</span>
+      <span><i style="background:var(--orange)"></i>&gt; pivô</span>
+      <span><i style="background:var(--green)"></i>posição final</span>
+    </div>
+
+    <section class="prose">
+      <h2>Comparando</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Algoritmo</th><th>Melhor</th><th>Médio</th><th>Pior</th><th>Memória extra</th><th>Estável?</th></tr>
+          <tr><td>Merge Sort</td><td>$n \log n$</td><td>$n \log n$</td><td>$n \log n$</td><td>$O(n)$</td><td>sim</td></tr>
+          <tr><td>Quicksort</td><td>$n \log n$</td><td>$n \log n$</td><td>$n^2$</td><td>$O(\log n)$ (pilha)</td><td>não</td></tr>
+          <tr><td>Heapsort</td><td>$n \log n$</td><td>$n \log n$</td><td>$n \log n$</td><td>$O(1)$</td><td>não</td></tr>
+        </table>
+      </div>
+      <p><b>Por que $n \log n$?</b> No merge sort, a recursão tem $\log_2 n$ níveis, e em cada nível as intercalações somam $n$ operações: $T(n) = 2T(n/2) + n = \Theta(n \log n)$. Isso também é o <b>limite inferior</b> para qualquer ordenação baseada em comparações: há $n!$ ordens possíveis e cada comparação dá 1 bit de informação, e $\log_2 n! = \Theta(n \log n)$.</p>
+      <div class="callout warn"><p><b>O pior caso do quicksort:</b> com o pivô sendo o último elemento e o vetor <b>já ordenado</b>, cada partição separa só um elemento e a recursão vira uma lista: $O(n^2)$. Clique em "Já ordenado" e compare as comparações. Na prática se usa pivô aleatório ou mediana de três.</p></div>
+      <p>O <code>std::sort</code> do C++ usa o <b>introsort</b>: começa com quicksort, troca para heapsort se a recursão ficar profunda demais (evitando o $n^2$) e usa insertion sort nos pedaços pequenos. Python e Java usam o <b>Timsort</b> (merge + insertion), que é estável e muito rápido em dados parcialmente ordenados.</p>
+      <p>O heap também é a base da <b>fila de prioridade</b> (<code>std::priority_queue</code>): inserir e remover o máximo em $O(\log n)$, usada no algoritmo de Dijkstra e em escalonadores.</p>
+      <p>Implementações em C++ com testes: <a href="../codigo/ordenacao.cpp"><code>codigo/ordenacao.cpp</code></a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, GENERATORS } from './ordenacao2.js';
+
+    const W = 900, H = 500, PAD = 40;
+    const MARK = { cmp: COLORS.yellow, swap: COLORS.red, key: COLORS.purple };
+    let alg = 'merge', max = 1;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'ordenacao.cpp',
+      render(step, s) {
+        const n = step.items.length;
+        const heap = step.kind === 'heap';
+        const BASE = heap ? 470 : 300, MAXH = heap ? 120 : 220;
+        const slot = (W - 2 * PAD) / n;
+        const bw = Math.min(50, slot * 0.72);
+        const cx = k => PAD + slot * k + slot / 2;
+        const hgt = v => 14 + (v / max) * (MAXH - 14);
+        const colorOf = k => {
+          if (step.marks[k]) return MARK[step.marks[k]];
+          if (step.pivot === k) return COLORS.purple;
+          if (step.part) { const [ini, i, j] = step.part; if (k >= ini && k <= i) return COLORS.teal; if (k > i && k < j) return COLORS.orange; }
+          if (step.sorted.includes(k)) return COLORS.green;
+          if (heap && k >= (step.heapSize ?? n)) return COLORS.green;
+          if (step.range && (k < step.range[0] || k >= step.range[1])) return '#2b4a55';
+          return COLORS.blue;
+        };
+        s.line('base', PAD - 10, BASE, W - PAD + 10, BASE, { stroke: COLORS.border, sw: 2, layer: 'bg' });
+        step.items.forEach((it, k) => {
+          if (!it) return;
+          const hh = hgt(it.v);
+          s.rect(`bar${it.id}`, { x: cx(k) - bw / 2, y: BASE - hh, w: bw, h: hh, rx: 4, fill: colorOf(k), stroke: 'none' });
+          s.text(`val${it.id}`, it.v, { x: cx(k), y: BASE - hh - 11, size: 12, mono: true });
+        });
+        for (let k = 0; k < n; k++) s.text(`ix${k}`, k, { x: cx(k), y: BASE + 14, size: 10, mono: true, fill: COLORS.faint });
+
+        if (step.range && !heap) {
+          const [a, b] = step.range;
+          s.path('range', `M ${cx(a) - slot / 2 + 3} ${BASE + 28} H ${cx(b - 1) + slot / 2 - 3}`, { stroke: COLORS.muted, sw: 3 });
+          if (step.split != null) s.line('split', cx(step.split) - slot / 2, BASE - MAXH - 20, cx(step.split) - slot / 2, BASE + 34, { stroke: COLORS.yellow, sw: 1.5, dash: '5 4' });
+          s.text('depth', `profundidade da recursão: ${step.depth}`, { x: W - 20, y: 20, size: 12, anchor: 'end', mono: true, fill: COLORS.muted });
+        }
+        // vetor auxiliar do merge sort
+        if (step.kind === 'merge' && step.range) {
+          s.text('aux-l', 'aux', { x: PAD - 20, y: 450, size: 12, mono: true, fill: COLORS.muted });
+          s.line('aux-base', PAD - 10, 470, W - PAD + 10, 470, { stroke: COLORS.border, sw: 1, dash: '4 4', layer: 'bg' });
+          step.aux.forEach((it, k) => {
+            const hh = hgt(it.v) * 0.45;
+            s.rect(`bar${it.id}`, { x: cx(step.range[0] + k) - bw / 2, y: 470 - hh, w: bw, h: hh, rx: 4, fill: COLORS.pink, stroke: 'none' });
+            s.text(`val${it.id}`, it.v, { x: cx(step.range[0] + k), y: 470 - hh - 10, size: 11, mono: true });
+          });
+        }
+        // heap desenhado como árvore
+        if (heap) {
+          const size = step.heapSize ?? n;
+          const P = i => { const lv = Math.floor(Math.log2(i + 1)); const pos = i + 1 - 2 ** lv; return [W * (pos + 0.5) / 2 ** lv, 40 + lv * 70]; };
+          for (let i = 1; i < size; i++) { const [x1, y1] = P(Math.floor((i - 1) / 2)), [x2, y2] = P(i); s.line(`he${i}`, x1, y1 + 16, x2, y2 - 16, { stroke: COLORS.border, sw: 2 }); }
+          for (let i = 0; i < size; i++) {
+            const it = step.items[i]; const [x, y] = P(i);
+            const c = step.marks[i] ? MARK[step.marks[i]] : COLORS.muted;
+            s.circle(`hn${it.id}`, { x, y, r: 17, fill: COLORS.surface2, stroke: c, sw: step.marks[i] ? 3 : 1.5 });
+            s.text(`ht${it.id}`, it.v, { x, y, size: 13, weight: 700, mono: true });
+          }
+          s.text('phase', step.phase === 'build' ? 'fase 1: construindo o heap' : step.phase === 'sort' ? `fase 2: extraindo o máximo · heap com ${size} elemento(s)` : '', { x: 20, y: 20, size: 13, anchor: 'start', fill: COLORS.muted });
+        }
+      },
+    });
+
+    function run() {
+      const values = $('#arr').value.split(/[,\s;]+/).map(Number).filter(Number.isFinite).map(Math.round).slice(0, 16);
+      const v = values.length >= 2 ? values : [5, 3, 8, 1];
+      max = Math.max(...v, 1);
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      player.setCode(CODES[alg], 'cpp');
+      player.load(GENERATORS[alg](v));
+    }
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.alg; run(); }));
+    $('#arr').addEventListener('change', run);
+    $('#rnd').addEventListener('click', () => { $('#arr').value = Array.from({ length: 10 }, () => randInt(1, 99)).join(', '); run(); });
+    $('#sorted').addEventListener('click', () => { $('#arr').value = [5, 12, 18, 25, 31, 40, 47, 55, 63, 70].join(', '); run(); });
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual algoritmo garante $O(n \\log n)$ no pior caso <b>e</b> não usa memória extra proporcional a n?', options: ['Heapsort', 'Merge Sort', 'Quicksort', 'Insertion Sort'], answer: 0, explain: 'O merge sort precisa do vetor auxiliar e o quicksort tem pior caso $n^2$.' },
+      { q: 'Num heap guardado em vetor (índice a partir de 0), quais são os filhos do nó de índice 4?', options: ['9 e 10', '8 e 9', '5 e 6', '2 e 3'], answer: 0, explain: '$2 \\cdot 4 + 1 = 9$ e $2 \\cdot 4 + 2 = 10$. O pai de $i$ é $\\lfloor (i-1)/2 \\rfloor$.' },
+      { q: 'Por que o merge sort é <b>estável</b>?', options: ['Na intercalação, em caso de empate, pega primeiro o da metade esquerda (v[i] <= v[j])', 'Porque é recursivo', 'Porque usa vetor auxiliar', 'Não é estável'], answer: 0, explain: 'Com < no lugar de <=, elementos iguais trocariam de ordem e ele deixaria de ser estável.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tabelas Hash · Estruturas de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 480px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ed">Estruturas de Dados</a>
+      <span class="sep">/</span><span>Tabelas hash</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Estruturas de Dados</div>
+    <h1>Tabelas hash: busca em $O(1)$</h1>
+    <p class="lead">E se, em vez de procurar a chave, a gente <b>calculasse</b> onde ela está? Uma função de hash transforma a chave num índice do vetor. O problema é quando duas chaves caem no mesmo lugar: as <b>colisões</b>.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Tratamento de colisões">
+        <button class="btn" data-s="encadeamento">Encadeamento separado</button>
+        <button class="btn" data-s="linear">Endereçamento aberto (linear)</button>
+      </div>
+      <label>M = <select id="m"><option>7</option><option selected>11</option><option>13</option></select></label>
+      <label>Chave <input id="k" type="number" value="47" style="width:80px"></label>
+      <button class="btn primary" id="ins">Inserir</button>
+      <button class="btn" id="find">Buscar</button>
+      <button class="btn" id="del">Remover</button>
+      <span class="spacer"></span>
+      <button class="btn small" id="many">+5 aleatórias</button>
+      <button class="btn small" id="coll">Forçar colisões</button>
+      <button class="btn small" id="clr">Limpar</button>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Os dois jeitos de lidar com colisões</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th></th><th>Encadeamento separado</th><th>Endereçamento aberto</th></tr>
+          <tr><td>Colisão</td><td>a chave entra na lista daquela posição</td><td>procura outra posição livre (sondagem)</td></tr>
+          <tr><td>Fator de carga $\alpha = n/M$</td><td>pode passar de 1</td><td>precisa ser &lt; 1 (idealmente &lt; 0,7)</td></tr>
+          <tr><td>Busca média</td><td>$O(1 + \alpha)$</td><td>$\approx \frac{1}{1-\alpha}$ sondagens (sem sucesso)</td></tr>
+          <tr><td>Remoção</td><td>tira da lista</td><td>precisa de marca "removido" (†)</td></tr>
+          <tr><td>Cache</td><td>ruim (ponteiros)</td><td>ótima (vetor contíguo)</td></tr>
+        </table>
+      </div>
+      <p>Na sondagem <b>linear</b> as chaves formam blocos contíguos (<b>agrupamento primário</b>), que crescem cada vez mais rápido. A sondagem <b>quadrática</b> ($i + 1^2, i + 2^2, \dots$) e o <b>hash duplo</b> ($i + j \cdot h_2(k)$) espalham melhor.</p>
+      <h2>Boas funções de hash</h2>
+      <ul>
+        <li>Espalham as chaves uniformemente e são rápidas de calcular.</li>
+        <li>Com $h(k) = k \bmod M$, escolha $M$ <b>primo</b> e longe de potências de 2. Teste "Forçar colisões" com M = 11: múltiplos de 11 caem todos na posição 0!</li>
+        <li>Para strings: $h(s) = \left(\sum s_i \cdot b^{n-1-i}\right) \bmod M$ (hash polinomial, calculado por Horner). Somar os caracteres é uma péssima ideia: "ab" e "ba" colidem.</li>
+      </ul>
+      <p>Quando $\alpha$ passa de um limite, a tabela é <b>redimensionada</b> (dobrada) e todas as chaves são reinseridas: o mesmo truque amortizado do <code>std::vector</code>. <code>std::unordered_map</code> usa encadeamento; o <code>dict</code> do Python e as tabelas "abseil" usam endereçamento aberto.</p>
+      <div class="callout warn"><p><b>Hash não guarda ordem.</b> Para "a menor chave maior que x" ou "todas as chaves entre a e b", use uma árvore balanceada (<code>std::map</code>). O $O(1)$ é <i>médio</i>: no pior caso (todas colidindo) a busca é $O(n)$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, emptyTable, op, count, REMOVIDO } from './hash.js';
+
+    const W = 900, H = 500;
+    let strategy = 'encadeamento';
+    let table = emptyTable(11, strategy);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'hash.cpp',
+      render(step, s) {
+        const M = step.M, sh = Math.min(40, 440 / M), X = 170, Y0 = 30, SW = 90;
+        const n = step.strategy === 'encadeamento' ? step.slots.reduce((a, l) => a + l.length, 0) : step.slots.filter(x => x != null && x !== REMOVIDO).length;
+        for (let i = 0; i < M; i++) {
+          const y = Y0 + i * sh;
+          const hot = step.hot === i;
+          const collide = step.collide === i;
+          const found = hot && step.found;
+          s.rect(`slot${i}`, { x: X, y, w: SW, h: sh - 4, rx: 5, fill: found ? '#1f3319' : collide ? '#3a1b18' : hot ? '#3d3a22' : COLORS.surface2, stroke: found ? COLORS.green : collide ? COLORS.red : hot ? COLORS.yellow : COLORS.border, sw: hot ? 2.5 : 1.5 });
+          s.text(`idx${i}`, i, { x: X - 14, y: y + (sh - 4) / 2, size: 13, anchor: 'end', mono: true, fill: i === step.h ? COLORS.yellow : COLORS.faint });
+          if (step.strategy === 'linear') {
+            const v = step.slots[i];
+            if (v != null) s.text(`v${i}-${v}`, v, { x: X + SW / 2, y: y + (sh - 4) / 2, size: Math.min(17, sh * 0.5), weight: 700, mono: true, fill: v === REMOVIDO ? COLORS.red : COLORS.text });
+          } else {
+            const list = step.slots[i];
+            s.circle(`dot${i}`, { x: X + SW - 14, y: y + (sh - 4) / 2, r: 4, fill: list.length ? COLORS.blue : COLORS.faint, stroke: 'none' });
+            list.forEach((v, p) => {
+              const gap = Math.min(82, 380 / Math.max(1, list.length));
+              const nx = X + SW + 36 + p * gap;
+              const chainHot = hot && step.chainHot === p;
+              s.rect(`c${v}`, { x: nx, y: y + 2, w: 58, h: sh - 8, rx: 5, fill: chainHot ? '#3d3a22' : '#1c3640', stroke: chainHot ? COLORS.yellow : COLORS.blue, sw: 1.5 });
+              s.text(`ct${v}`, v, { x: nx + 29, y: y + (sh - 4) / 2, size: Math.min(15, sh * 0.45), weight: 700, mono: true });
+              const fx = p === 0 ? X + SW - 14 : nx - gap + 58;
+              s.line(`ca${v}`, fx, y + (sh - 4) / 2, nx - 3, y + (sh - 4) / 2, { stroke: COLORS.blue, sw: 1.8, arrow: true });
+            });
+          }
+        }
+        // cálculo do hash
+        s.text('hk', `h(${step.k}) = ${step.k} mod ${M} = ${step.h}`, { x: 800, y: 50, size: 19, weight: 800, mono: true, fill: COLORS.yellow });
+        const alpha = n / M;
+        s.text('alpha', `α = n / M = ${n} / ${M} = ${alpha.toFixed(2)}`, { x: 800, y: 100, size: 13, mono: true, fill: COLORS.muted });
+        s.rect('abar-bg', { x: 710, y: 120, w: 180, h: 10, rx: 5, fill: COLORS.surface3, stroke: 'none' });
+        s.rect('abar', { x: 710, y: 120, w: Math.min(180, 180 * alpha), h: 10, rx: 5, fill: alpha > 0.7 ? COLORS.red : COLORS.teal, stroke: 'none' });
+        if (step.strategy === 'linear' && step.probe != null) s.text('probe', `sondagem nº ${step.probe + 1}`, { x: 800, y: 160, size: 14, fill: COLORS.muted });
+        if (step.error) s.text('err', '⚠ tabela cheia', { x: 800, y: 200, size: 18, weight: 700, fill: COLORS.red });
+      },
+    });
+
+    function show(steps) { player.setCode(CODES[strategy], 'cpp'); player.load(steps); }
+    function exec(kind, k) { const r = op(table, kind, k); table = r.table; return r.steps; }
+    $('#ins').addEventListener('click', () => { show(exec('insere', +$('#k').value)); player.play(); $('#k').value = randInt(1, 99); });
+    $('#find').addEventListener('click', () => { show(exec('busca', +$('#k').value)); player.play(); });
+    $('#del').addEventListener('click', () => { show(exec('remove', +$('#k').value)); player.play(); });
+    $('#many').addEventListener('click', () => { let steps = []; for (let t = 0; t < 5; t++) steps = steps.concat(exec('insere', randInt(1, 99))); show(steps); player.setSpeed(4); player.root.querySelector('.speed').value = '4'; player.play(); });
+    $('#coll').addEventListener('click', () => { const M = table.M; let steps = []; for (let t = 1; t <= 4; t++) steps = steps.concat(exec('insere', M * t + (strategy === 'linear' ? 0 : 0))); show(steps); player.play(); });
+    const reset = () => { table = emptyTable(+$('#m').value, strategy); show(exec('busca', 0).slice(0, 1)); };
+    $('#clr').addEventListener('click', reset);
+    $('#m').addEventListener('change', reset);
+    $$('[data-s]').forEach(b => b.addEventListener('click', () => {
+      strategy = b.dataset.s;
+      $$('[data-s]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      const keys = table.strategy === 'encadeamento' ? table.slots.flat() : table.slots.filter(x => x != null && x !== REMOVIDO);
+      table = emptyTable(table.M, strategy);
+      let steps = [];
+      for (const k of keys) steps = exec('insere', k);
+      show(steps.length ? steps.slice(-1) : exec('busca', 0).slice(0, 1));
+    }));
+    $('[data-s=encadeamento]').setAttribute('aria-pressed', 'true');
+    for (const k of [15, 26, 8, 30, 41]) exec('insere', k);
+    show(exec('insere', 47));
+
+    mountQuiz($('#quiz'), [
+      { q: 'Com M = 10 e $h(k) = k \\bmod 10$, por que é uma má ideia guardar preços como 1990, 2990, 3990…?', options: ['Todos caem na mesma posição (0)', 'Porque 10 é par', 'Porque a tabela enche', 'Não há problema'], answer: 0, explain: 'O mod 10 só olha o último dígito, e dados reais costumam ter padrões. Um M primo espalha melhor.' },
+      { q: 'Na sondagem linear, por que não podemos simplesmente apagar (VAZIO) uma chave removida?', options: ['Buscas por chaves que colidiram e foram para depois parariam no buraco e diriam "não existe"', 'Porque desperdiça memória', 'Porque a função de hash muda', 'Podemos, sem problema'], answer: 0, explain: 'A busca para no primeiro VAZIO. A marca REMOVIDO diz "continue procurando".' },
+      { q: 'Qual o custo médio de uma busca numa tabela hash com encadeamento e fator de carga α constante?', options: ['$O(1)$', '$O(\\log n)$', '$O(n)$', '$O(\\alpha n)$'], answer: 0, explain: 'Cada lista tem em média α elementos. Com redimensionamento, α fica limitado por uma constante.' },
+    ]);
+  </script>
+</body>
+</html>

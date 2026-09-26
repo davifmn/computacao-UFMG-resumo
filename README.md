@@ -70,12 +70,20 @@ python3 -m http.server 8000     # ou: npx serve
 | [Cálculo Diferencial e Integral I](periodo-02/calculo-diferencial-e-integral-1/) · MAT001 | Limites ε-δ · Derivada (com derivação simbólica) · Integral de Riemann | Python |
 | [Administração TGA](periodo-02/administracao-tga/) · CAD103 | **Tutorial:** escolas da administração | — |
 
+### 3º período
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Estruturas de Dados](periodo-03/estruturas-de-dados/) · DCC221 | Listas · Pilhas e filas · Árvores e AVL · Ordenação O(n log n) · Hash | C++ |
+| [Introdução a Bancos de Dados](periodo-03/introducao-a-bancos-de-dados/) · DCC222 | **Tutorial:** SQL no navegador · JOINs | Python + SQLite |
+| [Álgebra Linear Computacional](periodo-03/algebra-linear-computacional/) · DCC639 | Mínimos quadrados · PageRank · SVD | Python |
+| [Cálculo Diferencial e Integral II](periodo-03/calculo-diferencial-e-integral-2/) · MAT039 | Taylor · Superfícies 3D · Descida do gradiente | Python |
+| [Probabilidade](periodo-03/probabilidade/) · EST032 | Distribuições · TCL e Galton · Bayes e Monty Hall | Python |
+
 ### Próximos períodos
 
-Os períodos 3 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
-"em construção" no site. Ideias já planejadas: listas encadeadas, árvores binárias de
-busca e AVL (Estruturas de Dados), grafos, BFS/DFS e Dijkstra (Algoritmos I), autômatos
-(FTC), escalonamento de processos (SO)...
+Os períodos 4 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+"em construção" no site. Ideias já planejadas: grafos, BFS/DFS e Dijkstra (Algoritmos I), autômatos (FTC), escalonamento de processos (SO)...
 
 ## Estrutura do repositório
 

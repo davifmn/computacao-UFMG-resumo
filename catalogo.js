@@ -116,7 +116,63 @@ export const PERIODOS = [
       },
     ],
   },
-  { numero: 3, id: 'periodo-03', planejadas: ['Estruturas de Dados', 'Introdução a Bancos de Dados', 'Álgebra Linear Computacional', 'Cálculo Diferencial e Integral II', 'Probabilidade'] },
+  {
+    numero: 3,
+    id: 'periodo-03',
+    disciplinas: [
+      {
+        id: 'ed', codigo: 'DCC221', nome: 'Estruturas de Dados', cor: 'blue',
+        pasta: 'periodo-03/estruturas-de-dados',
+        resumo: 'Complexidade, TADs, listas, pilhas, filas, árvores de busca e AVL, heaps, ordenação e hashing.',
+        visualizacoes: [
+          { titulo: 'Listas encadeadas', arquivo: 'listas.html', descricao: 'Inserir, buscar e remover com os ponteiros cabeca, atual, anterior e novo se movendo linha a linha.' },
+          { titulo: 'Pilhas e filas', arquivo: 'pilha-fila.html', descricao: 'Pilha em vetor, fila circular desenhada como anel e a checagem de parênteses balanceados.' },
+          { titulo: 'Árvores de busca e AVL', arquivo: 'arvores.html', descricao: 'Inserção, remoção, percursos e as rotações da AVL, com os nós trocando de lugar.' },
+          { titulo: 'Ordenação O(n log n)', arquivo: 'ordenacao-avancada.html', descricao: 'Merge sort com vetor auxiliar, quicksort com partição e heapsort com o heap em árvore.' },
+          { titulo: 'Tabelas hash', arquivo: 'hash.html', descricao: 'Colisões, encadeamento × sondagem linear, agrupamento e marcas de remoção.' },
+        ],
+      },
+      {
+        id: 'bd', codigo: 'DCC222', nome: 'Introdução a Bancos de Dados', cor: 'teal',
+        pasta: 'periodo-03/introducao-a-bancos-de-dados',
+        resumo: 'Modelo ER e relacional, álgebra relacional, SQL, normalização, transações e índices.',
+        visualizacoes: [
+          { titulo: 'SQL na prática', arquivo: 'sql.html', tipo: 'tutorial', descricao: 'SQLite de verdade no navegador: exemplos executáveis e 12 exercícios corrigidos automaticamente.' },
+          { titulo: 'Como um JOIN funciona', arquivo: 'joins.html', descricao: 'Laços aninhados passo a passo para INNER, LEFT, RIGHT e FULL JOIN, e o NULL.' },
+        ],
+      },
+      {
+        id: 'alc', codigo: 'DCC639', nome: 'Álgebra Linear Computacional', cor: 'yellow',
+        pasta: 'periodo-03/algebra-linear-computacional',
+        resumo: 'Condicionamento, fatorações, mínimos quadrados, autovalores e SVD no computador.',
+        visualizacoes: [
+          { titulo: 'Mínimos quadrados', arquivo: 'minimos-quadrados.html', descricao: 'Arraste pontos: ajuste polinomial pelas equações normais, resíduos e sobreajuste.' },
+          { titulo: 'PageRank', arquivo: 'pagerank.html', descricao: 'Crie links entre páginas e veja o método das potências achar o autovetor do Google.' },
+          { titulo: 'Compressão com SVD', arquivo: 'svd.html', descricao: 'Uma imagem (até a sua) reconstruída com as k primeiras camadas da SVD.' },
+        ],
+      },
+      {
+        id: 'calculo2', codigo: 'MAT039', nome: 'Cálculo Diferencial e Integral II', cor: 'purple',
+        pasta: 'periodo-03/calculo-diferencial-e-integral-2',
+        resumo: 'Séries, funções de várias variáveis, derivadas parciais, gradiente, otimização e integrais múltiplas.',
+        visualizacoes: [
+          { titulo: 'Séries de Taylor', arquivo: 'taylor.html', descricao: 'Polinômios de grau crescente imitando funções, e o raio de convergência.' },
+          { titulo: 'Superfícies e derivadas parciais', arquivo: 'superficies.html', descricao: 'Superfícies 3D que giram com o mouse, cortes, plano tangente e gradiente.' },
+          { titulo: 'Descida do gradiente', arquivo: 'gradiente.html', descricao: 'Trajetórias sobre curvas de nível, passo, momento e mínimos locais: como redes neurais aprendem.' },
+        ],
+      },
+      {
+        id: 'probabilidade', codigo: 'EST032', nome: 'Probabilidade', cor: 'pink',
+        pasta: 'periodo-03/probabilidade',
+        resumo: 'Probabilidade condicional, Bayes, variáveis aleatórias, distribuições e teoremas-limite.',
+        visualizacoes: [
+          { titulo: 'Distribuições', arquivo: 'distribuicoes.html', descricao: 'Seis distribuições com parâmetros, áreas, momentos e amostragem sobre a curva teórica.' },
+          { titulo: 'Teorema Central do Limite', arquivo: 'limite-central.html', descricao: 'Tábua de Galton, médias virando uma normal e a Lei dos Grandes Números.' },
+          { titulo: 'Bayes e Monty Hall', arquivo: 'bayes.html', descricao: 'O teste diagnóstico com 1000 pessoas e o problema das três portas, jogável.' },
+        ],
+      },
+    ],
+  },
   { numero: 4, id: 'periodo-04', planejadas: ['Algoritmos I', 'Organização de Computadores I', 'Fundamentos da Teoria da Computação', 'Álgebra A', 'Introdução à Ciência dos Dados'] },
   { numero: 5, id: 'periodo-05', planejadas: ['Algoritmos II', 'Linguagens de Programação', 'Pesquisa Operacional', 'Equações Diferenciais C'] },
   { numero: 6, id: 'periodo-06', planejadas: ['Engenharia de Software', 'Sistemas Operacionais', 'Compiladores I'] },

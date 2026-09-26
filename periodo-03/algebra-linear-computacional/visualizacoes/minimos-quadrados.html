@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mínimos Quadrados · Álgebra Linear Computacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 4em 1fr 2.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 8px; overflow-x: auto; }
+    #plot { cursor: crosshair; touch-action: none; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alc">Álgebra Linear Computacional</a>
+      <span class="sep">/</span><span>Mínimos quadrados</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra Linear Computacional</div>
+    <h1>Mínimos quadrados: a melhor curva que não passa pelos pontos</h1>
+    <p class="lead">Com mais pontos do que parâmetros, o sistema $A\vec c = \vec y$ não tem solução. Então procuramos o $\vec c$ que <b>minimiza a soma dos quadrados dos erros</b>. <b>Clique</b> para adicionar pontos, <b>arraste</b> para mover e use <b>Shift+clique</b> para apagar.</p>
+
+    <div class="toolbar">
+      <button class="btn small" id="noisy">Reta com ruído</button>
+      <button class="btn small" id="curve">Curva com ruído</button>
+      <button class="btn small" id="outlier">Com um ponto discrepante</button>
+      <button class="btn small" id="clear">Limpar</button>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Pontos e curva ajustada"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Modelo</div>
+          <div class="ctl"><span>grau</span><input id="deg" type="range" min="0" max="9" value="1"><output id="deg-o"></output></div>
+          <div style="padding:0 14px 12px"><label style="font-size:14px;color:var(--muted)"><input type="checkbox" id="res" checked> mostrar resíduos</label></div>
+        </div>
+        <div class="panel"><div class="panel-title">Ajuste</div><div class="readout" id="fit"></div></div>
+        <div class="panel"><div class="panel-title">O sistema</div><div class="readout" id="system"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Por que "equações normais"?</h2>
+      <p>Para um polinômio $c_0 + c_1 x + \dots + c_d x^d$, cada ponto $(x_i, y_i)$ dá uma linha da matriz de Vandermonde $A$ (linha $i$: $1, x_i, x_i^2, \dots$). Como o sistema $A\vec c = \vec y$ é <b>sobredeterminado</b>, o melhor que se pode fazer é aproximar $\vec y$ por algum vetor do espaço-coluna de $A$.</p>
+      <p>O vetor mais próximo é a <b>projeção ortogonal</b> de $\vec y$ nesse espaço, e ela acontece quando o erro é perpendicular a todas as colunas de $A$: $A^T(\vec y - A\vec c) = \vec 0$, ou seja,</p>
+      <p>$$ A^T A\,\vec c = A^T \vec y. $$</p>
+      <p>É GAAL (projeção) encontrando Cálculo II (o mínimo de $\|A\vec c - \vec y\|^2$ tem gradiente zero exatamente nessa equação).</p>
+      <div class="callout warn"><p><b>Sobreajuste (overfitting):</b> com grau alto, a curva passa perto de todos os pontos (erro quase zero!) mas oscila loucamente entre eles e não serve para prever nada. Coloque 8 pontos e suba o grau até 7. Em aprendizado de máquina, o remédio é separar dados de validação e usar <b>regularização</b>.</p></div>
+      <div class="callout"><p><b>Na prática numérica,</b> formar $A^TA$ eleva ao quadrado o número de condição da matriz e perde precisão. Bibliotecas como <code>numpy.linalg.lstsq</code> resolvem por <b>fatoração QR</b> ou pela <b>SVD</b>, que trabalham direto com $A$. Os mínimos quadrados são a base da regressão linear, do GPS (várias medições, poucas incógnitas) e da calibração de sensores.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt, tex } from '../../../engine/page.js';
+    import { rng, normal } from '../../../engine/random.js';
+    import { polyFit } from './numerico.js';
+
+    const W = 900, H = 560;
+    const svg = $('#plot');
+    const scene = new Scene(svg, { width: W, height: H, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { x: [-1, 11], y: [-2, 12], box: [20, 20, W - 20, H - 20] });
+    plot.clip(['edges', 'nodes']);
+    const r = rng(9);
+    let pts = [];
+
+    const presets = {
+      noisy: () => Array.from({ length: 12 }, (_, i) => { const x = 0.5 + i * 0.8; return [x, 0.8 * x + 1 + normal(r, 0, 0.9)]; }),
+      curve: () => Array.from({ length: 14 }, (_, i) => { const x = 0.3 + i * 0.7; return [x, 0.12 * (x - 5) ** 2 * (x - 5) / 3 + 5 + normal(r, 0, 0.6)]; }),
+      outlier: () => { const p = presets.noisy(); p[8] = [p[8][0], p[8][1] + 7]; return p; },
+    };
+
+    function draw() {
+      const d = Math.min(+$('#deg').value, Math.max(0, pts.length - 1));
+      $('#deg-o').value = $('#deg').value;
+      let fit = null;
+      try { if (pts.length >= 1) fit = polyFit(pts, d, { scaled: true }); } catch { fit = null; }   // estável para desenhar
+      scene.frame(s => {
+        plot.axes(s);
+        if (fit) {
+          plot.fn(s, 'fit', fit.pred, { stroke: COLORS.yellow, sw: 3 });
+          if ($('#res').checked) pts.forEach(([x, y], i) => s.line(`r${i}`, plot.X(x), plot.Y(y), plot.X(x), plot.Y(fit.pred(x)), { stroke: COLORS.red, sw: 2, opacity: 0.8 }));
+        }
+        pts.forEach(([x, y], i) => { const c = s.circle(`p${i}`, { x: plot.X(x), y: plot.Y(y), r: 7, fill: COLORS.blue, stroke: COLORS.bg, sw: 2 }); c.dataset.i = i; });
+      });
+      const fitEl = $('#fit');
+      if (!fit) { fitEl.innerHTML = '<span class="c-muted">Adicione pelo menos um ponto.</span>'; $('#system').innerHTML = ''; return; }
+      const n = v => fmt(v, 3).replace(',', '{,}');
+      // coeficientes na variável x original (só para graus baixos, em que a conta direta é confiável)
+      let raw = null;
+      try { if (d <= 4) raw = polyFit(pts, d); } catch { raw = null; }
+      const poly = raw ? raw.c.map((c, k) => (k === 0 ? n(c) : `${c < 0 ? '-' : '+'} ${n(Math.abs(c))}x${k > 1 ? `^{${k}}` : ''}`)).join(' ') : `\\text{polinômio de grau } ${d}`;
+      fitEl.innerHTML = '<div id="f1"></div><div id="f2"></div>' + (d < +$('#deg').value ? `<div class="c-muted" style="font-size:13px">Com ${pts.length} ponto(s), o grau máximo útil é ${pts.length - 1}.</div>` : '') + (d >= pts.length - 1 && pts.length > 2 ? '<div class="c-orange" style="font-size:14px">Grau = nº de pontos − 1: a curva <b>interpola</b> (erro zero), mas cuidado com o sobreajuste!</div>' : '');
+      tex($('#f1'), `p(x) = ${poly}`);
+      tex($('#f2'), `\\text{SSE} = \\sum r_i^2 = \\color{#fc6255}{${n(fit.sse)}}`);
+      $('#system').innerHTML = '<div id="s1"></div><div class="c-muted" style="font-size:13px" id="s2"></div>';
+      tex($('#s1'), `\\underbrace{A}_{${pts.length} \\times ${d + 1}}\\,\\vec c \\approx \\vec y \\ \\Rightarrow\\ \\underbrace{A^TA}_{${d + 1} \\times ${d + 1}}\\,\\vec c = A^T\\vec y`);
+      $('#s2').textContent = `${pts.length} equações, ${d + 1} incógnitas: sobredeterminado${pts.length > d + 1 ? '' : ' (não mais!)'}.`;
+    }
+
+    // ---------- interação: adicionar, arrastar, apagar ----------
+    let drag = null;
+    const toXY = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return [plot.invX(p.x), plot.invY(p.y)]; };
+    svg.addEventListener('pointerdown', e => {
+      const i = e.target.dataset?.i;
+      if (i != null && e.shiftKey) { pts.splice(+i, 1); draw(); return; }
+      if (i != null) drag = +i;
+      else { pts.push(toXY(e)); drag = pts.length - 1; }
+      svg.setPointerCapture(e.pointerId);
+      draw();
+    });
+    svg.addEventListener('pointermove', e => { if (drag == null) return; pts[drag] = toXY(e); draw(); });
+    svg.addEventListener('pointerup', () => { drag = null; });
+
+    for (const k of Object.keys(presets)) $(`#${k}`).addEventListener('click', () => { pts = presets[k](); draw(); });
+    $('#clear').addEventListener('click', () => { pts = []; draw(); });
+    $('#deg').addEventListener('input', draw);
+    $('#res').addEventListener('change', draw);
+    pts = presets.noisy();
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantos pontos (com x distintos) um polinômio de grau 3 consegue interpolar exatamente?', options: ['4', '3', '6', 'infinitos'], answer: 0, explain: 'São 4 coeficientes, e a matriz de Vandermonde 4 × 4 com x distintos é invertível.' },
+      { q: 'Nas equações normais, o que significa $A^T(\\vec y - A\\vec c) = \\vec 0$?', options: ['O vetor de resíduos é ortogonal às colunas de A', 'Os resíduos são todos zero', 'A é invertível', 'A soma dos resíduos é mínima'], answer: 0, explain: 'É a condição de projeção ortogonal: o erro não tem componente no espaço gerado pelo modelo.' },
+      { q: 'Por que o ponto discrepante (outlier) "puxa" tanto a reta?', options: ['Porque os erros entram ao quadrado: um erro 5 vezes maior pesa 25 vezes mais', 'Porque é o último ponto', 'Por erro numérico', 'Não puxa'], answer: 0, explain: 'Mínimos quadrados são sensíveis a outliers. Minimizar $\\sum |r_i|$ (norma L1) é mais robusto, mas não tem fórmula fechada.' },
+    ]);
+  </script>
+</body>
+</html>

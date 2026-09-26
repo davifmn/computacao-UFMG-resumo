@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL na Prática · Bancos de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .sqlbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+    .sqlbox textarea { display: block; width: 100%; border: 0; border-radius: 0; background: var(--surface); color: var(--text); font: 14px/1.6 var(--mono); padding: 12px 14px; resize: vertical; min-height: 64px; }
+    .sqlbox .bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--surface-2); border-top: 1px solid var(--border); }
+    .sqlbox .bar .hint { color: var(--faint); font-size: 12px; margin-left: auto; }
+    .sqlbox .out { padding: 10px 12px; border-top: 1px solid var(--border); max-height: 340px; overflow: auto; }
+    .sqlbox .out:empty { display: none; }
+    .sqlbox table.data { font-size: 13px; }
+    .sqlbox .err { color: var(--red); font-family: var(--mono); font-size: 13px; }
+    .sqlbox .meta { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .schema { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+    .schema .t { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font: 13px/1.7 var(--mono); }
+    .schema .t b { display: block; color: var(--blue); font-size: 14px; margin-bottom: 4px; }
+    .schema .pk { color: var(--yellow); } .schema .fk { color: var(--pink); }
+    .ex { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--purple); border-radius: 10px; padding: 12px 14px; margin: 14px 0; }
+    .ex .q { margin-bottom: 6px; }
+    .ex .fb { margin-top: 8px; font-size: 14px; }
+    #loading { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#bd">Bancos de Dados</a>
+      <span class="sep">/</span><span>Tutorial: SQL na prática</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Tutorial · Introdução a Bancos de Dados</div>
+    <h1>SQL na prática, direto no navegador</h1>
+    <p class="lead">Este tutorial roda um banco <b>SQLite de verdade</b> dentro da sua página (compilado para WebAssembly). Toda consulta pode ser editada e executada: aperte <kbd>Ctrl</kbd>+<kbd>Enter</kbd> ou clique em <b>Executar</b>. Nada é enviado para servidor nenhum. <span id="loading">Carregando o banco…</span></p>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>1. O banco de exemplo</h2>
+        <p>Uma universidade fictícia com quatro tabelas. Em amarelo, a <b>chave primária</b> (identifica cada linha, sem repetição); em rosa, as <b>chaves estrangeiras</b> (apontam para a chave primária de outra tabela). O arquivo completo é <a href="universidade.sql"><code>universidade.sql</code></a>.</p>
+        <div class="schema">
+          <div class="t"><b>alunos</b><span class="pk">matricula</span><br>nome<br>curso<br>ano_ingresso</div>
+          <div class="t"><b>disciplinas</b><span class="pk">codigo</span><br>nome<br>creditos<br>periodo<br><span class="fk">professor_id → professores</span></div>
+          <div class="t"><b>matriculas</b><span class="pk fk">matricula → alunos</span><br><span class="pk fk">codigo → disciplinas</span><br><span class="pk">semestre</span><br>nota <span class="c-faint">(NULL = cursando)</span></div>
+          <div class="t"><b>professores</b><span class="pk">id</span><br>nome<br>departamento</div>
+        </div>
+        <p>No <b>modelo relacional</b>, os dados ficam em <b>tabelas</b> (relações). Cada linha é uma tupla e cada coluna é um atributo com um tipo. Relacionamentos não são ponteiros: são <b>valores iguais</b> em colunas de tabelas diferentes. A tabela <code>matriculas</code> implementa o relacionamento muitos-para-muitos entre alunos e disciplinas.</p>
+
+        <h2>2. SELECT: escolhendo colunas e linhas</h2>
+        <div class="sqlbox" data-sql="SELECT nome, curso, ano_ingresso
+FROM alunos;"></div>
+        <p><code>WHERE</code> filtra linhas com condições (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>, <code>AND</code>, <code>OR</code>, <code>NOT</code>):</p>
+        <div class="sqlbox" data-sql="SELECT nome, ano_ingresso
+FROM alunos
+WHERE curso = 'CC' AND ano_ingresso >= 2023;"></div>
+        <p>Outros operadores úteis: <code>IN (lista)</code>, <code>BETWEEN a AND b</code> e <code>LIKE</code> com curingas (<code>%</code> = qualquer sequência, <code>_</code> = um caractere):</p>
+        <div class="sqlbox" data-sql="SELECT codigo, nome, periodo
+FROM disciplinas
+WHERE nome LIKE '%Software%' OR periodo IN (6, 7);"></div>
+        <div class="callout warn"><p><b>NULL é "desconhecido".</b> <code>nota = NULL</code> nunca é verdadeiro (nem para as linhas com NULL!). Use <code>IS NULL</code> / <code>IS NOT NULL</code>. Troque abaixo para <code>= NULL</code> e veja o resultado vazio.</p></div>
+        <div class="sqlbox" data-sql="SELECT matricula, codigo, semestre
+FROM matriculas
+WHERE nota IS NULL;"></div>
+
+        <h2>3. Ordenar, limitar, calcular</h2>
+        <div class="sqlbox" data-sql="SELECT matricula, codigo, nota,
+       nota >= 60 AS aprovado,          -- expressões viram colunas
+       ROUND(nota / 10, 1) AS conceito
+FROM matriculas
+WHERE nota IS NOT NULL
+ORDER BY nota DESC, matricula
+LIMIT 10;"></div>
+        <p><code>DISTINCT</code> remove linhas repetidas do resultado:</p>
+        <div class="sqlbox" data-sql="SELECT DISTINCT semestre FROM matriculas ORDER BY semestre;"></div>
+
+        <h2>4. Agregação: GROUP BY e HAVING</h2>
+        <p>Funções de agregação (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>) resumem várias linhas numa só. Com <code>GROUP BY</code>, uma linha por grupo:</p>
+        <div class="sqlbox" data-sql="SELECT codigo,
+       COUNT(*)            AS matriculas,
+       COUNT(nota)         AS com_nota,     -- COUNT(coluna) ignora NULL
+       ROUND(AVG(nota), 1) AS media,
+       MIN(nota), MAX(nota)
+FROM matriculas
+GROUP BY codigo
+ORDER BY media DESC;"></div>
+        <p><code>WHERE</code> filtra <b>linhas antes</b> de agrupar; <code>HAVING</code> filtra <b>grupos depois</b>:</p>
+        <div class="sqlbox" data-sql="SELECT codigo, COUNT(*) AS reprovacoes
+FROM matriculas
+WHERE nota < 60
+GROUP BY codigo
+HAVING COUNT(*) >= 3;"></div>
+        <div class="callout"><p><b>Ordem lógica de execução:</b> <code>FROM</code> → <code>WHERE</code> → <code>GROUP BY</code> → <code>HAVING</code> → <code>SELECT</code> → <code>ORDER BY</code> → <code>LIMIT</code>. É por isso que um apelido criado no SELECT pode ser usado no ORDER BY, mas (em SQL padrão) não no WHERE.</p></div>
+
+        <h2>5. Juntando tabelas (JOIN)</h2>
+        <p>Para mostrar <b>nomes</b> em vez de códigos, junte as tabelas pela chave. Veja o algoritmo passo a passo na <a href="../visualizacoes/joins.html">visualização de JOINs</a>.</p>
+        <div class="sqlbox" data-sql="SELECT a.nome AS aluno, d.nome AS disciplina, m.semestre, m.nota
+FROM matriculas m
+JOIN alunos a      ON a.matricula = m.matricula
+JOIN disciplinas d ON d.codigo = m.codigo
+WHERE d.periodo = 3
+ORDER BY d.nome, m.nota DESC;"></div>
+        <p>Com <code>LEFT JOIN</code>, linhas sem par também aparecem, com NULL. Qual disciplina não tem professor?</p>
+        <div class="sqlbox" data-sql="SELECT d.codigo, d.nome, p.nome AS professor
+FROM disciplinas d
+LEFT JOIN professores p ON p.id = d.professor_id;"></div>
+
+        <h2>6. Subconsultas</h2>
+        <p>Uma consulta pode usar o resultado de outra: como valor, como lista (<code>IN</code>) ou como teste de existência (<code>EXISTS</code>).</p>
+        <div class="sqlbox" data-sql="-- alunos com nota acima da média geral
+SELECT DISTINCT a.nome
+FROM alunos a JOIN matriculas m ON m.matricula = a.matricula
+WHERE m.nota > (SELECT AVG(nota) FROM matriculas)
+ORDER BY a.nome;"></div>
+        <div class="sqlbox" data-sql="-- disciplinas em que NENHUM aluno reprovou
+SELECT codigo, nome
+FROM disciplinas d
+WHERE NOT EXISTS (
+    SELECT 1 FROM matriculas m
+    WHERE m.codigo = d.codigo AND m.nota < 60
+);"></div>
+
+        <h2>7. Modificando dados</h2>
+        <p>Cada bloco começa com o banco original. Rode e veja o efeito:</p>
+        <div class="sqlbox" data-sql="INSERT INTO alunos (matricula, nome, curso, ano_ingresso)
+VALUES (2025999, 'Nova Aluna', 'CC', 2025);
+
+UPDATE alunos SET curso = 'SI' WHERE matricula = 2025999;
+
+SELECT * FROM alunos WHERE ano_ingresso = 2025;"></div>
+        <div class="sqlbox" data-sql="-- restrições protegem a integridade dos dados:
+INSERT INTO alunos VALUES (2025998, 'Fulano', 'Medicina', 2025);"></div>
+        <div class="sqlbox" data-sql="BEGIN TRANSACTION;
+DELETE FROM matriculas WHERE nota < 60;
+SELECT COUNT(*) AS restantes FROM matriculas;
+ROLLBACK;                       -- desfaz tudo desde o BEGIN
+SELECT COUNT(*) AS depois_do_rollback FROM matriculas;"></div>
+        <div class="callout warn"><p><b>Nunca rode <code>UPDATE</code> ou <code>DELETE</code> sem <code>WHERE</code></b> num banco de verdade, a não ser que queira mesmo alterar a tabela inteira. Transações garantem as propriedades <b>ACID</b>: Atomicidade (tudo ou nada), Consistência, Isolamento e Durabilidade.</p></div>
+
+        <h2>8. Criando tabelas e índices</h2>
+        <div class="sqlbox" data-sql="CREATE TABLE monitorias (
+    codigo     TEXT REFERENCES disciplinas(codigo),
+    monitor    INTEGER REFERENCES alunos(matricula),
+    semestre   TEXT NOT NULL,
+    vagas      INTEGER DEFAULT 1 CHECK (vagas > 0),
+    PRIMARY KEY (codigo, semestre)
+);
+INSERT INTO monitorias (codigo, monitor, semestre) VALUES ('DCC221', 2021018, '2024/2');
+SELECT * FROM monitorias;"></div>
+        <p>Um <b>índice</b> é uma estrutura auxiliar (uma árvore B+, parente da árvore de busca de Estruturas de Dados) que evita varrer a tabela inteira. Compare o plano de execução antes e depois:</p>
+        <div class="sqlbox" data-sql="EXPLAIN QUERY PLAN SELECT * FROM matriculas WHERE nota > 90;
+CREATE INDEX idx_nota ON matriculas(nota);
+EXPLAIN QUERY PLAN SELECT * FROM matriculas WHERE nota > 90;"></div>
+        <p>Índices aceleram buscas, mas ocupam espaço e deixam INSERT/UPDATE mais lentos, porque o índice também precisa ser atualizado. Crie-os nas colunas usadas em filtros e junções frequentes.</p>
+
+        <h2>9. Exercícios</h2>
+        <p>Escreva a consulta e clique em <b>Verificar</b>. A correção compara o <b>resultado</b> com o da resposta (a ordem das linhas não importa, a das colunas sim), então existem várias consultas certas.</p>
+        <div id="exercises"></div>
+
+        <h2>10. Área livre</h2>
+        <div class="sqlbox" data-sql="SELECT name, sql FROM sqlite_master WHERE type = 'table';"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module" src="sql-tutorial.js"></script>
+</body>
+</html>

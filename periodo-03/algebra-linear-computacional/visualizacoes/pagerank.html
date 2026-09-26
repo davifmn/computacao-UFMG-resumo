@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PageRank · Álgebra Linear Computacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 6em 1fr 3em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 8px; overflow-x: auto; }
+    #graph .node { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alc">Álgebra Linear Computacional</a>
+      <span class="sep">/</span><span>PageRank</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra Linear Computacional</div>
+    <h1>PageRank: o autovetor de 25 bilhões de dólares</h1>
+    <p class="lead">Como o Google decidia quais páginas mostrar primeiro? Uma página é importante se páginas importantes apontam para ela. Essa definição circular é a equação de um <b>autovetor</b>, e o <b>método das potências</b> o encontra. <b>Clique numa página e depois em outra</b> para criar ou apagar um link.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="graph" aria-label="Grafo de páginas e links"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Método das potências</div>
+          <div class="ctl">
+            <span>iteração</span><input id="k" type="range" min="0" max="40" value="0"><output id="k-o"></output>
+            <span>d (amortec.)</span><input id="d" type="range" min="0" max="1" step="0.05" value="0.85"><output id="d-o"></output>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="play">▶ Iterar</button>
+            <button class="btn small" id="p-cycle">Ciclo</button>
+            <button class="btn small" id="p-star">Estrela</button>
+            <button class="btn small" id="p-web">Mini-web</button>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Vetor de importância</div><svg id="bars" aria-label="Barras do PageRank"></svg></div>
+        <div class="panel"><div class="panel-title">A matriz do Google G</div><div class="readout" id="matrix"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>A ideia</h2>
+      <p>Imagine um <b>surfista aleatório</b>: em cada página, ele clica num dos links ao acaso (com probabilidade $d$) ou se teletransporta para uma página qualquer (com probabilidade $1 - d$). O PageRank de uma página é a fração do tempo que o surfista passa nela, a longo prazo.</p>
+      <p>Se $\vec x$ é a distribuição de probabilidade atual, um passo do surfista leva a $G\vec x$. A distribuição estável satisfaz</p>
+      <p>$$ G\,\vec x = \vec x, $$</p>
+      <p>ou seja, $\vec x$ é um <b>autovetor de autovalor 1</b>. Como $G$ é estocástica por colunas e (graças ao teletransporte) tem todas as entradas positivas, o <b>Teorema de Perron–Frobenius</b> garante que esse autovetor existe, é único e positivo.</p>
+      <h2>O método das potências</h2>
+      <p>Começando de qualquer vetor, repita $\vec x \leftarrow G\vec x$. A componente na direção do autovetor dominante sobrevive e as outras encolhem com fator $|\lambda_2 / \lambda_1|$ a cada iteração (e $|\lambda_2| \le d$). É por isso que $d = 0{,}85$ converge em poucas dezenas de iterações, mesmo com bilhões de páginas: cada iteração é só uma multiplicação de matriz esparsa por vetor.</p>
+      <ul>
+        <li>Com <b>d = 1</b> (sem teletransporte), o "Ciclo" nunca converge: o vetor fica girando. O teletransporte é o que torna o problema bem-posto.</li>
+        <li>Uma página sem links de saída (beco sem saída) é tratada como se apontasse para todas.</li>
+      </ul>
+      <p>O mesmo método das potências aparece em <b>análise de redes sociais</b> (centralidade de autovetor), em <b>cadeias de Markov</b> (distribuição estacionária) e no cálculo do maior autovalor de qualquer matriz.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt, tex } from '../../../engine/page.js';
+    import { pagerank, googleMatrix } from './numerico.js';
+
+    const W = 700, H = 560, N = 6;
+    const NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const svg = $('#graph');
+    const scene = new Scene(svg, { width: W, height: H });
+    svg.style.setProperty('--dur', '350ms');
+    const bars = new Scene($('#bars'), { width: 340, height: 200 });
+    $('#bars').style.setProperty('--dur', '300ms');
+    const PRESETS = {
+      cycle: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
+      star: [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [0, 1]],
+      web: [[0, 1], [0, 2], [1, 2], [2, 0], [3, 2], [4, 2], [4, 5], [5, 4], [1, 3], [3, 0]],
+    };
+    let links = PRESETS.web.map(l => [...l]), selected = null, hist = [];
+    const P = i => [W / 2 + 220 * Math.cos(-Math.PI / 2 + (2 * Math.PI * i) / N), H / 2 + 220 * Math.sin(-Math.PI / 2 + (2 * Math.PI * i) / N)];
+
+    function recompute() { hist = pagerank(N, links, +$('#d').value, 40); draw(); }
+
+    function draw() {
+      const k = +$('#k').value;
+      $('#k-o').value = k; $('#d-o').value = fmt(+$('#d').value, 2);
+      const x = k === 0 ? Array(N).fill(1 / N) : hist[k - 1].x;
+      scene.frame(s => {
+        for (const [a, b] of links) {
+          const [x1, y1] = P(a), [x2, y2] = P(b);
+          const both = links.some(([c, e]) => c === b && e === a);
+          const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+          const off = both ? 18 : 0;
+          const r2 = 24 + 60 * Math.sqrt(x[b]);
+          s.path(`l${a}-${b}`, `M ${x1 + ux * 30 - uy * off} ${y1 + uy * 30 + ux * off} L ${x2 - ux * (r2 + 6) - uy * off} ${y2 - uy * (r2 + 6) + ux * off}`, { stroke: COLORS.muted, sw: 2, arrow: true, opacity: 0.8 });
+        }
+        for (let i = 0; i < N; i++) {
+          const [cx, cy] = P(i);
+          const r = 24 + 60 * Math.sqrt(x[i]);
+          const c = s.circle(`n${i}`, { x: cx, y: cy, r, fill: selected === i ? '#3d3a22' : '#1c3640', stroke: selected === i ? COLORS.yellow : COLORS.blue, sw: 2.5 });
+          c.classList.add('node'); c.dataset.i = i;
+          s.text(`t${i}`, NAMES[i], { x: cx, y: cy - 8, size: 18, weight: 800 }).style.pointerEvents = 'none';
+          s.text(`v${i}`, fmt(x[i], 3), { x: cx, y: cy + 12, size: 12, mono: true, fill: COLORS.yellow }).style.pointerEvents = 'none';
+        }
+        s.text('hint', selected == null ? 'clique numa página para escolher a origem de um link' : `agora clique no destino do link a partir de ${NAMES[selected]}`, { x: W / 2, y: H - 16, size: 13, fill: COLORS.faint });
+      });
+      bars.frame(s => {
+        const bw = 44;
+        x.forEach((v, i) => {
+          const hgt = 150 * v / Math.max(...x, 1e-9);
+          s.rect(`b${i}`, { x: 20 + i * 52, y: 170 - hgt, w: bw, h: hgt, rx: 4, fill: COLORS.blue, stroke: 'none' });
+          s.text(`bl${i}`, NAMES[i], { x: 20 + i * 52 + bw / 2, y: 186, size: 13, weight: 700 });
+          s.text(`bv${i}`, fmt(v, 3), { x: 20 + i * 52 + bw / 2, y: 160 - hgt, size: 11, mono: true, fill: COLORS.yellow });
+        });
+      });
+      const G = googleMatrix(N, links, +$('#d').value);
+      tex($('#matrix'), `G = \\begin{bmatrix}${G.map(r => r.map(v => fmt(v, 2).replace(',', '{,}')).join(' & ')).join(' \\\\ ')}\\end{bmatrix}`);
+    }
+
+    svg.addEventListener('click', e => {
+      const i = e.target.dataset?.i;
+      if (i == null) { selected = null; draw(); return; }
+      if (selected == null) { selected = +i; draw(); return; }
+      if (selected !== +i) {
+        const idx = links.findIndex(([a, b]) => a === selected && b === +i);
+        if (idx >= 0) links.splice(idx, 1); else links.push([selected, +i]);
+      }
+      selected = null;
+      recompute();
+    });
+    let anim = null;
+    $('#play').addEventListener('click', () => { anim?.cancel(); anim = tween(4000, t => { $('#k').value = Math.round(40 * t); draw(); }, ease.linear); });
+    $('#k').addEventListener('input', draw);
+    $('#d').addEventListener('input', recompute);
+    for (const [id, key] of [['p-cycle', 'cycle'], ['p-star', 'star'], ['p-web', 'web']]) $(`#${id}`).addEventListener('click', () => { links = PRESETS[key].map(l => [...l]); $('#k').value = 0; recompute(); });
+    $('#k').value = 40;
+    recompute();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que o método das potências converge para o autovetor <b>dominante</b>?', options: ['As outras componentes são multiplicadas por |λᵢ/λ₁| < 1 a cada passo e somem', 'Porque normalizamos o vetor', 'Porque G é simétrica', 'Por sorte'], answer: 0, explain: 'Escrevendo $x_0 = \\sum c_i v_i$, temos $G^k x_0 = \\sum c_i \\lambda_i^k v_i$, e o termo com o maior $|\\lambda|$ domina.' },
+      { q: 'Na "Estrela" (todos apontam para A), qual página tem o maior PageRank?', options: ['A', 'B', 'todas iguais', 'F'], answer: 0, explain: 'Todas as outras "votam" em A. E como A aponta para B, B herda parte da importância de A e fica em segundo.' },
+      { q: 'Qual é a soma das componentes do vetor de PageRank?', options: ['1', 'n', '0', 'depende de d'], answer: 0, explain: 'É uma distribuição de probabilidade: G preserva a soma porque cada coluna soma 1.' },
+    ]);
+  </script>
+</body>
+</html>

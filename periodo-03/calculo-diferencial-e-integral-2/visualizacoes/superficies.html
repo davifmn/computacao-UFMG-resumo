@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Superfícies e Derivadas Parciais · Cálculo II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 3em 1fr 3.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 8px; overflow-x: auto; }
+    #view { cursor: grab; touch-action: none; }
+    .toggles { display: flex; flex-direction: column; gap: 6px; padding: 4px 14px 14px; font-size: 14px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo2">Cálculo II</a>
+      <span class="sep">/</span><span>Superfícies e derivadas parciais</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral II</div>
+    <h1>Funções de duas variáveis</h1>
+    <p class="lead">O gráfico de $z = f(x, y)$ é uma superfície. <b>Arraste para girar.</b> Num ponto, cortar a superfície na direção de $x$ (ou de $y$) dá uma curva comum, e a inclinação dela é a <b>derivada parcial</b>.</p>
+
+    <div class="toolbar"><div class="chips" id="surfs"></div></div>
+
+    <div class="lab">
+      <div class="stage"><svg id="view" aria-label="Superfície 3D"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Ponto P = (x₀, y₀)</div>
+          <div class="ctl">
+            <span>x₀</span><input id="x0" type="range" min="-1.8" max="1.8" step="0.02" value="0.8"><output id="x0-o"></output>
+            <span>y₀</span><input id="y0" type="range" min="-1.8" max="1.8" step="0.02" value="0.5"><output id="y0-o"></output>
+          </div>
+          <div class="toggles">
+            <label><input type="checkbox" id="t-slices" checked> cortes e retas tangentes (∂f/∂x, ∂f/∂y)</label>
+            <label><input type="checkbox" id="t-plane"> plano tangente</label>
+            <label><input type="checkbox" id="t-levels" checked> curvas de nível no chão</label>
+            <label><input type="checkbox" id="t-grad" checked> gradiente no chão</label>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Em P</div><div class="readout" id="info"></div></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--pink)"></i>corte y = y₀ e inclinação ∂f/∂x</span>
+      <span><i style="background:var(--green)"></i>corte x = x₀ e inclinação ∂f/∂y</span>
+      <span><i style="background:var(--yellow)"></i>ponto P e gradiente</span>
+    </div>
+
+    <section class="prose">
+      <h2>Derivadas parciais e gradiente</h2>
+      <p>$\frac{\partial f}{\partial x}$ trata $y$ como constante e deriva só em $x$. Por exemplo, $f = x^2 y + \sin y$ dá $f_x = 2xy$ e $f_y = x^2 + \cos y$. O <b>gradiente</b> junta as duas num vetor:</p>
+      <p>$$ \nabla f = \left(\frac{\partial f}{\partial x}, \frac{\partial f}{\partial y}\right) $$</p>
+      <ul>
+        <li>$\nabla f$ aponta para onde $f$ <b>cresce mais rápido</b>, e $\|\nabla f\|$ é essa taxa máxima.</li>
+        <li>$\nabla f$ é <b>perpendicular às curvas de nível</b> (repare no chão).</li>
+        <li>A <b>derivada direcional</b> na direção unitária $\vec u$ é $D_{\vec u} f = \nabla f \cdot \vec u$.</li>
+        <li>O <b>plano tangente</b> em $(x_0, y_0)$ é $z = f(x_0,y_0) + f_x\,(x - x_0) + f_y\,(y - y_0)$: a versão 2D da reta tangente.</li>
+      </ul>
+      <h2>Máximos, mínimos e selas</h2>
+      <p>Nos pontos críticos, $\nabla f = \vec 0$ e o plano tangente fica horizontal. Para classificar, use a <b>matriz Hessiana</b> $H = \begin{bmatrix} f_{xx} & f_{xy} \\ f_{xy} & f_{yy}\end{bmatrix}$: se $\det H &gt; 0$ e $f_{xx} &gt; 0$, é mínimo; se $\det H &gt; 0$ e $f_{xx} &lt; 0$, máximo; se $\det H &lt; 0$, é <b>ponto de sela</b> (veja a "Sela": sobe numa direção e desce na outra). Com restrições (máximo de $f$ sobre a curva $g = 0$), usam-se os <b>multiplicadores de Lagrange</b>: $\nabla f = \lambda \nabla g$.</p>
+      <p>Continue em <a href="gradiente.html">Gradiente e descida do gradiente</a>, o algoritmo que treina redes neurais.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt, tex } from '../../../engine/page.js';
+    import { SURFACES, contours } from './multivar.js';
+
+    const W = 900, H = 600, N = 26;
+    const svg = $('#view');
+    const scene = new Scene(svg, { width: W, height: H, layers: ['bg', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    let key = 'paraboloide', az = -0.7, el = 0.55;
+
+    // projeção: gira em torno de z (azimute) e inclina (elevação)
+    const S = () => SURFACES[key];
+    function proj(x, y, z) {
+      const R = S().range, sc = 190 / R;
+      const x1 = x * Math.cos(az) - y * Math.sin(az), y1 = x * Math.sin(az) + y * Math.cos(az);
+      const z2 = y1 * Math.sin(el) + z * Math.cos(el);
+      return [W / 2 + x1 * sc, H / 2 + 40 - z2 * sc];
+    }
+    const Z = (x, y) => S().f(x, y) * S().zScale;
+    const color = t => `hsl(${220 - 180 * t} 70% 62%)`;
+
+    function draw() {
+      const Sf = S(), R = Sf.range;
+      const x0 = +$('#x0').value * R / 2, y0 = +$('#y0').value * R / 2;
+      $('#x0-o').value = fmt(x0, 2); $('#y0-o').value = fmt(y0, 2);
+      // faixa de z para colorir
+      let zmin = Infinity, zmax = -Infinity;
+      for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const z = Z(-R + (2 * R * i) / N, -R + (2 * R * j) / N); zmin = Math.min(zmin, z); zmax = Math.max(zmax, z); }
+      const floor = zmin - 0.35 * (zmax - zmin + 0.5);
+      const P = (x, y, z) => proj(x, y, z).map(v => v.toFixed(1)).join(' ');
+      const [fx, fy] = Sf.grad(x0, y0);
+      scene.frame(s => {
+        // chão: moldura, curvas de nível e gradiente
+        s.path('floor', `M ${P(-R, -R, floor)} L ${P(R, -R, floor)} L ${P(R, R, floor)} L ${P(-R, R, floor)} Z`, { stroke: COLORS.border, sw: 1, fill: 'rgba(255,255,255,.02)', layer: 'bg' });
+        if ($('#t-levels').checked) {
+          const levels = Array.from({ length: 9 }, (_, k) => zmin / Sf.zScale + ((k + 0.5) / 9) * (zmax - zmin) / Sf.zScale);
+          contours(Sf.f, [-R, R, -R, R], levels, 60).forEach((segs, li) => {
+            const d = segs.map(([[ax, ay], [bx, by]]) => `M ${P(ax, ay, floor)} L ${P(bx, by, floor)}`).join(' ');
+            s.path(`lv${li}`, d || 'M 0 0', { stroke: color((li + 0.5) / 9), sw: 1.4, opacity: 0.7, layer: 'bg' });
+          });
+        }
+        if ($('#t-grad').checked) {
+          const g = Math.hypot(fx, fy) || 1, L = Math.min(0.6 * R, 0.35 * R * g);
+          s.path('grad', `M ${P(x0, y0, floor)} L ${P(x0 + (fx / g) * L, y0 + (fy / g) * L, floor)}`, { stroke: COLORS.yellow, sw: 3, arrow: true, layer: 'bg' });
+          s.path('drop', `M ${P(x0, y0, floor)} L ${P(x0, y0, Z(x0, y0))}`, { stroke: COLORS.yellow, sw: 1, dash: '3 4', layer: 'bg' });
+        }
+        // malha da superfície
+        for (let i = 0; i <= N; i++) {
+          const u = -R + (2 * R * i) / N;
+          let dX = '', dY = '';
+          for (let j = 0; j <= N; j++) {
+            const v = -R + (2 * R * j) / N;
+            dX += `${j ? 'L' : 'M'} ${P(u, v, Z(u, v))} `;
+            dY += `${j ? 'L' : 'M'} ${P(v, u, Z(v, u))} `;
+          }
+          const t = (Z(u, 0) - zmin) / (zmax - zmin || 1);
+          s.path(`gx${i}`, dX, { stroke: color(t), sw: 1.1, opacity: 0.55 });
+          s.path(`gy${i}`, dY, { stroke: color((Z(0, u) - zmin) / (zmax - zmin || 1)), sw: 1.1, opacity: 0.55 });
+        }
+        // plano tangente
+        if ($('#t-plane').checked) {
+          const zp = (x, y) => (Sf.f(x0, y0) + fx * (x - x0) + fy * (y - y0)) * Sf.zScale;
+          const d = 0.45 * R;
+          const c = [[x0 - d, y0 - d], [x0 + d, y0 - d], [x0 + d, y0 + d], [x0 - d, y0 + d]];
+          s.path('plane', `M ${c.map(([x, y]) => P(x, y, zp(x, y))).join(' L ')} Z`, { stroke: COLORS.yellow, sw: 1.5, fill: 'rgba(244,211,94,.18)', layer: 'nodes' });
+        }
+        // cortes e retas tangentes
+        if ($('#t-slices').checked) {
+          let cx = '', cy = '';
+          for (let k = 0; k <= 60; k++) {
+            const t = -R + (2 * R * k) / 60;
+            cx += `${k ? 'L' : 'M'} ${P(t, y0, Z(t, y0))} `;
+            cy += `${k ? 'L' : 'M'} ${P(x0, t, Z(x0, t))} `;
+          }
+          s.path('cx', cx, { stroke: COLORS.pink, sw: 3, layer: 'nodes' });
+          s.path('cy', cy, { stroke: COLORS.green, sw: 3, layer: 'nodes' });
+          const d = 0.5 * R, z0 = Z(x0, y0);
+          s.path('tx', `M ${P(x0 - d, y0, z0 - fx * d * Sf.zScale)} L ${P(x0 + d, y0, z0 + fx * d * Sf.zScale)}`, { stroke: COLORS.pink, sw: 2, dash: '6 4', layer: 'nodes' });
+          s.path('ty', `M ${P(x0, y0 - d, z0 - fy * d * Sf.zScale)} L ${P(x0, y0 + d, z0 + fy * d * Sf.zScale)}`, { stroke: COLORS.green, sw: 2, dash: '6 4', layer: 'nodes' });
+        }
+        const [px, py] = proj(x0, y0, Z(x0, y0));
+        s.circle('P', { x: px, y: py, r: 7, fill: COLORS.yellow, stroke: COLORS.bg, sw: 2 });
+        // eixos
+        const ax = (k, to, lbl, col) => { s.path(`ax${k}`, `M ${P(0, 0, floor)} L ${P(...to, floor)}`, { stroke: col, sw: 1.5, arrow: true, layer: 'bg' }); const [lx, ly] = proj(...to.map(v => v * 1.1), floor); s.text(`axl${k}`, lbl, { x: lx, y: ly, size: 14, weight: 700, fill: col }); };
+        ax('x', [R, 0], 'x', COLORS.pink);
+        ax('y', [0, R], 'y', COLORS.green);
+      });
+      $('#info').innerHTML = '<div id="i1"></div><div id="i2"></div><div id="i3"></div>';
+      const n = v => fmt(v, 3).replace(',', '{,}');
+      tex($('#i1'), `f(x,y) = ${Sf.tex}`);
+      tex($('#i2'), `f(${n(x0)}, ${n(y0)}) = ${n(Sf.f(x0, y0))}`);
+      tex($('#i3'), `\\color{#f78fb3}{f_x = ${n(fx)}},\\ \\color{#83c167}{f_y = ${n(fy)}},\\ \\ \\color{#f4d35e}{\\|\\nabla f\\| = ${n(Math.hypot(fx, fy))}}`);
+    }
+
+    $('#surfs').append(...Object.entries(SURFACES).map(([k, Sf]) => {
+      const b = h('button', { class: 'btn small' }, Sf.nome);
+      b.addEventListener('click', () => { key = k; [...$('#surfs').children].forEach(x => x.setAttribute('aria-pressed', x === b)); scene.clear(); draw(); });
+      return b;
+    }));
+    $('#surfs').children[0].setAttribute('aria-pressed', 'true');
+    for (const id of ['x0', 'y0']) $(`#${id}`).addEventListener('input', draw);
+    for (const id of ['t-slices', 't-plane', 't-levels', 't-grad']) $(`#${id}`).addEventListener('change', draw);
+    let drag = null;
+    svg.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, az, el]; svg.setPointerCapture(e.pointerId); svg.style.cursor = 'grabbing'; });
+    svg.addEventListener('pointermove', e => {
+      if (!drag) return;
+      az = drag[2] + (e.clientX - drag[0]) * 0.008;
+      el = Math.max(-0.1, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.006));
+      draw();
+    });
+    svg.addEventListener('pointerup', () => { drag = null; svg.style.cursor = 'grab'; });
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Se $f(x, y) = x^2 y$, quanto vale $\\partial f / \\partial y$ no ponto (3, 5)?', options: ['9', '30', '15', '45'], answer: 0, explain: '$f_y = x^2$ (x é constante), logo $f_y(3, 5) = 9$.' },
+      { q: 'Em que direção você deve andar para <b>subir</b> o mais rápido possível numa montanha $z = f(x,y)$?', options: ['Na direção de ∇f', 'Perpendicular a ∇f', 'Na direção de −∇f', 'Ao longo da curva de nível'], answer: 0, explain: 'Andar ao longo da curva de nível mantém a altura; −∇f é a descida mais íngreme.' },
+      { q: 'Em $f = x^2 - y^2$, o ponto (0, 0) é:', options: ['um ponto de sela', 'um mínimo', 'um máximo', 'não é ponto crítico'], answer: 0, explain: '∇f = (0, 0) ali, mas f cresce na direção x e decresce na direção y. $\\det H = (2)(-2) - 0 &lt; 0$.' },
+    ]);
+  </script>
+</body>
+</html>
