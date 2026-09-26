@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Árvores de Busca · Estruturas de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 480px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ed">Estruturas de Dados</a>
+      <span class="sep">/</span><span>Árvores de busca</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Estruturas de Dados</div>
+    <h1>Árvores binárias de busca e AVL</h1>
+    <p class="lead">Numa árvore binária de busca, tudo à esquerda de um nó é menor e tudo à direita é maior. Buscar é descer um caminho, descartando metade a cada passo, <b>se a árvore estiver balanceada</b>. A AVL garante isso com <b>rotações</b>: veja os nós trocarem de lugar.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Tipo de árvore">
+        <button class="btn" data-mode="abb">ABB simples</button>
+        <button class="btn" data-mode="avl">AVL (balanceada)</button>
+      </div>
+      <label>Chave <input id="x" type="number" value="35" style="width:70px"></label>
+      <button class="btn primary" id="ins">Inserir</button>
+      <button class="btn" id="find">Buscar</button>
+      <button class="btn" id="del">Remover</button>
+      <span class="spacer"></span>
+      <button class="btn small" id="seq">Inserir 1…7 em ordem</button>
+      <button class="btn small" id="rnd">Aleatória</button>
+      <button class="btn small" id="clr">Limpar</button>
+    </div>
+    <div class="toolbar">
+      <span class="c-muted" style="font-size:14px">Percursos:</span>
+      <div class="chips">
+        <button class="btn small" data-t="preOrdem">Pré-ordem</button>
+        <button class="btn small" data-t="emOrdem">Em ordem</button>
+        <button class="btn small" data-t="posOrdem">Pós-ordem</button>
+        <button class="btn small" data-t="largura">Largura</button>
+      </div>
+      <span class="spacer"></span>
+      <span class="c-muted" id="stats" style="font-family:var(--mono);font-size:13px"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--yellow)"></i>nó atual</span>
+      <span><i style="background:var(--blue)"></i>caminho percorrido</span>
+      <span><i style="background:var(--green)"></i>encontrado / inserido</span>
+      <span><i style="background:var(--red)"></i>desbalanceado / removido</span>
+      <span><i style="background:var(--purple)"></i>sucessor</span>
+      <span><i style="background:var(--teal)"></i>visitado no percurso</span>
+    </div>
+
+    <section class="prose">
+      <h2>Por que balancear?</h2>
+      <p>O custo de buscar, inserir e remover é a <b>altura</b> $h$ da árvore. Com as chaves chegando em ordem aleatória, $h \approx 1{,}39 \log_2 n$ em média. Se chegarem ordenadas (clique em "Inserir 1…7 em ordem" no modo ABB), a árvore vira uma <b>lista</b> e tudo passa a custar $O(n)$.</p>
+      <p>A <b>AVL</b> (Adelson-Velsky e Landis, 1962) exige que, em todo nó, as alturas das subárvores esquerda e direita difiram de no máximo 1 (o <b>fator de balanço</b> $fb \in \{-1, 0, +1\}$). Isso garante $h \le 1{,}44 \log_2 n$: com um milhão de chaves, no máximo cerca de 28 níveis.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Caso</th><th>Situação</th><th>Correção</th></tr>
+          <tr><td>LL</td><td>inseriu na esquerda do filho esquerdo</td><td>rotação simples à direita</td></tr>
+          <tr><td>RR</td><td>inseriu na direita do filho direito</td><td>rotação simples à esquerda</td></tr>
+          <tr><td>LR</td><td>inseriu na direita do filho esquerdo</td><td>rotação dupla: esquerda no filho, depois direita</td></tr>
+          <tr><td>RL</td><td>inseriu na esquerda do filho direito</td><td>rotação dupla: direita no filho, depois esquerda</td></tr>
+        </table>
+      </div>
+      <p>Uma rotação só troca alguns ponteiros ($O(1)$) e <b>preserva a ordem</b> da ABB: o percurso em ordem continua igual. Experimente inserir 10, 20, 30 (RR) ou 30, 10, 20 (LR) na AVL.</p>
+
+      <h2>Os quatro percursos</h2>
+      <ul>
+        <li><b>Pré-ordem</b> (raiz, esq, dir): copiar ou serializar a árvore; notação prefixa.</li>
+        <li><b>Em ordem</b> (esq, raiz, dir): numa ABB, sai <b>ordenado</b>. Isso dá o <i>tree sort</i>.</li>
+        <li><b>Pós-ordem</b> (esq, dir, raiz): liberar a memória (filhos antes do pai); avaliar expressões.</li>
+        <li><b>Largura</b> (nível a nível, com uma fila): menor caminho em grafos não ponderados (BFS).</li>
+      </ul>
+      <div class="callout"><p>Outras árvores balanceadas: <b>rubro-negra</b> (usada no <code>std::map</code> e no <code>TreeMap</code> do Java; balanceamento mais "frouxo", com menos rotações) e <b>árvores B</b> (muitos filhos por nó, feitas para disco: índices de bancos de dados).</p></div>
+      <p>Implementação em C++ com testes: <a href="../codigo/arvore.cpp"><code>codigo/arvore.cpp</code></a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, insert, search, remove, traversal, build, emptyTree, layout, height } from './arvores.js';
+
+    const W = 900, H = 500;
+    let avl = false;
+    let tree = build([50, 30, 70, 20, 40, 60, 80]);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'arvore.cpp',
+      render(step, s) {
+        const { pos, count, depth } = layout(step);
+        const dx = Math.min(70, (W - 80) / Math.max(1, count));
+        const dy = Math.min(80, (H - 130) / Math.max(1, depth));
+        const r = Math.max(14, Math.min(22, dx * 0.36));
+        const x0 = W / 2 - ((count - 1) * dx) / 2;
+        const P = id => [x0 + pos.get(id).i * dx, 50 + pos.get(id).d * dy];
+        const byId = new Map(step.nodes.map(n => [n.id, n]));
+        const hl = step.hl ?? {};
+        const hOf = id => (id == null ? 0 : byId.get(id).h);
+
+        for (const n of step.nodes) {
+          if (!pos.has(n.id)) continue;
+          for (const c of [n.left, n.right]) {
+            if (c == null || !pos.has(c)) continue;
+            const [x1, y1] = P(n.id), [x2, y2] = P(c);
+            const onPath = hl.path?.includes(n.id) && (hl.path.includes(c) || hl.cur === c);
+            s.line(`e${c}`, x1, y1 + r, x2, y2 - r, { stroke: onPath ? COLORS.blue : COLORS.border, sw: onPath ? 3 : 2 });
+          }
+        }
+        for (const n of step.nodes) {
+          if (!pos.has(n.id)) continue;
+          const [x, y] = P(n.id);
+          const fb = hOf(n.left) - hOf(n.right);
+          let fill = COLORS.surface2, stroke = COLORS.muted, text = COLORS.text;
+          if (hl.path?.includes(n.id)) { fill = '#1c3640'; stroke = COLORS.blue; }
+          if (hl.visited?.includes(n.id)) { fill = '#173530'; stroke = COLORS.teal; }
+          if (hl.succ === n.id) { fill = '#2a2140'; stroke = COLORS.purple; }
+          if (hl.found === n.id || hl.created === n.id) { fill = '#1f3319'; stroke = COLORS.green; }
+          if (hl.unbalanced === n.id || hl.deleting === n.id) { fill = '#3a1b18'; stroke = COLORS.red; }
+          if (hl.cur === n.id) stroke = COLORS.yellow;
+          s.circle(`n${n.id}`, { x, y, r, fill, stroke, sw: hl.cur === n.id ? 3.5 : 2 });
+          s.text(`t${n.id}`, n.key, { x, y, size: r * 0.8, weight: 700, mono: true, fill: text });
+          if (avl) s.text(`fb${n.id}`, `${fb > 0 ? '+' : ''}${fb}`, { x: x + r + 8, y: y - r + 2, size: 11, mono: true, weight: 700, fill: Math.abs(fb) > 1 ? COLORS.red : COLORS.faint });
+          const vi = hl.visited?.indexOf(n.id);
+          if (vi != null && vi >= 0) s.text(`vo${n.id}`, vi + 1, { x: x - r - 6, y: y - r + 2, size: 11, weight: 800, fill: COLORS.teal });
+        }
+        if (step.output) s.text('out', `saída: ${step.output.join('  ')}`, { x: 30, y: H - 24, size: 16, anchor: 'start', weight: 700, mono: true, fill: COLORS.teal });
+        s.text('hgt', `altura = ${depth + (count ? 1 : 0)} · nós = ${count}`, { x: W - 20, y: 22, size: 13, anchor: 'end', mono: true, fill: COLORS.muted });
+      },
+    });
+
+    const stats = () => { $('#stats').textContent = `${tree.nodes.size} nós · altura ${height(tree)} · ótimo possível: ${Math.ceil(Math.log2(tree.nodes.size + 1))}`; };
+    function show(codeKey, steps) { player.setCode(CODES[codeKey], 'cpp'); player.load(steps); stats(); }
+    function doInsert(x) { const r = insert(tree, x, { avl }); tree = r.tree; return r.steps; }
+
+    $('#ins').addEventListener('click', () => { show(avl ? 'insereAVL' : 'insere', doInsert(+$('#x').value)); player.play(); $('#x').value = randInt(1, 99); });
+    $('#find').addEventListener('click', () => { show('busca', search(tree, +$('#x').value).steps); player.play(); });
+    $('#del').addEventListener('click', () => { const r = remove(tree, +$('#x').value, { avl }); tree = r.tree; show('remove', r.steps); player.play(); });
+    $$('[data-t]').forEach(b => b.addEventListener('click', () => { show(b.dataset.t, traversal(tree, b.dataset.t).steps); player.play(); }));
+    $('#seq').addEventListener('click', () => {
+      tree = emptyTree();
+      const steps = [1, 2, 3, 4, 5, 6, 7].flatMap(k => doInsert(k));
+      show(avl ? 'insereAVL' : 'insere', steps);
+      player.setSpeed(4); player.root.querySelector('.speed').value = '4';
+      player.play();
+    });
+    $('#rnd').addEventListener('click', () => {
+      const keys = [...new Set(Array.from({ length: 10 }, () => randInt(1, 99)))];
+      tree = build(keys, { avl });
+      show('emOrdem', traversal(tree, 'emOrdem').steps.slice(0, 1));
+    });
+    $('#clr').addEventListener('click', () => { tree = emptyTree(); show('insere', traversal(tree, 'emOrdem').steps.slice(0, 1)); });
+    $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
+      avl = b.dataset.mode === 'avl';
+      $$('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      // reconstrói a árvore atual no novo modo (reinserindo em ordem de nível)
+      const keys = traversal(tree, 'largura').output;
+      tree = build(keys, { avl });
+      show(avl ? 'insereAVL' : 'insere', traversal(tree, 'emOrdem').steps.slice(0, 1));
+    }));
+    $('[data-mode=abb]').setAttribute('aria-pressed', 'true');
+    show('insere', doInsert(35));
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual percurso de uma ABB lista as chaves em ordem crescente?', options: ['Em ordem', 'Pré-ordem', 'Pós-ordem', 'Largura'], answer: 0, explain: 'Esquerda (menores), raiz, direita (maiores), recursivamente.' },
+      { q: 'Numa ABB <b>não balanceada</b>, qual o pior caso de uma busca com n chaves?', options: ['$O(n)$', '$O(\\log n)$', '$O(1)$', '$O(n \\log n)$'], answer: 0, explain: 'Inserindo chaves ordenadas, a árvore degenera numa lista de altura n.' },
+      { q: 'Na AVL, inserimos 30, 10 e depois 20. Que rotação acontece?', options: ['Dupla: esquerda em 10, depois direita em 30 (caso LR)', 'Simples à direita em 30', 'Simples à esquerda em 10', 'Nenhuma'], answer: 0, explain: 'O 20 entra à direita do filho esquerdo (zigue-zague). Faça no simulador!' },
+      { q: 'Ao remover um nó com dois filhos, por que usamos o sucessor (menor da subárvore direita)?', options: ['Ele é maior que toda a subárvore esquerda e menor que o resto da direita, então pode ocupar o lugar', 'Porque é sempre uma folha', 'Porque é o maior da árvore', 'Por convenção, sem motivo'], answer: 0, explain: 'O antecessor (maior da esquerda) também funcionaria. Nenhum dos dois tem dois filhos, então removê-los cai num caso simples.' },
+    ]);
+  </script>
+</body>
+</html>

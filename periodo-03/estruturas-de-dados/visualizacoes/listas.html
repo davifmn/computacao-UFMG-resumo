@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Listas Encadeadas · Estruturas de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ed">Estruturas de Dados</a>
+      <span class="sep">/</span><span>Listas encadeadas</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Estruturas de Dados</div>
+    <h1>Listas encadeadas</h1>
+    <p class="lead">Um vetor guarda os elementos lado a lado na memória. Uma lista encadeada espalha os elementos em <b>nós</b>, e cada nó guarda o endereço do próximo. Escolha uma operação e veja os ponteiros mudarem, linha a linha.</p>
+
+    <div class="toolbar">
+      <label>Valor <input id="x" type="number" value="10" style="width:80px"></label>
+      <div class="chips" id="ops"></div>
+      <span class="spacer"></span>
+      <button class="btn small" id="random">Lista aleatória</button>
+      <button class="btn small" id="clear">Esvaziar</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i>ponteiro <code>prox</code></span>
+      <span><i style="background:var(--yellow)"></i>atual</span>
+      <span><i style="background:var(--pink)"></i>anterior</span>
+      <span><i style="background:var(--green)"></i>novo</span>
+      <span><i style="background:var(--red)"></i>nó sendo removido</span>
+    </div>
+
+    <section class="prose">
+      <h2>Vetor × lista encadeada</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Operação</th><th>Vetor</th><th>Lista encadeada</th></tr>
+          <tr><td>Acessar o i-ésimo</td><td>$O(1)$</td><td>$O(n)$ (percorrer)</td></tr>
+          <tr><td>Inserir/remover no início</td><td>$O(n)$ (deslocar tudo)</td><td>$O(1)$</td></tr>
+          <tr><td>Inserir no fim</td><td>$O(1)$ amortizado</td><td>$O(n)$, ou $O(1)$ com ponteiro para a cauda</td></tr>
+          <tr><td>Inserir/remover no meio (com o nó em mãos)</td><td>$O(n)$</td><td>$O(1)$</td></tr>
+          <tr><td>Busca</td><td>$O(n)$, ou $O(\log n)$ se ordenado</td><td>$O(n)$ (sem busca binária!)</td></tr>
+          <tr><td>Memória extra</td><td>folga de capacidade</td><td>um ponteiro por elemento</td></tr>
+        </table>
+      </div>
+      <p>Na prática, o vetor costuma ganhar mesmo em operações "teoricamente piores", porque ele usa bem a <b>cache</b> do processador (os elementos estão vizinhos na memória). A lista brilha quando há muitas inserções e remoções no meio, com o nó já em mãos: filas de tarefas de um SO, blocos livres de memória, o <code>std::list</code>.</p>
+
+      <h2>Variações</h2>
+      <ul>
+        <li><b>Duplamente encadeada:</b> cada nó também aponta para o anterior, o que permite remover em $O(1)$ e andar para trás (<code>std::list</code>).</li>
+        <li><b>Circular:</b> o último aponta para o primeiro, útil para escalonamento round-robin.</li>
+        <li><b>Com sentinela (nó cabeça):</b> um nó falso no início elimina o caso especial "lista vazia" / "remover o primeiro" que aparece no código ao lado.</li>
+      </ul>
+      <div class="callout warn"><p><b>Os três bugs clássicos:</b> (1) perder a referência para o resto da lista ao religar na ordem errada; (2) desreferenciar <code>nullptr</code> (sempre teste <code>atual != nullptr</code> antes de <code>atual-&gt;prox</code>); (3) esquecer o <code>delete</code> (vazamento) ou usar o nó depois dele.</p></div>
+      <p>Implementação completa com destrutor, cópia e testes: <a href="../codigo/lista.cpp"><code>codigo/lista.cpp</code></a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, randInt } from '../../../engine/page.js';
+    import { CODES, LABELS, run, fromValues } from './listas.js';
+
+    const W = 900, H = 380, Y = 170, NW = 58, PW = 28, NH = 44;
+    const PTR = { atual: COLORS.yellow, anterior: COLORS.pink, novo: COLORS.green };
+    let list = fromValues([3, 8, 15, 23]);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'Lista.cpp',
+      render(step, s) {
+        const byId = new Map(step.nodes.map(n => [n.id, n]));
+        const chain = [];
+        for (let cur = step.cabeca, g = 0; cur != null && g < 50; cur = byId.get(cur)?.prox, g++) chain.push(cur);
+        const slot = Math.min(118, (W - 140) / Math.max(chain.length + 1, 5));
+        const X0 = 110;
+        const pos = new Map();
+        chain.forEach((id, k) => pos.set(id, [X0 + k * slot, Y]));
+        // nós fora da corrente: novo (ainda não ligado) ou removido
+        for (const n of step.nodes) {
+          if (pos.has(n.id)) continue;
+          const k = n.prox != null && pos.has(n.prox) ? chain.indexOf(n.prox) - 0.5 : chain.length - 0.3;
+          pos.set(n.id, [X0 + Math.max(0, k) * slot, Y + 120]);
+        }
+        if (step.detached != null && pos.has(step.detached)) {
+          const [x] = pos.get(step.detached);
+          pos.set(step.detached, [x, Y + 120]);
+        }
+
+        // cabeça
+        s.rect('head', { x: 16, y: 56, w: 70, h: 34, fill: COLORS.surface2, stroke: COLORS.blue });
+        s.text('head-l', 'cabeca', { x: 51, y: 73, size: 13, mono: true, weight: 700, fill: COLORS.blue });
+        if (step.cabeca != null) {
+          const [hx, hy] = pos.get(step.cabeca);
+          s.path('head-a', `M 86 73 C 110 73, ${hx - 20} ${hy - 50}, ${hx + NW / 2} ${hy - NH / 2 - 4}`, { stroke: COLORS.blue, sw: 2.5, arrow: true });
+        } else s.text('head-null', 'nullptr', { x: 51, y: 108, size: 12, mono: true, fill: COLORS.faint });
+
+        for (const n of step.nodes) {
+          const [x, y] = pos.get(n.id);
+          const deleted = n.state === 'deleted' || step.detached === n.id;
+          const found = step.found === n.id;
+          const stroke = deleted ? COLORS.red : found ? COLORS.green : n.state === 'new' ? COLORS.green : COLORS.border;
+          s.rect(`nv${n.id}`, { x, y: y - NH / 2, w: NW, h: NH, rx: 6, fill: found ? '#1f3319' : deleted ? '#2a1717' : COLORS.surface2, stroke, sw: 2 });
+          s.rect(`np${n.id}`, { x: x + NW, y: y - NH / 2, w: PW, h: NH, rx: 6, fill: COLORS.surface, stroke, sw: 2 });
+          s.text(`nt${n.id}`, n.valor, { x: x + NW / 2, y, size: 17, weight: 700, mono: true, fill: deleted ? COLORS.red : COLORS.text });
+          s.circle(`nd${n.id}`, { x: x + NW + PW / 2, y, r: 4, fill: n.prox == null ? COLORS.faint : COLORS.blue, stroke: 'none' });
+          if (n.prox != null && pos.has(n.prox)) {
+            const [tx, ty] = pos.get(n.prox);
+            const sx = x + NW + PW / 2;
+            const d = Math.abs(ty - y) < 1 && tx > x
+              ? `M ${sx} ${y} L ${tx - 4} ${ty}`
+              : `M ${sx} ${y} C ${sx + 40} ${y}, ${tx - 40} ${ty}, ${tx - 4} ${ty}`;
+            s.path(`na${n.id}`, d, { stroke: deleted ? COLORS.red : COLORS.blue, sw: 2.2, arrow: true });
+          } else {
+            s.text(`nn${n.id}`, '∅', { x: x + NW + PW + 14, y, size: 16, fill: COLORS.faint });
+          }
+        }
+
+        // ponteiros auxiliares (atual, anterior, novo)
+        const below = new Map();
+        for (const [name, color] of Object.entries(PTR)) {
+          const id = step.ptr[name];
+          if (!(name in step.ptr)) continue;
+          if (id == null) {
+            s.text(`p-${name}`, `${name} = nullptr`, { x: W - 20, y: 30 + Object.keys(PTR).indexOf(name) * 20, size: 13, anchor: 'end', mono: true, fill: color });
+            continue;
+          }
+          const [x, y] = pos.get(id);
+          const k = below.get(id) ?? 0;
+          below.set(id, k + 1);
+          const up = y > Y + 50;          // nó rebaixado: rótulo acima dele não caberia → abaixo
+          const ly = up ? y + NH / 2 + 22 + k * 18 : y - NH / 2 - 22 - k * 18;
+          s.text(`p-${name}`, name, { x: x + NW / 2, y: ly, size: 13, weight: 700, mono: true, fill: color });
+        }
+      },
+    });
+
+    function exec(op) {
+      const x = Math.round(+$('#x').value || 0);
+      const r = run(op, list, x);
+      list = r.list;
+      player.setCode(CODES[op], 'cpp');
+      player.load(r.steps);
+      player.play();
+      $('#x').value = randInt(1, 40);
+    }
+
+    $('#ops').append(...Object.entries(LABELS).map(([op, label]) => {
+      const b = h('button', { class: `btn small${op === 'ordenado' ? ' primary' : ''}` }, label);
+      b.addEventListener('click', () => exec(op));
+      return b;
+    }));
+    const show = () => { player.setCode(CODES.ordenado, 'cpp'); player.load(run('busca', list, -99999).steps.slice(-1)); };
+    $('#random').addEventListener('click', () => {
+      const vals = [...new Set(Array.from({ length: randInt(3, 6) }, () => randInt(1, 40)))].sort((a, b) => a - b);
+      list = fromValues(vals); show();
+    });
+    $('#clear').addEventListener('click', () => { list = { nodes: [], cabeca: null }; show(); });
+    player.setCode(CODES.ordenado, 'cpp');
+    const first = run('ordenado', list, 10);
+    list = first.list;
+    player.load(first.steps);
+
+    mountQuiz($('#quiz'), [
+      {
+        q: 'Para inserir <code>novo</code> logo depois do nó <code>p</code>, qual ordem está <b>correta</b>?',
+        options: [
+          '<code>novo-&gt;prox = p-&gt;prox;</code> e depois <code>p-&gt;prox = novo;</code>',
+          '<code>p-&gt;prox = novo;</code> e depois <code>novo-&gt;prox = p-&gt;prox;</code>',
+          'Tanto faz a ordem',
+          '<code>novo-&gt;prox = p;</code> e depois <code>p-&gt;prox = novo;</code>',
+        ],
+        answer: 0,
+        explain: 'Na ordem inversa, <code>p-&gt;prox</code> já foi sobrescrito quando o copiamos: <code>novo</code> aponta para si mesmo e o resto da lista se perde. Ligue o novo nó primeiro, depois religue o anterior (como no <code>insereOrdenado</code>).',
+      },
+      {
+        q: 'Qual o custo de acessar o 1000º elemento de uma lista encadeada?',
+        options: ['$O(n)$: é preciso seguir 999 ponteiros', '$O(1)$', '$O(\\log n)$', 'Depende do valor'],
+        answer: 0,
+        explain: 'Não há como calcular o endereço do i-ésimo nó: ele pode estar em qualquer lugar da memória.',
+      },
+      {
+        q: 'O que acontece se o <code>remove</code> esquecer o caso <code>anterior == nullptr</code>?',
+        options: ['Remover o primeiro elemento desreferencia nullptr e o programa quebra', 'Nada de errado', 'O último nunca é removido', 'A lista fica circular'],
+        answer: 0,
+        explain: 'Se o alvo é o primeiro, não existe anterior, e <code>anterior-&gt;prox</code> acessa memória inválida. É preciso mudar a cabeça. Um nó sentinela elimina esse caso especial.',
+      },
+    ]);
+  </script>
+</body>
+</html>

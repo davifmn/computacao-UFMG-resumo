@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pilhas e Filas · Estruturas de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ed">Estruturas de Dados</a>
+      <span class="sep">/</span><span>Pilhas e filas</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Estruturas de Dados</div>
+    <h1>Pilhas e filas</h1>
+    <p class="lead">Duas estruturas que só permitem mexer nas pontas. Na <b>pilha</b>, o último a entrar é o primeiro a sair (LIFO), como uma pilha de pratos. Na <b>fila</b>, o primeiro a entrar é o primeiro a sair (FIFO), como a fila do bandejão.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Estrutura">
+        <button class="btn" data-k="pilha">Pilha</button>
+        <button class="btn" data-k="fila">Fila circular</button>
+        <button class="btn" data-k="parenteses">Aplicação: parênteses</button>
+      </div>
+      <span class="spacer"></span>
+      <span id="ctl-sf">
+        <label>Valor <input id="x" type="number" value="7" style="width:70px"></label>
+        <button class="btn primary" id="push">Empilhar</button>
+        <button class="btn" id="pop">Desempilhar</button>
+      </span>
+      <span id="ctl-p" hidden>
+        <label>Expressão <input id="expr" type="text" value="{a[b(c)d]e}(f)" size="20"></label>
+        <button class="btn primary" id="check">Verificar</button>
+        <button class="btn small" data-e="(()">(()</button>
+        <button class="btn small" data-e="([)]">([)]</button>
+        <button class="btn small" data-e="int f(v[i]) { return (x); }">código</button>
+      </span>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Onde elas aparecem</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Pilha (LIFO)</th><th>Fila (FIFO)</th></tr>
+          <tr><td>pilha de chamadas de funções (recursão!)</td><td>fila de processos do sistema operacional</td></tr>
+          <tr><td>desfazer (Ctrl+Z) e o botão "voltar" do navegador</td><td>fila de impressão, buffers de rede e de teclado</td></tr>
+          <tr><td>verificar parênteses; avaliar expressões pós-fixas</td><td>busca em largura (BFS) em grafos</td></tr>
+          <tr><td>busca em profundidade (DFS) sem recursão</td><td>simulações de atendimento (teoria de filas)</td></tr>
+        </table>
+      </div>
+      <h2>Por que a fila é circular?</h2>
+      <p>Numa fila guardada num vetor "reto", cada remoção no início deixa um buraco. Ou deslocamos tudo ($O(n)$), ou o espaço do começo é desperdiçado para sempre. Com a aritmética modular <code>(i + 1) % MAX</code>, o índice <b>dá a volta</b> e reaproveita essas posições: tudo em $O(1)$. Enfileire até o fim do vetor, desenfileire alguns e enfileire de novo para ver o <code>fim</code> voltar para 0.</p>
+      <div class="callout"><p><b>TAD (Tipo Abstrato de Dados):</b> quem usa a pilha só enxerga <code>empilha</code>, <code>desempilha</code>, <code>topo</code> e <code>vazia</code>. A representação (vetor, lista encadeada…) fica escondida e pode mudar sem afetar o resto do programa. Em C++: <code>std::stack</code>, <code>std::queue</code> e <code>std::deque</code> (que permite as duas pontas).</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, MAX, stackOp, queueOp, balancedSteps, emptyStack, emptyQueue } from './pilhafila.js';
+
+    const W = 900, H = 480;
+    let kind = 'pilha';
+    let stack = emptyStack(), queue = emptyQueue();
+
+    function box(s, key, v, x, y, { w = 56, h = 40, hot = false, color = COLORS.blue } = {}) {
+      s.rect(`b${key}`, { x: x - w / 2, y: y - h / 2, w, h, rx: 6, fill: hot ? '#3d3a22' : '#1c3640', stroke: hot ? COLORS.yellow : color, sw: 2 });
+      s.text(`t${key}`, v, { x, y, size: 17, weight: 700, mono: true, fill: hot ? COLORS.yellow : COLORS.text });
+    }
+
+    function renderStack(step, s) {
+      const X = 380, slotY = k => 430 - k * 48;
+      for (let k = 0; k < MAX; k++) {
+        s.rect(`slot${k}`, { x: X - 34, y: slotY(k) - 22, w: 68, h: 44, rx: 4, fill: COLORS.surface, stroke: COLORS.border, layer: 'bg' });
+        s.text(`si${k}`, k, { x: X + 50, y: slotY(k), size: 12, mono: true, fill: COLORS.faint, layer: 'bg' });
+      }
+      s.path('walls', `M ${X - 40} 40 V ${slotY(0) + 26} H ${X + 40} V 40`, { stroke: COLORS.muted, sw: 2, layer: 'bg' });
+      step.items.forEach((it, k) => { if (it) box(s, it.id, it.v, X, slotY(k), { hot: it.id === step.hot }); });
+      const ty = step.topo >= 0 ? slotY(step.topo) : slotY(0) + 44;
+      s.text('topo', `topo = ${step.topo} →`, { x: X - 50, y: ty, size: 15, anchor: 'end', weight: 700, mono: true, fill: COLORS.yellow });
+      if (step.out) {
+        box(s, step.out.id, step.out.v, 680, 120, { color: COLORS.green });
+        s.text('out-l', 'retornou', { x: 680, y: 84, size: 13, fill: COLORS.green });
+      }
+      if (step.error) s.text('err', `⚠ ${step.error}`, { x: 680, y: 240, size: 18, weight: 700, fill: COLORS.red });
+    }
+
+    function renderQueue(step, s) {
+      const CX = 250, CY = 240, R = 150;
+      const P = k => { const a = -Math.PI / 2 + (2 * Math.PI * k) / MAX; return [CX + R * Math.cos(a), CY + R * Math.sin(a)]; };
+      for (let k = 0; k < MAX; k++) {
+        const [x, y] = P(k);
+        s.rect(`cell${k}`, { x: x - 32, y: y - 24, w: 64, h: 48, rx: 8, fill: COLORS.surface, stroke: COLORS.border, layer: 'bg' });
+        const [lx, ly] = [CX + (R + 46) * Math.cos(-Math.PI / 2 + (2 * Math.PI * k) / MAX), CY + (R + 46) * Math.sin(-Math.PI / 2 + (2 * Math.PI * k) / MAX)];
+        s.text(`ci${k}`, k, { x: lx, y: ly, size: 12, mono: true, fill: COLORS.faint, layer: 'bg' });
+      }
+      step.items.forEach((it, k) => { if (it) { const [x, y] = P(k); box(s, it.id, it.v, x, y, { hot: it.id === step.hot }); } });
+      const arrow = (key, k, color, r0) => {
+        const a = -Math.PI / 2 + (2 * Math.PI * k) / MAX;
+        s.path(key, `M ${CX + r0 * Math.cos(a)} ${CY + r0 * Math.sin(a)} L ${CX + (R - 32) * Math.cos(a)} ${CY + (R - 32) * Math.sin(a)}`, { stroke: color, sw: 3, arrow: true });
+      };
+      arrow('a-ini', step.inicio, COLORS.green, 20);
+      arrow('a-fim', step.fim, COLORS.pink, 40);
+      s.text('l-ini', `início = ${step.inicio}`, { x: CX, y: CY - 12, size: 13, weight: 700, mono: true, fill: COLORS.green });
+      s.text('l-fim', `fim = ${step.fim}`, { x: CX, y: CY + 12, size: 13, weight: 700, mono: true, fill: COLORS.pink });
+      // o mesmo vetor, "reto"
+      const X0 = 520, SW = 44;
+      s.text('lin-t', 'o mesmo vetor na memória:', { x: X0, y: 380, size: 12, anchor: 'start', fill: COLORS.muted });
+      for (let k = 0; k < MAX; k++) {
+        const it = step.items[k];
+        s.rect(`lin${k}`, { x: X0 + k * SW, y: 396, w: SW - 4, h: 36, rx: 4, fill: it ? '#1c3640' : COLORS.surface, stroke: COLORS.border });
+        if (it) s.text(`lint${k}-${it.id}`, it.v, { x: X0 + k * SW + (SW - 4) / 2, y: 414, size: 13, mono: true, weight: 700 });
+        s.text(`lini${k}`, k, { x: X0 + k * SW + (SW - 4) / 2, y: 446, size: 11, mono: true, fill: k === step.inicio ? COLORS.green : k === step.fim ? COLORS.pink : COLORS.faint });
+      }
+      if (step.out) {
+        box(s, step.out.id, step.out.v, 680, 110, { color: COLORS.green });
+        s.text('out-l', 'saiu da fila', { x: 680, y: 74, size: 13, fill: COLORS.green });
+      }
+      s.text('size', `tamanho = ${step.tamanho} / ${MAX}`, { x: 680, y: 200, size: 16, weight: 700, mono: true, fill: COLORS.text });
+      if (step.error) s.text('err', `⚠ ${step.error}`, { x: 680, y: 250, size: 18, weight: 700, fill: COLORS.red });
+    }
+
+    function renderParens(step, s) {
+      const chars = [...step.s];
+      const cw = Math.min(34, 800 / Math.max(chars.length, 1));
+      const X0 = W / 2 - (chars.length * cw) / 2;
+      chars.forEach((c, i) => {
+        const cur = step.i === i, bad = step.bad === i, match = step.match?.includes(i);
+        const isP = '()[]{}'.includes(c);
+        s.rect(`cbg${i}`, { x: X0 + i * cw + 1, y: 40, w: cw - 2, h: 40, rx: 4, fill: bad ? '#3a1b18' : match ? '#1f3319' : cur ? '#3d3a22' : COLORS.surface, stroke: cur ? COLORS.yellow : 'transparent', sw: 2 });
+        s.text(`ch${i}`, c === ' ' ? '·' : c, { x: X0 + i * cw + cw / 2, y: 60, size: 18, weight: isP ? 800 : 400, mono: true, fill: bad ? COLORS.red : match ? COLORS.green : isP ? COLORS.text : COLORS.faint });
+      });
+      const SX = W / 2, slotY = k => 430 - k * 42;
+      s.path('walls', `M ${SX - 36} 130 V ${slotY(0) + 24} H ${SX + 36} V 130`, { stroke: COLORS.muted, sw: 2, layer: 'bg' });
+      s.text('st-l', 'pilha', { x: SX + 60, y: slotY(0), size: 13, anchor: 'start', fill: COLORS.muted });
+      step.stack.forEach((it, k) => {
+        s.rect(`sb${it.id}`, { x: SX - 28, y: slotY(k) - 18, w: 56, h: 36, rx: 6, fill: '#1c3640', stroke: COLORS.blue, sw: 2 });
+        s.text(`st${it.id}`, it.c, { x: SX, y: slotY(k), size: 20, weight: 800, mono: true });
+      });
+      if (step.done != null) s.text('res', step.done ? '✓ balanceada' : '✗ não balanceada', { x: W / 2, y: 110, size: 20, weight: 800, fill: step.done ? COLORS.green : COLORS.red });
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'Código',
+      render(step, s) {
+        if (step.kind === 'pilha') renderStack(step, s);
+        else if (step.kind === 'fila') renderQueue(step, s);
+        else renderParens(step, s);
+      },
+    });
+
+    function op(which) {
+      const x = Math.round(+$('#x').value || 0);
+      const r = kind === 'pilha' ? stackOp(stack, which, x) : queueOp(queue, which, x);
+      if (kind === 'pilha') stack = r.state; else queue = r.state;
+      player.load(r.steps);
+      player.play();
+      if (which === 'push') $('#x').value = randInt(1, 99);
+    }
+    function setKind(k) {
+      kind = k;
+      $$('[data-k]').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+      $('#ctl-sf').hidden = k === 'parenteses';
+      $('#ctl-p').hidden = k !== 'parenteses';
+      $('#push').textContent = k === 'fila' ? 'Enfileirar' : 'Empilhar';
+      $('#pop').textContent = k === 'fila' ? 'Desenfileirar' : 'Desempilhar';
+      player.setCode(CODES[k], 'cpp');
+      if (k === 'parenteses') player.load(balancedSteps($('#expr').value));
+      else {
+        // mostra o estado atual
+        const r = k === 'pilha' ? stackOp(stack, 'noop') : queueOp(queue, 'noop');
+        player.load([{ ...r.steps[0], line: null, msg: 'Use os botões acima para operar.' }]);
+      }
+    }
+    $$('[data-k]').forEach(b => b.addEventListener('click', () => setKind(b.dataset.k)));
+    $('#push').addEventListener('click', () => op('push'));
+    $('#pop').addEventListener('click', () => op('pop'));
+    $('#check').addEventListener('click', () => player.load(balancedSteps($('#expr').value)));
+    $$('[data-e]').forEach(b => b.addEventListener('click', () => { $('#expr').value = b.dataset.e; player.load(balancedSteps(b.dataset.e)); }));
+
+    // estado inicial: alguns elementos já empilhados/enfileirados
+    for (const v of [4, 9, 2]) stack = stackOp(stack, 'push', v).state;
+    for (const v of [15, 42, 8, 23, 16, 4]) queue = queueOp(queue, 'push', v).state;
+    for (let k = 0; k < 4; k++) queue = queueOp(queue, 'pop').state;
+    setKind('pilha');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Empilhamos 1, 2, 3 e depois desempilhamos duas vezes. Quem está no topo?', options: ['1', '2', '3', 'a pilha está vazia'], answer: 0, explain: 'Saem 3 e 2 (LIFO), e sobra o 1.' },
+      { q: 'Numa fila circular com MAX = 8, início = 6 e tamanho = 4, qual é o valor de fim?', options: ['2', '10', '4', '6'], answer: 0, explain: 'fim = (início + tamanho) % MAX = 10 % 8 = 2.' },
+      { q: 'Qual estrutura a busca em <b>largura</b> (BFS) usa para decidir o próximo vértice a visitar?', options: ['Fila', 'Pilha', 'Árvore', 'Tabela hash'], answer: 0, explain: 'A BFS visita os vértices na ordem em que foram descobertos (FIFO). Trocar a fila por uma pilha transforma a BFS em DFS.' },
+    ]);
+  </script>
+</body>
+</html>

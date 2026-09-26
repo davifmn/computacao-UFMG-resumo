@@ -1,0 +1,74 @@
+[
+  {
+    "id": "e1",
+    "enunciado": "Liste o nome e o ano de ingresso de todos os alunos do curso de Sistemas de Informação (curso = 'SI').",
+    "resposta": "SELECT nome, ano_ingresso FROM alunos WHERE curso = 'SI';",
+    "ordenado": false
+  },
+  {
+    "id": "e2",
+    "enunciado": "Liste as disciplinas do 1º e do 2º período (código e nome), da maior para a menor quantidade de créditos.",
+    "resposta": "SELECT codigo, nome FROM disciplinas WHERE periodo IN (1, 2) ORDER BY creditos DESC, codigo;",
+    "ordenado": false
+  },
+  {
+    "id": "e3",
+    "enunciado": "Quantos alunos há em cada curso? Mostre o curso e a quantidade.",
+    "resposta": "SELECT curso, COUNT(*) FROM alunos GROUP BY curso;",
+    "ordenado": false
+  },
+  {
+    "id": "e4",
+    "enunciado": "Qual a média das notas (ignorando quem ainda está cursando) de cada disciplina? Mostre o código e a média arredondada para 1 casa decimal.",
+    "resposta": "SELECT codigo, ROUND(AVG(nota), 1) FROM matriculas WHERE nota IS NOT NULL GROUP BY codigo;",
+    "ordenado": false
+  },
+  {
+    "id": "e5",
+    "enunciado": "Liste o nome de cada aluno e o nome de cada disciplina em que ele foi reprovado (nota menor que 60).",
+    "resposta": "SELECT a.nome, d.nome FROM matriculas m JOIN alunos a ON a.matricula = m.matricula JOIN disciplinas d ON d.codigo = m.codigo WHERE m.nota < 60;",
+    "ordenado": false
+  },
+  {
+    "id": "e6",
+    "enunciado": "Quais disciplinas nunca tiveram nenhuma matrícula? Mostre o código e o nome.",
+    "resposta": "SELECT d.codigo, d.nome FROM disciplinas d LEFT JOIN matriculas m ON m.codigo = d.codigo WHERE m.codigo IS NULL;",
+    "ordenado": false
+  },
+  {
+    "id": "e7",
+    "enunciado": "Liste o nome de cada disciplina e o nome do professor responsável, incluindo as disciplinas sem professor definido.",
+    "resposta": "SELECT d.nome, p.nome FROM disciplinas d LEFT JOIN professores p ON p.id = d.professor_id;",
+    "ordenado": false
+  },
+  {
+    "id": "e8",
+    "enunciado": "Quais alunos têm média geral (das disciplinas já concluídas) acima de 75? Mostre o nome e a média arredondada para 1 casa.",
+    "resposta": "SELECT a.nome, ROUND(AVG(m.nota), 1) FROM alunos a JOIN matriculas m ON m.matricula = a.matricula WHERE m.nota IS NOT NULL GROUP BY a.matricula HAVING AVG(m.nota) > 75;",
+    "ordenado": false
+  },
+  {
+    "id": "e9",
+    "enunciado": "Quais alunos cursaram alguma disciplina mais de uma vez (reprovaram e fizeram de novo)? Mostre só o nome, sem repetir.",
+    "resposta": "SELECT DISTINCT a.nome FROM alunos a JOIN matriculas m ON m.matricula = a.matricula GROUP BY a.matricula, m.codigo HAVING COUNT(*) > 1;",
+    "ordenado": false
+  },
+  {
+    "id": "e10",
+    "enunciado": "Mostre o nome do(s) aluno(s) que tirou(aram) a maior nota em Estruturas de Dados (DCC221). Use uma subconsulta.",
+    "resposta": "SELECT a.nome FROM alunos a JOIN matriculas m ON m.matricula = a.matricula WHERE m.codigo = 'DCC221' AND m.nota = (SELECT MAX(nota) FROM matriculas WHERE codigo = 'DCC221');",
+    "ordenado": false
+  },
+  {
+    "id": "e11",
+    "enunciado": "Para cada professor, mostre o nome e quantas disciplinas ele leciona, incluindo professores com zero disciplinas.",
+    "resposta": "SELECT p.nome, COUNT(d.codigo) FROM professores p LEFT JOIN disciplinas d ON d.professor_id = p.id GROUP BY p.id;",
+    "ordenado": false
+  },
+  {
+    "id": "e12",
+    "enunciado": "Liste os 3 alunos com mais créditos concluídos (nota ≥ 60), com o nome e o total de créditos, do maior para o menor.",
+    "resposta": "SELECT a.nome, SUM(d.creditos) AS total FROM alunos a JOIN matriculas m ON m.matricula = a.matricula JOIN disciplinas d ON d.codigo = m.codigo WHERE m.nota >= 60 GROUP BY a.matricula ORDER BY total DESC, a.nome LIMIT 3;",
+    "ordenado": false
+  }
+]

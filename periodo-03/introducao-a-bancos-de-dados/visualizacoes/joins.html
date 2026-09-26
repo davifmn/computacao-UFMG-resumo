@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JOINs · Bancos de Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#bd">Bancos de Dados</a>
+      <span class="sep">/</span><span>JOINs</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução a Bancos de Dados</div>
+    <h1>Como um JOIN funciona por dentro</h1>
+    <p class="lead">Um JOIN combina linhas de duas tabelas que satisfazem uma condição. O algoritmo mais simples compara <b>cada linha de A com cada linha de B</b>. Escolha o tipo de JOIN e veja quais linhas entram no resultado e quais ficam de fora.</p>
+
+    <div class="toolbar">
+      <div class="chips" id="types">
+        <button class="btn" data-t="INNER">INNER JOIN</button>
+        <button class="btn" data-t="LEFT">LEFT JOIN</button>
+        <button class="btn" data-t="RIGHT">RIGHT JOIN</button>
+        <button class="btn" data-t="FULL">FULL OUTER JOIN</button>
+      </div>
+      <code id="sql" style="font-size:13px"></code>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Resumo dos tipos</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Tipo</th><th>Entra no resultado</th><th>Pergunta típica</th></tr>
+          <tr><td>INNER</td><td>só os pares que casam</td><td>"disciplinas e seus professores"</td></tr>
+          <tr><td>LEFT</td><td>tudo de A (com NULL quando não casa)</td><td>"todas as disciplinas, com professor se houver"</td></tr>
+          <tr><td>RIGHT</td><td>tudo de B (com NULL quando não casa)</td><td>o mesmo que LEFT com as tabelas trocadas</td></tr>
+          <tr><td>FULL</td><td>tudo dos dois lados</td><td>"compare as duas listas e mostre as diferenças"</td></tr>
+        </table>
+      </div>
+      <div class="callout tip"><p><b>Truque do anti-join:</b> <code>A LEFT JOIN B ... WHERE B.id IS NULL</code> devolve as linhas de A <b>sem</b> par em B ("disciplinas sem professor", "clientes que nunca compraram"). Na página ao lado, o FTC (DCC129) é essa linha.</p></div>
+      <div class="callout warn"><p><b>NULL não é igual a NULL.</b> Em SQL, <code>NULL = NULL</code> dá <i>desconhecido</i>, não verdadeiro. Por isso uma disciplina sem professor nunca casa no JOIN, e para testar NULL se usa <code>IS NULL</code>, nunca <code>= NULL</code>.</p></div>
+      <p><b>Por que o banco não faz sempre o laço aninhado?</b> Com 1 milhão de linhas em cada tabela seriam $10^{12}$ comparações. Com um <b>índice</b> (árvore B+) em B.id, cada linha de A encontra seu par em $O(\log n)$. O <b>hash join</b> monta uma tabela hash com B e varre A uma vez: $O(|A| + |B|)$. O otimizador escolhe sozinho: veja com <code>EXPLAIN QUERY PLAN</code> no <a href="../tutoriais/sql.html">tutorial de SQL</a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { CODE, A, B, joinSteps } from './joins.js';
+
+    const W = 900, H = 580, RH = 30;
+    const AX = 20, AW = [80, 150, 60], BX = 600, BW = [60, 100], Y0 = 60;
+    const RX = 120, RW = [80, 150, 60, 60, 100], RY = 300;
+    let type = 'INNER';
+
+    function table(s, key, x, y, widths, header, rows, { hot = -1, color = COLORS.blue, faded = [] } = {}) {
+      let cx = x;
+      header.forEach((hd, c) => {
+        s.rect(`${key}h${c}`, { x: cx, y, w: widths[c] - 2, h: RH - 2, rx: 3, fill: COLORS.surface3, stroke: 'none' });
+        s.text(`${key}ht${c}`, hd, { x: cx + widths[c] / 2, y: y + RH / 2, size: 12, weight: 700, mono: true, fill: color });
+        cx += widths[c];
+      });
+      rows.forEach((row, r) => {
+        let x2 = x;
+        const on = r === hot;
+        row.forEach((v, c) => {
+          s.rect(`${key}c${r}-${c}`, { x: x2, y: y + (r + 1) * RH, w: widths[c] - 2, h: RH - 2, rx: 3, fill: on ? '#3d3a22' : faded.includes(r) ? COLORS.surface : COLORS.surface2, stroke: on ? COLORS.yellow : 'none', sw: 1.5 });
+          s.text(`${key}t${r}-${c}`, v ?? 'NULL', { x: x2 + widths[c] / 2, y: y + (r + 1) * RH + RH / 2, size: 12, mono: true, fill: v == null ? COLORS.faint : COLORS.text });
+          x2 += widths[c];
+        });
+      });
+    }
+
+    const player = new StepPlayer($('#player'), {
+      code: CODE, lang: 'python', width: W, height: H, codeTitle: 'Junção por laços aninhados',
+      render(step, s) {
+        s.text('ta', 'A = disciplinas', { x: AX, y: Y0 - 18, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+        s.text('tb', 'B = professores', { x: BX, y: Y0 - 18, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+        table(s, 'A', AX, Y0, AW, ['codigo', 'nome', 'prof'], A.map(r => [r.codigo, r.nome, r.prof]), { hot: step.ai ?? -1 });
+        const unmatchedB = step.done ? B.map((_, j) => j).filter(j => !step.matched.includes(j)) : [];
+        table(s, 'B', BX, Y0, BW, ['id', 'nome'], B.map(r => [r.id, r.nome]), { hot: step.bj ?? -1, color: COLORS.pink, faded: type === 'INNER' || type === 'LEFT' ? unmatchedB : [] });
+        if (step.ai != null && step.bj != null) {
+          const y1 = Y0 + (step.ai + 1) * RH + RH / 2, y2 = Y0 + (step.bj + 1) * RH + RH / 2;
+          s.path('cmp', `M ${AX + AW[0] + AW[1] + AW[2] + 4} ${y1} C ${480} ${y1}, ${520} ${y2}, ${BX - 6} ${y2}`, { stroke: step.eq ? COLORS.green : COLORS.red, sw: 2.5, dash: step.eq ? null : '6 5' });
+          s.text('cmp-l', step.eq ? '=' : '≠', { x: 510, y: (y1 + y2) / 2 - 10, size: 20, weight: 800, fill: step.eq ? COLORS.green : COLORS.red });
+        }
+        s.text('tr', `resultado (${type} JOIN)`, { x: RX, y: RY - 18, size: 13, anchor: 'start', weight: 700, fill: COLORS.yellow });
+        const rows = step.result.map(r => [...(r.a != null ? [A[r.a].codigo, A[r.a].nome, A[r.a].prof] : [null, null, null]), ...(r.b != null ? [B[r.b].id, B[r.b].nome] : [null, null])]);
+        table(s, 'R', RX, RY, RW, ['codigo', 'nome', 'prof', 'id', 'nome'], rows, { hot: step.fresh ?? -1, color: COLORS.yellow });
+        // Diagrama de Venn do tipo escolhido
+        const vx = 790, vy = 470;
+        const fillA = ['LEFT', 'FULL'].includes(type), fillB = ['RIGHT', 'FULL'].includes(type);
+        s.circle('va', { x: vx - 22, y: vy, r: 36, fill: fillA ? 'rgba(88,196,221,.35)' : 'transparent', stroke: COLORS.blue, sw: 2 });
+        s.circle('vb', { x: vx + 22, y: vy, r: 36, fill: fillB ? 'rgba(247,143,179,.35)' : 'transparent', stroke: COLORS.pink, sw: 2 });
+        s.path('vi', `M ${vx} ${vy - 28} A 36 36 0 0 1 ${vx} ${vy + 28} A 36 36 0 0 1 ${vx} ${vy - 28} Z`, { fill: 'rgba(244,211,94,.6)', stroke: 'none' });
+        s.text('vla', 'A', { x: vx - 40, y: vy, size: 14, weight: 800, fill: COLORS.blue });
+        s.text('vlb', 'B', { x: vx + 40, y: vy, size: 14, weight: 800, fill: COLORS.pink });
+      },
+    });
+
+    function run() {
+      $$('[data-t]').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === type));
+      $('#sql').textContent = `SELECT * FROM disciplinas A ${type === 'FULL' ? 'FULL OUTER' : type} JOIN professores B ON A.prof = B.id;`;
+      player.load(joinSteps(type));
+    }
+    $$('[data-t]').forEach(b => b.addEventListener('click', () => { type = b.dataset.t; run(); }));
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'A tem 5 linhas e B tem 3. Qual o <b>máximo</b> de linhas que um INNER JOIN pode ter?', options: ['15', '5', '8', '3'], answer: 0, explain: 'Se todos os pares casarem (ex.: a condição é sempre verdadeira), o resultado é o produto cartesiano: 5 × 3.' },
+      { q: 'Um LEFT JOIN de A com B tem, no <b>mínimo</b>, quantas linhas?', options: ['|A|', '0', '|B|', '|A| × |B|'], answer: 0, explain: 'Toda linha de A aparece pelo menos uma vez (com NULLs se não casar).' },
+      { q: 'Qual consulta encontra os professores sem nenhuma disciplina?', options: ['<code>SELECT p.* FROM professores p LEFT JOIN disciplinas d ON d.prof = p.id WHERE d.codigo IS NULL</code>', '<code>SELECT p.* FROM professores p JOIN disciplinas d ON d.prof = p.id WHERE d.codigo IS NULL</code>', '<code>SELECT p.* FROM professores p JOIN disciplinas d ON d.prof = NULL</code>', '<code>SELECT * FROM professores WHERE id = NULL</code>'], answer: 0, explain: 'É o anti-join: LEFT JOIN seguido do filtro IS NULL no lado direito. Com INNER JOIN, a linha sem par já teria sido descartada.' },
+    ]);
+  </script>
+</body>
+</html>

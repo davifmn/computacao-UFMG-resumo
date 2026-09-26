@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teorema Central do Limite · Probabilidade</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    #board { display: block; width: 100%; height: auto; }
+    .ctl { display: grid; grid-template-columns: 6em 1fr 3.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#probabilidade">Probabilidade</a>
+      <span class="sep">/</span><span>Teorema Central do Limite</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Probabilidade</div>
+    <h1>Por que a curva normal aparece em todo lugar</h1>
+    <p class="lead">Some muitas coisas aleatórias e independentes: o resultado é quase sempre uma <b>normal</b>, não importa como era cada parcela. Esse é o <b>Teorema Central do Limite</b>, o resultado mais importante da estatística.</p>
+
+    <h2>1. A tábua de Galton</h2>
+    <div class="lab">
+      <div class="stage"><canvas id="board" width="1100" height="640" aria-label="Tábua de Galton"></canvas></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Controles</div>
+          <div class="ctl">
+            <span>linhas</span><input id="rows" type="range" min="4" max="16" value="12"><output id="rows-o"></output>
+            <span>p (direita)</span><input id="gp" type="range" min="0.1" max="0.9" step="0.05" value="0.5"><output id="gp-o"></output>
+            <span>velocidade</span><input id="speed" type="range" min="1" max="30" value="8"><output id="speed-o"></output>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px">
+            <button class="btn primary" id="go">▶ Soltar bolinhas</button>
+            <button class="btn" id="reset">Zerar</button>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">O que está acontecendo</div><div class="readout" id="g-info"></div></div>
+      </div>
+    </div>
+
+    <h2>2. Médias de amostras</h2>
+    <div class="toolbar"><div class="chips" id="bases"></div></div>
+    <div class="lab">
+      <div class="stage"><svg id="clt" aria-label="Histograma das médias amostrais"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Tamanho da amostra</div>
+          <div class="ctl"><span>n</span><input id="n" type="range" min="1" max="50" value="1"><output id="n-o"></output></div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="many">+1000 médias</button>
+            <button class="btn" id="one">+1 média</button>
+            <button class="btn" id="clr">Zerar</button>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Números</div><div class="readout" id="c-info"></div></div>
+      </div>
+    </div>
+    <p class="c-muted" style="max-width:900px">Em cinza, a distribuição de <b>uma</b> observação; em rosa, o histograma das <b>médias</b> de n observações; em amarelo, a normal prevista pelo teorema. Comece com n = 1 e vá aumentando: até a distribuição em "U" vira um sino.</p>
+
+    <h2>3. A Lei dos Grandes Números</h2>
+    <div class="toolbar">
+      <button class="btn primary" id="lln-go">Lançar um dado 1000 vezes (5 pessoas)</button>
+      <span class="c-muted" style="font-size:14px">cada linha é a média acumulada de uma pessoa</span>
+    </div>
+    <div class="stage"><svg id="lln" aria-label="Média acumulada de lançamentos de dado"></svg></div>
+
+    <section class="prose">
+      <h2>Os dois teoremas-limite</h2>
+      <p>Sejam $X_1, X_2, \dots$ independentes, com a mesma distribuição, média $\mu$ e desvio $\sigma$, e $\bar X_n = \frac{1}{n}\sum X_i$.</p>
+      <ul>
+        <li><b>Lei dos Grandes Números:</b> $\bar X_n \to \mu$. A média amostral converge para a verdadeira. É por isso que simulações (método de Monte Carlo) funcionam e que cassinos sempre ganham no longo prazo.</li>
+        <li><b>Teorema Central do Limite:</b> $\frac{\bar X_n - \mu}{\sigma/\sqrt n} \to N(0, 1)$. Não só converge, mas as <b>flutuações</b> em torno de $\mu$ são normais, com desvio $\sigma/\sqrt n$.</li>
+      </ul>
+      <div class="callout"><p><b>O $\sqrt n$ é caro:</b> para reduzir o erro de uma pesquisa pela metade é preciso <b>quadruplicar</b> a amostra. Uma pesquisa eleitoral com 1000 pessoas tem margem de erro de ≈ 3 pontos, com 4000 pessoas cai para ≈ 1,5.</p></div>
+      <p>Na tábua de Galton, cada bolinha faz uma soma de $n$ desvios de ±1 (Bernoulli). A posição final é uma <b>Binomial</b>(n, p), que pelo TCL fica cada vez mais parecida com a normal: é o caso particular que De Moivre descobriu em 1733.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt, tex } from '../../../engine/page.js';
+    import { rng, histogram, mean, variance } from '../../../engine/random.js';
+    import { BASES, sampleMeans, galtonPath } from './prob.js';
+
+    const r = rng(1733);
+
+    // ================= 1. Galton =================
+    const cv = $('#board'), ctx = cv.getContext('2d');
+    const GW = cv.width, GH = cv.height;
+    let rows = 12, gp = 0.5, balls = [], bins = [], running = false, released = 0, spawnAcc = 0, last = 0;
+    const TOP = 40, PEG_DY = () => Math.min(34, 360 / rows), PEG_DX = () => Math.min(58, (GW - 120) / (rows + 1));
+    const pegX = (row, k) => GW / 2 + (k - row / 2) * PEG_DX();
+    const pegY = row => TOP + 30 + row * PEG_DY();
+    const binTop = () => pegY(rows) + 10;
+
+    function resetGalton() {
+      rows = +$('#rows').value; gp = +$('#gp').value;
+      balls = []; bins = Array(rows + 1).fill(0); released = 0;
+      infoGalton(); drawGalton();
+    }
+    function infoGalton() {
+      const n = bins.reduce((a, b) => a + b, 0);
+      $('#g-info').innerHTML = `<div>${n} bolinha(s) no fundo</div><div class="c-muted" style="font-size:14px">Em cada pino, a bolinha vai para a direita com probabilidade p = ${fmt(gp, 2)}. A caixa final é o <b>número de desvios à direita</b>: Binomial(${rows}, ${fmt(gp, 2)}). A curva amarela é a normal com a mesma média (${fmt(rows * gp, 2)}) e desvio (${fmt(Math.sqrt(rows * gp * (1 - gp)), 2)}).</div>`;
+    }
+    function drawGalton() {
+      ctx.clearRect(0, 0, GW, GH);
+      ctx.fillStyle = COLORS.muted;
+      for (let row = 0; row < rows; row++) for (let k = 0; k <= row; k++) {
+        ctx.beginPath(); ctx.arc(pegX(row, k), pegY(row), 4, 0, 2 * Math.PI); ctx.fill();
+      }
+      // caixas e histograma
+      const n = bins.reduce((a, b) => a + b, 0);
+      const bt = binTop(), maxH = GH - bt - 30, bw = PEG_DX();
+      const maxBin = Math.max(1, ...bins);
+      const scale = Math.min(maxH / maxBin, 6);
+      ctx.strokeStyle = COLORS.border;
+      for (let k = 0; k <= rows; k++) {
+        const x = pegX(rows, k);
+        ctx.fillStyle = COLORS.blue;
+        const hh = bins[k] * scale;
+        ctx.fillRect(x - bw * 0.42, GH - 30 - hh, bw * 0.84, hh);
+        ctx.fillStyle = COLORS.faint; ctx.font = '13px JetBrains Mono, monospace'; ctx.textAlign = 'center';
+        ctx.fillText(k, x, GH - 10);
+      }
+      // curva normal esperada
+      if (n > 0) {
+        const mu = rows * gp, sd = Math.sqrt(rows * gp * (1 - gp));
+        ctx.strokeStyle = COLORS.yellow; ctx.lineWidth = 2.5; ctx.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const kx = -0.5 + ((rows + 1) * i) / 200;
+          const dens = Math.exp(-(((kx - mu) / sd) ** 2) / 2) / (sd * Math.sqrt(2 * Math.PI));
+          const y = GH - 30 - dens * n * scale;
+          const x = pegX(rows, kx);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      // bolinhas
+      ctx.fillStyle = COLORS.yellow;
+      for (const b of balls) { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 2 * Math.PI); ctx.fill(); }
+    }
+    function ballPos(b) {
+      const row = Math.floor(b.t), f = b.t - row;
+      const k = b.path.slice(0, row).reduce((a, x) => a + x, 0);
+      if (row >= rows) return [pegX(rows, k), binTop() + (b.t - rows) * 80];
+      const x0 = pegX(row, k), y0 = pegY(row) - 12;
+      const k1 = k + b.path[row];
+      const x1 = pegX(row + 1, k1), y1 = pegY(row + 1) - 12;
+      return [x0 + (x1 - x0) * f, y0 + (y1 - y0) * f - Math.sin(Math.PI * f) * 8];
+    }
+    function tick(now) {
+      const dt = Math.min(50, now - (last || now)) / 1000; last = now;
+      const speed = +$('#speed').value;
+      spawnAcc += dt * speed * 3;
+      while (running && spawnAcc > 1) { spawnAcc--; balls.push({ t: 0, path: galtonPath(r, rows, gp), x: GW / 2, y: TOP }); released++; }
+      for (const b of balls) { b.t += dt * (2 + speed * 0.6); [b.x, b.y] = ballPos(b); }
+      const landed = balls.filter(b => b.t >= rows + 0.6);
+      for (const b of landed) bins[b.path.reduce((a, x) => a + x, 0)]++;
+      if (landed.length) infoGalton();
+      balls = balls.filter(b => b.t < rows + 0.6);
+      drawGalton();
+      if (running || balls.length) requestAnimationFrame(tick); else last = 0;
+    }
+    $('#go').addEventListener('click', () => {
+      running = !running;
+      $('#go').textContent = running ? '⏸ Parar' : '▶ Soltar bolinhas';
+      if (running) requestAnimationFrame(tick);
+    });
+    $('#reset').addEventListener('click', resetGalton);
+    for (const id of ['rows', 'gp', 'speed']) {
+      $(`#${id}`).addEventListener('input', e => { $(`#${id}-o`).value = e.target.value; if (id !== 'speed') resetGalton(); });
+      $(`#${id}-o`).value = $(`#${id}`).value;
+    }
+    resetGalton();
+
+    // ================= 2. TCL =================
+    const W = 900, H = 420;
+    const cs = new Scene($('#clt'), { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    cs.setAnimated(false);
+    const cplot = new Plot(cs, { box: [50, 20, W - 20, H - 36] });
+    cplot.clip(['areas', 'edges', 'nodes']);
+    let base = 'exponencial', means = [];
+    function drawCLT() {
+      const B = BASES[base], n = +$('#n').value;
+      $('#n-o').value = n;
+      const [lo, hi] = B.range;
+      const hist = histogram(means, lo, hi, 60);
+      const sd = B.sd / Math.sqrt(n);
+      const normalPeak = 1 / (sd * Math.sqrt(2 * Math.PI));
+      const histPeak = means.length ? Math.max(...hist.counts) / (means.length * hist.width) : 0;
+      let basePeak = 0; for (let i = 1; i < 200; i++) { const v = B.f(lo + ((hi - lo) * i) / 200); if (Number.isFinite(v)) basePeak = Math.max(basePeak, v); }
+      const ymax = Math.max(Math.min(normalPeak, histPeak * 1.3 || normalPeak), B.discreta ? 0.4 : Math.min(basePeak, 3)) * 1.15;
+      cplot.setView([lo, hi], [0, ymax]);
+      cs.frame(s => {
+        cplot.axes(s, { xLabel: 'x̄', yLabel: 'densidade' });
+        if (!B.discreta) cplot.fn(s, 'base', x => Math.min(B.f(x), ymax * 2), { stroke: COLORS.muted, sw: 2, dash: '6 5', layer: 'areas' });
+        else for (let k = 1; k <= 6; k++) s.line(`bd${k}`, cplot.X(k), cplot.Y(0), cplot.X(k), cplot.Y(1 / 6), { stroke: COLORS.muted, sw: 3, layer: 'areas' });
+        hist.counts.forEach((c, i) => {
+          const dens = means.length ? c / (means.length * hist.width) : 0;
+          const x0 = lo + i * hist.width;
+          s.rect(`h${i}`, { x: cplot.X(x0), y: cplot.Y(dens), w: Math.max(1, cplot.X(x0 + hist.width) - cplot.X(x0) - 1), h: cplot.Y(0) - cplot.Y(dens), rx: 0, fill: 'rgba(247,143,179,.55)', stroke: 'none', layer: 'areas' });
+        });
+        cplot.fn(s, 'normal', x => Math.exp(-(((x - B.media) / sd) ** 2) / 2) / (sd * Math.sqrt(2 * Math.PI)), { stroke: COLORS.yellow, sw: 2.5 });
+      });
+      $('#c-info').innerHTML = '<div id="ci1"></div><div id="ci2"></div>' + (means.length ? `<div>média das médias: <b>${fmt(mean(means), 4)}</b></div><div>desvio das médias: <b>${means.length > 1 ? fmt(Math.sqrt(variance(means)), 4) : '—'}</b></div><div class="c-muted">${means.length} médias sorteadas</div>` : '');
+      tex($('#ci1'), `\\mu = ${fmt(B.media, 3).replace(',', '{,}')},\\ \\sigma = ${fmt(B.sd, 3).replace(',', '{,}')}`);
+      tex($('#ci2'), `\\frac{\\sigma}{\\sqrt{n}} = \\frac{${fmt(B.sd, 3).replace(',', '{,}')}}{\\sqrt{${n}}} = ${fmt(sd, 4).replace(',', '{,}')}`);
+    }
+    $('#bases').append(...Object.entries(BASES).map(([k, B]) => { const b = h('button', { class: 'btn small', 'data-k': k }, B.nome); b.addEventListener('click', () => { base = k; means = []; [...$('#bases').children].forEach(x => x.setAttribute('aria-pressed', x === b)); drawCLT(); }); return b; }));
+    $('#bases').children[2].setAttribute('aria-pressed', 'true');
+    $('#many').addEventListener('click', () => { means = means.concat(sampleMeans(r, base, +$('#n').value, 1000)); drawCLT(); });
+    $('#one').addEventListener('click', () => { means = means.concat(sampleMeans(r, base, +$('#n').value, 1)); drawCLT(); });
+    $('#clr').addEventListener('click', () => { means = []; drawCLT(); });
+    $('#n').addEventListener('input', () => { means = []; drawCLT(); });
+    drawCLT();
+
+    // ================= 3. LLN =================
+    const ls = new Scene($('#lln'), { width: W, height: 300, layers: ['bg', 'edges', 'labels'] });
+    ls.setAnimated(false);
+    const lplot = new Plot(ls, { x: [1, 1000], y: [1, 6], box: [50, 16, W - 20, 270] });
+    lplot.clip(['edges']);
+    function drawLLN(paths = []) {
+      ls.frame(s => {
+        lplot.axes(s, { xLabel: 'lançamentos', yLabel: 'média' });
+        s.line('mu', lplot.X(1), lplot.Y(3.5), lplot.X(1000), lplot.Y(3.5), { stroke: COLORS.yellow, sw: 2, dash: '7 5' });
+        s.text('mu-l', 'μ = 3,5', { x: W - 30, y: lplot.Y(3.5) - 12, size: 13, anchor: 'end', weight: 700, fill: COLORS.yellow });
+        const cols = [COLORS.blue, COLORS.green, COLORS.pink, COLORS.purple, COLORS.orange];
+        paths.forEach((p, i) => s.path(`p${i}`, `M ${p.map((y, k) => `${lplot.X(k + 1).toFixed(1)} ${lplot.Y(y).toFixed(1)}`).join(' L ')}`, { stroke: cols[i], sw: 1.8 }));
+      });
+    }
+    $('#lln-go').addEventListener('click', () => {
+      const paths = Array.from({ length: 5 }, () => { let s = 0; return Array.from({ length: 1000 }, (_, k) => (s += 1 + Math.floor(r() * 6)) / (k + 1)); });
+      drawLLN(paths);
+    });
+    drawLLN();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O desvio da média amostral com n = 100 é quantas vezes menor que o de uma única observação?', options: ['10', '100', '50', '√10'], answer: 0, explain: '$\\sigma/\\sqrt{100} = \\sigma/10$.' },
+      { q: 'O TCL exige que as variáveis originais sejam normais?', options: ['Não: basta serem independentes, identicamente distribuídas e com variância finita', 'Sim', 'Só se forem contínuas', 'Só para n > 30'], answer: 0, explain: 'É justamente a mágica do teorema. O "n > 30" é só uma regra prática; distribuições muito assimétricas precisam de mais.' },
+      { q: 'Na tábua de Galton com 12 linhas e p = 0,5, em qual caixa cai o maior número de bolinhas?', options: ['6', '12', '0', 'em todas igualmente'], answer: 0, explain: 'A moda da Binomial(12; 0,5) é 6 = np.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Descida do Gradiente · Cálculo II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 6.5em 1fr 4em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    #map { cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#calculo2">Cálculo II</a>
+      <span class="sep">/</span><span>Descida do gradiente</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Cálculo Diferencial e Integral II</div>
+    <h1>Descida do gradiente: rolando morro abaixo</h1>
+    <p class="lead">Para achar o mínimo de uma função sem resolver $\nabla f = 0$ na mão: dê pequenos passos na direção de $-\nabla f$, a descida mais íngreme. É assim que redes neurais aprendem. <b>Clique no mapa</b> para escolher o ponto de partida.</p>
+
+    <div class="toolbar"><div class="chips" id="lands"></div></div>
+
+    <div class="lab">
+      <div class="stage"><svg id="map" aria-label="Curvas de nível e trajetória"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Hiperparâmetros</div>
+          <div class="ctl">
+            <span>passo η</span><input id="eta" type="range" min="-4" max="0.1" step="0.01" value="-1.3"><output id="eta-o"></output>
+            <span>momento β</span><input id="beta" type="range" min="0" max="0.95" step="0.05" value="0"><output id="beta-o"></output>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px"><button class="btn primary" id="run">▶ Descer</button><label style="font-size:14px;color:var(--muted);align-self:center"><input type="checkbox" id="field" checked> campo −∇f</label></div>
+        </div>
+        <div class="panel"><div class="panel-title">Resultado</div><div class="readout" id="info"></div></div>
+        <div class="panel"><div class="panel-title">f ao longo das iterações ("loss")</div><svg id="loss" aria-label="Valor de f por iteração"></svg></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>O algoritmo</h2>
+      <p>$$ \vec x_{k+1} = \vec x_k - \eta\, \nabla f(\vec x_k) $$</p>
+      <p>O <b>passo</b> (ou taxa de aprendizado) $\eta$ é o parâmetro mais importante:</p>
+      <ul>
+        <li><b>Pequeno demais:</b> converge, mas devagar (muitas iterações).</li>
+        <li><b>Grande demais:</b> ultrapassa o mínimo, oscila e pode <b>divergir</b>. Na "Tigela" $x^2 + y^2$, qualquer $\eta &gt; 1$ diverge. Teste!</li>
+        <li><b>Vale alongado:</b> o gradiente aponta quase perpendicular ao vale, e a trajetória faz <b>zigue-zague</b>. O <b>momento</b> ($\beta$) acumula a direção dos passos anteriores e suaviza isso.</li>
+        <li><b>Rosenbrock:</b> o mínimo em (1, 1) fica num vale curvo e plano, famoso por ser difícil.</li>
+        <li><b>Dois mínimos:</b> a descida só garante um mínimo <b>local</b>. Dependendo do ponto de partida, você cai em um ou no outro.</li>
+      </ul>
+      <div class="callout"><p><b>Em aprendizado de máquina,</b> $f$ é o erro do modelo nos dados de treino e $\vec x$ são os milhões de pesos da rede. O gradiente é calculado pela regra da cadeia (o <i>backpropagation</i>), e variações como SGD, Momentum e Adam são refinamentos desta mesma ideia. Veja também a playlist <a href="https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi" target="_blank" rel="noopener">Neural Networks</a> do 3Blue1Brown.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, h, fmt } from '../../../engine/page.js';
+    import { LANDSCAPES, contours, gradientDescent } from './multivar.js';
+
+    const W = 900, H = 600;
+    const svg = $('#map');
+    const scene = new Scene(svg, { width: W, height: H, layers: ['bg', 'areas', 'edges', 'nodes', 'labels'] });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { box: [20, 20, W - 20, H - 20] });
+    plot.clip(['areas', 'edges', 'nodes']);
+    const ls = new Scene($('#loss'), { width: 320, height: 160, layers: ['bg', 'edges', 'labels'] });
+    ls.setAnimated(false);
+
+    let key = 'vale', start = LANDSCAPES.vale.start, path = [], shown = 0, anim = null, levelCache = null;
+    const eta = () => 10 ** +$('#eta').value;
+    const beta = () => +$('#beta').value;
+
+    function levels(L) {
+      const [x0, x1, y0, y1] = L.box;
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i <= 40; i++) for (let j = 0; j <= 40; j++) { const v = L.f(x0 + ((x1 - x0) * i) / 40, y0 + ((y1 - y0) * j) / 40); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      const k = 16;
+      return Array.from({ length: k }, (_, i) => L.log ? lo + (Math.exp(Math.log(hi - lo + 1) * ((i + 1) / (k + 1))) - 1) : lo + ((hi - lo) * ((i + 1) / (k + 1)) ** 2));
+    }
+
+    function draw() {
+      const L = LANDSCAPES[key];
+      const [x0, x1, y0, y1] = L.box;
+      // mantém a proporção 1:1 (senão os gradientes não parecem perpendiculares às curvas)
+      const aspect = (W - 40) / (H - 40), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      let hw = (x1 - x0) / 2, hh = (y1 - y0) / 2;
+      if (hw / hh > aspect) hh = hw / aspect; else hw = hh * aspect;
+      plot.setView([cx - hw, cx + hw], [cy - hh, cy + hh]);
+      if (!levelCache || levelCache.key !== key) {
+        const lv = levels(L);
+        levelCache = { key, lv, segs: contours(L.f, [cx - hw, cx + hw, cy - hh, cy + hh], lv, 110) };
+      }
+      const pts = path.slice(0, shown + 1);
+      scene.frame(s => {
+        plot.axes(s, { labels: false });
+        levelCache.segs.forEach((segs, i) => {
+          const t = i / levelCache.segs.length;
+          const d = segs.map(([[ax, ay], [bx, by]]) => `M ${plot.X(ax).toFixed(1)} ${plot.Y(ay).toFixed(1)} L ${plot.X(bx).toFixed(1)} ${plot.Y(by).toFixed(1)}`).join(' ');
+          s.path(`c${i}`, d || 'M 0 0', { stroke: `hsl(${200 - 160 * t} 65% 55%)`, sw: 1.4, opacity: 0.8, layer: 'areas' });
+        });
+        if ($('#field').checked) {
+          for (let i = 1; i < 16; i++) for (let j = 1; j < 11; j++) {
+            const x = plot.xr[0] + ((plot.xr[1] - plot.xr[0]) * i) / 16, y = plot.yr[0] + ((plot.yr[1] - plot.yr[0]) * j) / 11;
+            const [gx, gy] = L.grad(x, y); const g = Math.hypot(gx, gy) || 1;
+            const len = 16;
+            s.line(`f${i}-${j}`, plot.X(x), plot.Y(y), plot.X(x) - (gx / g) * len, plot.Y(y) + (gy / g) * len, { stroke: COLORS.faint, sw: 1.2, arrow: true, layer: 'areas' });
+          }
+        }
+        if (pts.length > 1) s.path('path', `M ${pts.map(([x, y]) => `${plot.X(x).toFixed(1)} ${plot.Y(Math.max(-1e4, Math.min(1e4, y))).toFixed(1)}`).join(' L ')}`, { stroke: COLORS.yellow, sw: 2.2 });
+        pts.forEach(([x, y], i) => { if (i % Math.max(1, Math.floor(pts.length / 60)) === 0 || i === pts.length - 1) s.circle(`pt${i}`, { x: plot.X(x), y: plot.Y(y), r: i === pts.length - 1 ? 6 : 2.5, fill: COLORS.yellow, stroke: 'none' }); });
+        s.circle('start', { x: plot.X(start[0]), y: plot.Y(start[1]), r: 7, fill: 'none', stroke: COLORS.green, sw: 2.5 });
+      });
+      drawLoss(pts);
+      const last = pts[pts.length - 1] ?? start;
+      const diverged = pts.some(([x, y]) => !Number.isFinite(x) || Math.abs(x) > 1e3 || Math.abs(y) > 1e3);
+      $('#info').innerHTML = `<div>iteração <b>${pts.length - 1}</b> de ${path.length - 1}</div><div>x = (${fmt(last[0], 4)}, ${fmt(last[1], 4)})</div><div>f(x) = <b>${Number.isFinite(L.f(...last)) ? fmt(L.f(...last), 5) : '∞'}</b></div>` +
+        (diverged ? '<div class="c-red"><b>Divergiu!</b> O passo η é grande demais.</div>' : shown === path.length - 1 && path.length > 1 ? '<div class="c-green">Convergiu (passos minúsculos).</div>' : '');
+      $('#eta-o').value = eta() < 0.01 ? eta().toExponential(0) : fmt(eta(), 3);
+      $('#beta-o').value = fmt(beta(), 2);
+    }
+
+    function drawLoss(pts) {
+      const L = LANDSCAPES[key];
+      const vals = pts.map(p => L.f(...p)).filter(Number.isFinite).map(v => Math.log10(Math.max(v - (key === 'dois' ? -0.5 : 0), 1e-12)));
+      ls.frame(s => {
+        s.line('ax', 30, 140, 310, 140, { stroke: COLORS.border, sw: 1, layer: 'bg' });
+        s.text('lbl', 'log₁₀ f', { x: 4, y: 12, size: 11, anchor: 'start', fill: COLORS.faint });
+        if (vals.length < 2) return;
+        const lo = Math.min(...vals), hi = Math.max(...vals) || 1;
+        const X = i => 30 + (280 * i) / Math.max(1, path.length - 1), Y = v => 140 - (120 * (v - lo)) / (hi - lo || 1);
+        s.path('loss', `M ${vals.map((v, i) => `${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' L ')}`, { stroke: COLORS.pink, sw: 2 });
+      });
+    }
+
+    function run() {
+      anim?.cancel();
+      path = gradientDescent(LANDSCAPES[key], start, eta(), key === 'rosenbrock' ? 4000 : 300, beta());
+      shown = 0;
+      draw();
+      const n = path.length - 1;
+      anim = tween(Math.min(4000, 400 + n * 25), t => { shown = Math.round(n * t); draw(); }, ease.linear);
+    }
+    function setLand(k) {
+      key = k; start = LANDSCAPES[k].start; path = []; shown = 0; levelCache = null;
+      const def = { tigela: -1.0, vale: -1.05, rosenbrock: -3, dois: -1.3 }[k];
+      $('#eta').value = def;
+      [...$('#lands').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+      draw(); run();
+    }
+    $('#lands').append(...Object.entries(LANDSCAPES).map(([k, L]) => { const b = h('button', { class: 'btn small', 'data-k': k }, L.nome); b.addEventListener('click', () => setLand(k)); return b; }));
+    svg.addEventListener('click', e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      start = [plot.invX(p.x), plot.invY(p.y)];
+      run();
+    });
+    $('#run').addEventListener('click', run);
+    $('#eta').addEventListener('input', () => { $('#eta-o').value = fmt(eta(), 4); });
+    $('#eta').addEventListener('change', run);
+    $('#beta').addEventListener('change', run);
+    $('#beta').addEventListener('input', () => { $('#beta-o').value = fmt(beta(), 2); });
+    $('#field').addEventListener('change', draw);
+    setLand('vale');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que a descida do gradiente anda na direção de $-\\nabla f$?', options: ['Porque ∇f aponta para onde f mais cresce; o oposto é a descida mais íngreme', 'Por convenção', 'Porque −∇f aponta sempre para o mínimo global', 'Para ir mais devagar'], answer: 0, explain: 'É a direção de maior decrescimento <b>local</b>, o que não garante apontar para o mínimo global.' },
+      { q: 'Com $f = x^2$, o passo $x \\leftarrow x - \\eta \\cdot 2x = (1 - 2\\eta)x$. Para quais η a descida converge?', options: ['0 < η < 1', 'η < 2', 'qualquer η > 0', 'η = 0,5 apenas'], answer: 0, explain: 'É preciso $|1 - 2\\eta| &lt; 1$. Com η = 0,5 converge num passo só; com η > 1 o fator passa de 1 em módulo e diverge.' },
+      { q: 'A descida do gradiente sempre encontra o mínimo global?', options: ['Não: pode parar num mínimo local ou num ponto de sela', 'Sim, sempre', 'Só se η for pequeno', 'Só com momento'], answer: 0, explain: 'Em funções convexas (como a tigela) todo mínimo local é global. Em geral, não há essa garantia; veja "Dois mínimos".' },
+    ]);
+  </script>
+</body>
+</html>
