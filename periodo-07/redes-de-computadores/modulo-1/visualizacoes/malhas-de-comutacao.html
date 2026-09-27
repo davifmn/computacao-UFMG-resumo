@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Malhas de Comutação · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 5px; }
+    .dests { display: grid; grid-template-columns: repeat(4, auto); gap: 6px 10px; padding: 10px 14px; font: 13px var(--mono); color: var(--muted); }
+    .dests select { font-family: var(--mono); }
+    .row-in { display: flex; gap: 8px; align-items: center; padding: 8px 14px; flex-wrap: wrap; }
+    .ctl { display: grid; grid-template-columns: 6em minmax(0, 1fr) 4em; gap: 8px; align-items: center; padding: 6px 14px; font-size: 14px; color: var(--muted); }
+    .ctl input { min-width: 0; width: 100%; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Malhas de comutação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · aula 16 · complemento (o Tanenbaum não detalha; baseado em Kurose &amp; Ross, seção 4.2, e na literatura clássica)</div>
+    <h1>Por dentro de um comutador: malhas de comutação</h1>
+    <p class="lead">Um switch ou roteador tem <b>portas de entrada</b>, <b>portas de saída</b> e, no meio, a <b>malha de comutação</b> (switching fabric), que leva cada pacote (ou cada amostra de um circuito) da entrada certa para a saída certa. Como construir essa malha rápida, barata e sem bloqueios é o assunto desta página.</p>
+
+    <section class="prose">
+      <h2>Arquitetura geral</h2>
+      <ul>
+        <li><b>Porta de entrada</b>: termina a linha física, faz o processamento de enlace e a <b>consulta</b> (lookup) na tabela de encaminhamento para decidir a porta de saída. Isso é feito localmente em cada porta, em "velocidade de linha". Guarda o pacote numa fila se a malha estiver ocupada.</li>
+        <li><b>Malha de comutação</b>: conecta as entradas às saídas.</li>
+        <li><b>Porta de saída</b>: fila de saída (<b>buffer</b>) e escalonamento, processamento de enlace e transmissão.</li>
+        <li><b>Processador de controle</b>: roda os protocolos de roteamento ou de árvore geradora e monta as tabelas (plano de controle). O caminho dos pacotes pelas portas e pela malha é o <b>plano de dados</b>.</li>
+      </ul>
+      <h2>Três gerações de malha</h2>
+      <table class="data">
+        <tr><th>Tipo</th><th>Como funciona</th><th>Limite</th></tr>
+        <tr><td><b>Memória</b> (compartilhada)</td><td>A CPU ou um controlador copia o pacote da entrada para a memória e depois para a saída, como num computador comum.</td><td>Cada pacote exige 2 acessos (escrita e leitura): com memória de $B$ acessos/s, a vazão total é no máximo $B/2$ pacotes/s. Só um pacote de cada vez.</td></tr>
+        <tr><td><b>Barramento</b></td><td>A entrada põe o pacote num barramento compartilhado com um rótulo da porta de saída; só a saída certa o guarda.</td><td>Um pacote por vez: a vazão total é a velocidade do barramento (bom para redes locais e pequenas).</td></tr>
+        <tr><td><b>Rede de interconexão</b></td><td>Barra cruzada (crossbar) ou redes de múltiplos estágios (Banyan, Omega, Clos).</td><td>Vários pacotes em paralelo, desde que vão para saídas diferentes (e, nos multiestágio, que não disputem fios internos).</td></tr>
+      </table>
+      <h3>Barra cruzada (crossbar)</h3>
+      <p>$N$ barramentos horizontais (entradas) cruzam $N$ verticais (saídas), com uma chave em cada um dos $N^2$ cruzamentos. Qualquer permutação passa ao mesmo tempo: é <b>sem bloqueio interno</b>. O problema é o custo: $N^2$ pontos de cruzamento (1000 portas → 1 milhão). Ainda há disputa <b>na saída</b>: duas entradas querendo a mesma saída no mesmo instante, e uma delas espera.</p>
+      <h3>Redes de múltiplos estágios</h3>
+      <ul>
+        <li><b>Banyan / Omega</b>: $\log_2 N$ estágios de $N/2$ comutadores 2×2, ou seja, $\frac{N}{2}\log_2 N$ comutadores (bem menos que $N^2$). <b>Autorroteamento</b>: no estágio $i$, o $i$-ésimo bit do endereço de destino (do mais significativo) escolhe a saída de cima (0) ou de baixo (1); não precisa de controle central. Existe um único caminho entre cada entrada e cada saída, por isso há <b>bloqueio interno</b>: dois pacotes para saídas diferentes podem precisar do mesmo fio interno.</li>
+        <li><b>Batcher-Banyan</b>: uma rede de ordenação de Batcher ordena os pacotes pelo destino antes da Banyan, e então nenhuma permutação sofre bloqueio interno.</li>
+        <li><b>Clos</b> (3 estágios): na entrada, $k = N/n$ comutadores $n \times m$; no meio, $m$ comutadores $k \times k$; na saída, $k$ comutadores $m \times n$. É <b>estritamente sem bloqueio</b> se $m \ge 2n - 1$ (Clos, 1953) e rearranjável se $m \ge n$. Os pontos de cruzamento são $2Nm + m(N/n)^2$, muito menos que $N^2$ para $N$ grande.</li>
+      </ul>
+    </section>
+
+    <h2>Rede Omega 8×8: autorroteamento e bloqueio interno</h2>
+    <p>Escolha o destino de cada entrada. Cada pacote segue os bits do seu destino (0 = cima, 1 = baixo) em cada estágio. Em vermelho, os pacotes bloqueados porque outro já ocupou o mesmo fio.</p>
+    <div class="lab">
+      <div class="stage"><svg id="omega" aria-label="Rede Omega"></svg></div>
+      <div class="panel">
+        <div class="dests" id="dests"></div>
+        <div class="row-in">
+          <button class="btn small" data-pre="id">identidade</button>
+          <button class="btn small" data-pre="rev">inversa</button>
+          <button class="btn small" data-pre="rand">permutação aleatória</button>
+          <button class="btn small" data-pre="conf">conflito clássico</button>
+        </div>
+        <div class="row-in"><label><input type="checkbox" id="batcher"> ordenar antes (Batcher)</label></div>
+        <div class="readout" id="om-r"></div>
+      </div>
+    </div>
+
+    <h2>Filas na entrada e bloqueio na cabeça da fila (HOL)</h2>
+    <p>Com filas na <b>entrada</b>, só o primeiro pacote de cada fila disputa a malha. Se ele perde a disputa pela sua saída, o pacote de trás fica preso <b>mesmo que sua saída esteja livre</b>: é o <b>head-of-line blocking</b>. Com tráfego uniforme e saturado, a vazão cai para $2 - \sqrt 2 \approx 58{,}6\%$ quando $N$ cresce (Karol, Hluchyj e Morgan, 1987).</p>
+    <div class="lab">
+      <div class="stage"><svg id="hol" aria-label="Vazão com bloqueio HOL"></svg></div>
+      <div class="panel">
+        <div class="ctl"><span>portas N</span><input id="N" type="range" min="1" max="32" value="8"><output id="N-o"></output></div>
+        <div class="readout" id="hol-r"></div>
+      </div>
+    </div>
+    <section class="prose">
+      <ul>
+        <li><b>Filas na saída</b>: sem HOL, vazão de 100%, mas a malha precisa entregar até $N$ pacotes na mesma saída num slot (<b>aceleração</b>, speedup, de $N$ vezes).</li>
+        <li><b>Filas de saída virtuais (VOQ)</b>: cada entrada mantém uma fila separada <b>por saída</b>. Um escalonador (ex.: iSLIP) escolhe um emparelhamento entradas → saídas em cada slot, e a vazão chega perto de 100% sem acelerar a malha.</li>
+        <li>Quando a taxa de chegada supera o que a malha escoa, as filas crescem e há <b>perda de pacotes</b> por falta de buffer.</li>
+      </ul>
+    </section>
+
+    <h2>Custo: barra cruzada × Clos</h2>
+    <div class="panel">
+      <div class="row-in">
+        <label>N <input id="cN" type="number" value="1000" style="width:90px"></label>
+        <label>n (entradas por comutador do 1º estágio) <input id="cn" type="number" value="50" style="width:70px"></label>
+        <label>m (comutadores do meio) <input id="cm" type="number" value="99" style="width:70px"></label>
+      </div>
+      <div class="readout" id="clos-r"></div>
+    </div>
+
+    <section class="prose">
+      <h2>Comutação de circuitos: espaço e tempo</h2>
+      <ul>
+        <li><b>Divisão espacial</b>: caminhos físicos separados (barra cruzada, Clos): a conexão ocupa um caminho pela malha durante toda a chamada.</li>
+        <li><b>Divisão temporal: TSI</b> (Time Slot Interchanger): o quadro TDM de entrada (ex.: os 24 canais de uma T1) é <b>escrito</b> numa memória na ordem de chegada e <b>lido</b> na ordem desejada; cada canal troca de slot, e com isso de destino. A memória precisa fazer 2 acessos por slot, o que limita o número de canais: com slots de 125 μs/$n$ e acesso de $t$ ns, $n \le 125\,\mu s / 2t$.</li>
+        <li><b>TST</b> (tempo-espaço-tempo): TSIs nas pontas e uma malha espacial no meio, usado nas grandes centrais digitais.</li>
+      </ul>
+      <p>Exemplo de TSI: quadro de entrada (a, b, c, d) e ordem de leitura (2, 0, 3, 1) → saída (c, a, d, b). O canal que chegou no slot 2 sai no slot 0.</p>
+      <p>Volte à <a href="../tutoriais/revisao-prova-1.html">revisão da prova 1</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+    <section class="prose"><h2>Teste seu entendimento</h2></section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { rng } from '../../../../engine/random.js';
+    import { mountGenerator, mountQuiz } from '../../../../engine/quiz.js';
+    import { $, $$, h, fmt, pick, randInt, renderMath } from '../../../../engine/page.js';
+    import { shuffle, omegaRoute, omegaRouteAll, batcherThenBanyan, holThroughput, HOL_TABLE, crossbarPoints, closPoints, closNonBlocking } from './malhas.js';
+
+    const n = 3, N = 8;
+    const bin = v => v.toString(2).padStart(n, '0');
+    let dests = [0, 1, 2, 3, 4, 5, 6, 7];
+    const PAL = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.pink, COLORS.purple, COLORS.orange, COLORS.teal, '#e6e8eb'];
+
+    function destUI() {
+      $('#dests').replaceChildren(...dests.map((d, i) => h('label', {}, `${bin(i)} → `, (() => {
+        const sel = h('select', {}, ...Array.from({ length: N }, (_, k) => h('option', { value: k }, bin(k))));
+        sel.value = d;
+        sel.addEventListener('change', () => { dests[i] = +sel.value; drawOmega(); });
+        return sel;
+      })())));
+    }
+
+    const os = new Scene($('#omega'), { width: 860, height: 470 });
+    os.setAnimated(false);
+    function drawOmega() {
+      const Y = p => 50 + p * 52;
+      const X0 = 80, SW = 70, GAP = 150;
+      const sx = i => X0 + 60 + i * (SW + GAP) + GAP * 0.55;    // x da caixa do estágio i
+      const pairs = dests.map((d, i) => [i, d]);
+      const useB = $('#batcher').checked;
+      const routes = useB ? batcherThenBanyan(pairs, n) : omegaRouteAll(pairs, n);
+      os.frame(s => {
+        for (let p = 0; p < N; p++) {
+          s.text(`in${p}`, bin(p), { x: X0 - 30, y: Y(p), size: 13, mono: true, fill: COLORS.muted });
+          s.text(`ou${p}`, bin(p), { x: sx(n - 1) + SW + 50, y: Y(p), size: 13, mono: true, fill: COLORS.muted });
+        }
+        // fiação de embaralhamento e comutadores
+        for (let i = 0; i < n; i++) {
+          const xPrev = i === 0 ? X0 : sx(i - 1) + SW;
+          for (let p = 0; p < N; p++) s.line(`w${i}-${p}`, xPrev, Y(p), sx(i), Y(shuffle(p, n)), { stroke: COLORS.border, sw: 1.2, layer: 'bg' });
+          for (let k = 0; k < N / 2; k++) {
+            s.rect(`sw${i}-${k}`, { x: sx(i), y: Y(2 * k) - 16, w: SW, h: 52 + 32, rx: 8, fill: COLORS.surface2, stroke: COLORS.muted, sw: 1.2, layer: 'bg' });
+            s.text(`swl${i}-${k}`, '2×2', { x: sx(i) + SW / 2, y: Y(2 * k) + 26, size: 10, fill: COLORS.faint, layer: 'bg' });
+          }
+          s.text(`stl${i}`, `estágio ${i} · bit ${i}`, { x: sx(i) + SW / 2, y: 18, size: 12, fill: COLORS.muted });
+        }
+        s.line('wout', 0, 0, 0, 0, { stroke: 'none' });
+        // rotas
+        routes.forEach((r, k) => {
+          let d = `M ${X0} ${Y(r.src)}`;
+          let pos = r.src;
+          const last = r.blockedAt ?? n;
+          for (let i = 0; i < n; i++) {
+            const inPos = shuffle(pos, n);
+            d += ` L ${sx(i)} ${Y(inPos)}`;
+            if (i === r.blockedAt) break;
+            d += ` L ${sx(i) + SW} ${Y(r.hops[i].out)}`;
+            pos = r.hops[i].out;
+          }
+          if (r.blockedAt == null) d += ` L ${sx(n - 1) + SW + 30} ${Y(r.dst)}`;
+          s.path(`r${k}`, d, { stroke: r.blockedAt == null ? PAL[r.src] : COLORS.red, sw: 3, dash: r.blockedAt == null ? null : '6 4', opacity: 0.9 });
+          if (r.blockedAt != null) {
+            const inPos = shuffle(r.blockedAt === 0 ? r.src : r.hops[r.blockedAt - 1].out, n);
+            s.text(`x${k}`, '✕', { x: sx(r.blockedAt) + 6, y: Y(inPos), size: 18, weight: 800, fill: COLORS.red });
+          }
+          void last;
+        });
+      });
+      const blocked = routes.filter(r => r.blockedAt != null);
+      const outConf = new Set(dests).size < N;
+      $('#om-r').innerHTML = `<div>${routes.length - blocked.length} de ${N} pacotes passam.</div>`
+        + (blocked.length ? `<div class="c-red">Bloqueados: ${blocked.map(r => `${bin(r.src)}→${bin(r.dst)} (estágio ${r.blockedAt})`).join(', ')}</div>` : '<div class="c-green">Nenhum bloqueio.</div>')
+        + (outConf ? '<div class="c-orange">Há destinos repetidos: disputa na saída (nenhuma malha resolve isso sem filas).</div>' : '')
+        + `<div class="c-muted">Exemplo: ${bin(5)} → ${bin(2)} usa as saídas ${omegaRoute(5, 2, n).map(hp => (hp.bit ? 'baixo' : 'cima')).join(', ')} (bits de ${bin(2)}).</div>`
+        + (useB ? '<div class="c-muted">Com a ordenação, os pacotes entram na Banyan em ordem crescente de destino.</div>' : '');
+    }
+    $$('[data-pre]').forEach(b => b.addEventListener('click', () => {
+      const p = b.dataset.pre;
+      if (p === 'id') dests = [0, 1, 2, 3, 4, 5, 6, 7];
+      if (p === 'rev') dests = [7, 6, 5, 4, 3, 2, 1, 0];
+      if (p === 'rand') { dests = [0, 1, 2, 3, 4, 5, 6, 7]; for (let i = 7; i > 0; i--) { const j = randInt(0, i); [dests[i], dests[j]] = [dests[j], dests[i]]; } }
+      if (p === 'conf') dests = [0, 2, 1, 3, 4, 5, 6, 7];
+      destUI(); drawOmega();
+    }));
+    $('#batcher').addEventListener('change', drawOmega);
+    destUI(); drawOmega();
+
+    // ---------- HOL ----------
+    const hs = new Scene($('#hol'), { width: 860, height: 300 });
+    hs.setAnimated(false);
+    const sims = {};
+    for (let k = 1; k <= 32; k++) sims[k] = holThroughput(rng(k), k, 3000);
+    function drawHol() {
+      const Nn = +$('#N').value; $('#N-o').value = Nn;
+      const X = k => 60 + (k - 1) * 24.5, Y = v => 270 - v * 240;
+      hs.frame(s => {
+        s.line('ax', 50, 270, 840, 270, { stroke: COLORS.muted, sw: 1.5 });
+        [0.5, 0.586, 0.75, 1].forEach(v => { s.line(`g${v}`, 50, Y(v), 840, Y(v), { stroke: v === 0.586 ? COLORS.red : COLORS.border, sw: 1, dash: '3 4', layer: 'bg' }); s.text(`gl${v}`, fmt(v, 3), { x: 30, y: Y(v), size: 11, mono: true, fill: v === 0.586 ? COLORS.red : COLORS.faint }); });
+        for (let k = 1; k <= 32; k++) {
+          s.rect(`b${k}`, { x: X(k) - 9, y: Y(sims[k]), w: 18, h: 270 - Y(sims[k]), rx: 3, fill: k === Nn ? COLORS.yellow : COLORS.blue, stroke: 'none', opacity: k === Nn ? 1 : 0.6 });
+          if (k % 4 === 0 || k === 1) s.text(`bl${k}`, k, { x: X(k), y: 286, size: 11, mono: true, fill: COLORS.faint });
+        }
+        s.text('lim', '2 − √2', { x: 840, y: Y(0.586) - 10, size: 12, anchor: 'end', fill: COLORS.red });
+      });
+      $('#hol-r').innerHTML = `<div>N = ${Nn}: vazão simulada <b>${fmt(100 * sims[Nn], 1)}%</b>${HOL_TABLE[Nn] ? ` (teoria: ${fmt(100 * HOL_TABLE[Nn], 1)}%)` : ''}</div><div class="c-muted">Com N = 1 não há disputa (100%); com 2 portas, 75%; tende a 58,6%.</div>`;
+    }
+    $('#N').addEventListener('input', drawHol);
+    drawHol();
+
+    // ---------- Clos ----------
+    function drawClos() {
+      const Nn = +$('#cN').value, nn = +$('#cn').value, m = +$('#cm').value;
+      const ok = Nn > 0 && nn > 0 && Nn % nn === 0;
+      $('#clos-r').innerHTML = ok
+        ? `<div>Barra cruzada: $N^2 = ${fmt(crossbarPoints(Nn), 0)}$ pontos</div>
+           <div>Clos: $2Nm + m(N/n)^2 = ${fmt(closPoints(Nn, nn, m), 0)}$ pontos (${fmt(100 * closPoints(Nn, nn, m) / crossbarPoints(Nn), 1)}% da barra cruzada)</div>
+           <div>${closNonBlocking(nn, m) ? `<span class="c-green">Estritamente sem bloqueio</span> ($m = ${m} \\ge 2n - 1 = ${2 * nn - 1}$)` : m >= nn ? `<span class="c-orange">Rearranjável</span> ($n \\le m &lt; 2n - 1 = ${2 * nn - 1}$)` : `<span class="c-red">Pode bloquear</span> ($m &lt; n$)`}</div>`
+        : '<div class="c-red">N precisa ser múltiplo de n.</div>';
+      renderMath($('#clos-r'));
+    }
+    ['#cN', '#cn', '#cm'].forEach(s => $(s).addEventListener('input', drawClos));
+    drawClos();
+
+    // ---------- exercícios ----------
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['route', 'points', 'clos', 'mem']);
+        if (kind === 'route') {
+          const nn = pick([3, 4]), s0 = randInt(0, 2 ** nn - 1), d = randInt(0, 2 ** nn - 1);
+          const ans = omegaRoute(s0, d, nn).map(hp => (hp.bit ? 'b' : 'c')).join('');
+          return { q: `Rede Omega ${2 ** nn}×${2 ** nn}: um pacote vai da entrada ${s0.toString(2).padStart(nn, '0')} para a saída ${d.toString(2).padStart(nn, '0')}. Em cada estágio, ele sai por cima (c) ou por baixo (b)? Responda com ${nn} letras.`, input: true, answer: ans, check: v => v.trim().toLowerCase() === ans, explain: `Basta ler os bits do destino, do mais significativo: 0 = cima, 1 = baixo. A entrada não importa.` };
+        }
+        if (kind === 'points') {
+          const nn = pick([3, 4, 5, 6, 10]), NN = 2 ** nn;
+          return { q: `Quantos comutadores 2×2 tem uma rede Banyan/Omega ${NN}×${NN}?`, input: true, answer: String((NN / 2) * nn), explain: `$\\frac{N}{2}\\log_2 N = ${NN / 2} \\cdot ${nn}$.` };
+        }
+        if (kind === 'clos') {
+          const nn = pick([4, 8, 10, 16, 32]);
+          return { q: `Clos de 3 estágios com n = ${nn} entradas por comutador do 1º estágio. Qual o menor número de comutadores do meio (m) para ser estritamente sem bloqueio?`, input: true, answer: String(2 * nn - 1), explain: `$m \\ge 2n - 1 = ${2 * nn - 1}$.` };
+        }
+        const acc = pick([100, 200, 400]) * 1e6;
+        return { q: `Um comutador de memória compartilhada faz ${acc / 1e6} milhões de acessos à memória por segundo. Quantos milhões de pacotes por segundo ele comuta, no máximo?`, input: true, answer: String(acc / 2e6), explain: 'Cada pacote é escrito uma vez e lido uma vez: 2 acessos.' };
+      },
+    });
+    mountQuiz($('#quiz'), [
+      { q: 'Qual malha é sem bloqueio interno mas cresce com $N^2$?', options: ['Barra cruzada', 'Banyan', 'Barramento', 'Memória compartilhada'], answer: 0, explain: 'Um ponto de cruzamento para cada par entrada-saída.' },
+      { q: 'No autorroteamento da Banyan, o que decide a saída de cada comutador 2×2?', options: ['um bit do endereço de destino', 'um bit do endereço de origem', 'uma tabela central', 'a ordem de chegada'], answer: 0, explain: 'Estágio $i$ usa o $i$-ésimo bit do destino.' },
+      { q: 'O que é bloqueio HOL?', options: ['o pacote da frente da fila de entrada, esperando sua saída, impede o de trás de ir para uma saída livre', 'duas saídas usando a mesma entrada', 'perda de pacote por CRC', 'o buffer de saída cheio'], answer: 0, explain: 'Limita a vazão a ~58,6% com filas FIFO na entrada.' },
+      { q: 'Como eliminar o bloqueio HOL sem acelerar a malha?', options: ['filas de saída virtuais (uma fila por saída em cada entrada)', 'aumentar o buffer de entrada', 'usar barramento', 'usar CSMA/CD'], answer: 0, explain: 'VOQ + um bom escalonador (ex.: iSLIP).' },
+      { q: 'Uma rede de Clos com n = 10 é estritamente sem bloqueio se:', options: ['m ≥ 19', 'm ≥ 10', 'm ≥ 20', 'm ≥ 5'], answer: 0, explain: '$m \\ge 2n - 1$.' },
+      { q: 'O que faz um TSI?', options: ['troca canais de slot de tempo escrevendo o quadro TDM na memória e lendo em outra ordem', 'converte analógico em digital', 'divide a frequência em canais', 'detecta colisões'], answer: 0, explain: 'É a comutação por divisão de tempo.' },
+    ]);
+  </script>
+</body>
+</html>

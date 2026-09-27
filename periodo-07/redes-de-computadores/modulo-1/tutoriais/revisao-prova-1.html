@@ -36,6 +36,25 @@
       <nav class="toc" id="toc" aria-label="Sumário"></nav>
       <article class="prose" id="content">
 
+        <h2>O que cai: o cronograma da disciplina</h2>
+        <p>A <b>prova escrita 1 (28/09)</b> cobre as aulas 3 a 16. Cada aula e onde estudá-la:</p>
+        <table class="data">
+          <tr><th>Aula</th><th>Assunto</th><th>Onde estudar</th></tr>
+          <tr><td>3–4</td><td>Apresentação; introdução a redes</td><td><a href="cap1-introducao.html">Cap. 1</a>, seções 1.1 e 1.2</td></tr>
+          <tr><td>5</td><td>Conceitos básicos, fundamentos</td><td><a href="cap1-introducao.html">Cap. 1</a>, 1.3–1.7 · <a href="../visualizacoes/encapsulamento.html">Encapsulamento</a></td></tr>
+          <tr><td>6</td><td>Conceitos básicos (cont.); comutação, confiabilidade</td><td><a href="cap2-camada-fisica.html">Cap. 2</a>, 2.6.5 · <a href="../visualizacoes/comutacao.html">Circuitos × pacotes</a> · serviços confiáveis em 1.3 e 3.1</td></tr>
+          <tr><td>7</td><td>Mecanismos e tecnologias de acesso à rede</td><td><a href="cap2-camada-fisica.html">Cap. 2</a>: loop local (modems, ADSL, FTTH), 2.7 celular e 2.8 cabo; acesso sem fio no cap. 4 (802.11)</td></tr>
+          <tr><td>8</td><td>Enlace: codificação e delimitação de quadros</td><td><a href="cap2-camada-fisica.html">Cap. 2</a>, 2.5.1 · <a href="../visualizacoes/codificacao.html">Codificação</a> · <a href="cap3-camada-de-enlace.html">Cap. 3</a>, 3.1.2 · <a href="../visualizacoes/enquadramento.html">Enquadramento</a></td></tr>
+          <tr><td>9</td><td>Comunicação confiável: erros, códigos, CRC</td><td><a href="cap3-camada-de-enlace.html">Cap. 3</a>, 3.2 · <a href="../visualizacoes/deteccao-erros.html">Detecção de erros</a></td></tr>
+          <tr><td>10</td><td>Protocolos Volta-N e Repetição Seletiva</td><td><a href="cap3-camada-de-enlace.html">Cap. 3</a>, 3.3–3.4 · <a href="../visualizacoes/janela-deslizante.html">Janela deslizante</a></td></tr>
+          <tr><td>12</td><td>Meios físicos de transmissão</td><td><a href="cap2-camada-fisica.html">Cap. 2</a>, 2.1–2.4 · <a href="../visualizacoes/sinais.html">Nyquist e Shannon</a> · <a href="../visualizacoes/multiplexacao.html">Multiplexação</a></td></tr>
+          <tr><td>13</td><td>Programação em redes: sockets (prática)</td><td><a href="sockets.html">Sockets</a> (Tanenbaum 6.1.3–6.1.4)</td></tr>
+          <tr><td>14</td><td>Enlace: redes locais I</td><td><a href="cap4-subcamada-mac.html">Cap. 4</a>, 4.1–4.3 · <a href="../visualizacoes/acesso-multiplo.html">Acesso múltiplo</a> · <a href="../visualizacoes/ethernet-wifi.html">Ethernet</a></td></tr>
+          <tr><td>15</td><td>Redes locais II; redes sem fio</td><td><a href="cap4-subcamada-mac.html">Cap. 4</a>, 4.3.4–4.4 · <a href="../visualizacoes/ethernet-wifi.html">Wi-Fi e terminais oculto/exposto</a></td></tr>
+          <tr><td>16</td><td>Comutação: arquitetura e implementação de malhas de comutação</td><td><a href="../visualizacoes/malhas-de-comutacao.html">Malhas de comutação</a> (complemento, fora do Tanenbaum)</td></tr>
+        </table>
+        <p class="c-muted">Depois da prova (aula 22) vêm pontes, pontes com aprendizado e roteamento de fonte: já estão na seção 4.8 do <a href="cap4-subcamada-mac.html">cap. 4</a> e em <a href="../visualizacoes/pontes.html">Pontes</a>.</p>
+
         <h2>Roteiro de estudo</h2>
         <ol>
           <li>Leia cada capítulo e abra as visualizações indicadas (os links ▶ dentro dos capítulos).</li>
@@ -48,6 +67,7 @@
           <tr><td>1. Introdução</td><td><a href="../visualizacoes/encapsulamento.html">Encapsulamento</a></td></tr>
           <tr><td>2. Camada física</td><td><a href="../visualizacoes/sinais.html">Sinais, Nyquist e Shannon</a> · <a href="../visualizacoes/codificacao.html">Codificação e modulação</a> · <a href="../visualizacoes/multiplexacao.html">Multiplexação e CDMA</a> · <a href="../visualizacoes/comutacao.html">Circuitos × pacotes</a></td></tr>
           <tr><td>3. Enlace</td><td><a href="../visualizacoes/enquadramento.html">Enquadramento</a> · <a href="../visualizacoes/deteccao-erros.html">Detecção e correção de erros</a> · <a href="../visualizacoes/janela-deslizante.html">Janela deslizante</a></td></tr>
+          <tr><td>Aulas 13 e 16</td><td><a href="sockets.html">Sockets</a> · <a href="../visualizacoes/malhas-de-comutacao.html">Malhas de comutação</a></td></tr>
           <tr><td>4. MAC</td><td><a href="../visualizacoes/acesso-multiplo.html">Acesso múltiplo</a> · <a href="../visualizacoes/ethernet-wifi.html">Ethernet e Wi-Fi</a> · <a href="../visualizacoes/pontes.html">Pontes e spanning tree</a></td></tr>
         </table>
 
@@ -83,6 +103,8 @@
           <li><b>Quadro mínimo Ethernet</b>: 64 bytes do destino ao CRC (dados ≥ 46); o preâmbulo não conta.</li>
           <li><b>MACA × 802.11</b>: o MACA resolve o terminal exposto (quem só ouve o RTS pode transmitir); o 802.11 não (o NAV segura quem ouviu o RTS).</li>
           <li><b>Ponte</b>: aprende pela <b>origem</b>, decide pelo <b>destino</b>; destino na porta de chegada → descarta.</li>
+          <li><b>Sockets</b>: LISTEN <b>não</b> bloqueia (o ACCEPT sim); ACCEPT devolve um socket <b>novo</b>; o cliente não precisa de BIND; TCP não preserva fronteiras de mensagens.</li>
+          <li><b>Malhas</b>: barra cruzada = $N^2$ pontos e sem bloqueio interno; Banyan = $\frac{N}{2}\log_2 N$ comutadores, autorroteada pelos bits do destino, com bloqueio interno; filas FIFO na entrada → HOL → 58,6%; Clos sem bloqueio com $m \ge 2n - 1$.</li>
         </ul>
 
         <h2 id="simulado">Simulado</h2>
@@ -156,6 +178,17 @@
         return { q: `[Cap. 4] Depois da ${i}ª colisão, qual o maior número de slots que o recuo exponencial binário pode sortear?`, input: true, answer: String(hi), explain: `$2^{\\min(i,10)} - 1$${i > 10 ? ' (congelado em 1023 após 10 colisões)' : ''}.` }; },
       () => { const p = pick([10, 30, 45, 46, 60]); const pad = Math.max(0, 46 - p);
         return { q: `[Cap. 4] Quantos bytes de enchimento num quadro Ethernet com ${p} bytes de dados?`, input: true, answer: String(pad), explain: 'Dados mínimos de 46 bytes.' }; },
+      // aulas 13 e 16
+      () => pick([
+        { q: '[Sockets] Em que ordem o servidor TCP chama as primitivas? (use as iniciais: s, b, l, a)', input: true, answer: 'sbla', check: v => v.replace(/[^a-z]/gi, '').toLowerCase() === 'sbla', explain: 'SOCKET, BIND, LISTEN, ACCEPT.' },
+        { q: '[Sockets] Qual primitiva do servidor bloqueia até chegar um cliente?', input: true, answer: 'accept', check: v => /accept/i.test(v), explain: 'LISTEN só prepara a fila.' },
+        { q: '[Sockets] Qual primitiva do cliente bloqueia até a conexão ser estabelecida?', input: true, answer: 'connect', check: v => /connect/i.test(v), explain: 'CONNECT inicia o handshake e espera.' },
+      ]),
+      () => { const nn = pick([3, 4, 5]); const d = randInt(0, 2 ** nn - 1); const ans = d.toString(2).padStart(nn, '0').replace(/0/g, 'c').replace(/1/g, 'b');
+        return { q: `[Malhas] Rede Omega ${2 ** nn}×${2 ** nn}: por onde sai (c = cima, b = baixo) em cada estágio um pacote para a saída ${d.toString(2).padStart(nn, '0')}?`, input: true, answer: ans, check: v => v.trim().toLowerCase() === ans, explain: 'Os bits do destino, do mais significativo: 0 = cima, 1 = baixo.' }; },
+      () => { const NN = pick([16, 64, 256, 1024]); const k = Math.log2(NN); const which = Math.random() < 0.5;
+        return which ? { q: `[Malhas] Pontos de cruzamento de uma barra cruzada ${NN}×${NN}?`, input: true, answer: String(NN * NN), check: near(NN * NN), explain: '$N^2$.' }
+          : { q: `[Malhas] Comutadores 2×2 numa Banyan ${NN}×${NN}?`, input: true, answer: String(NN / 2 * k), check: near(NN / 2 * k), explain: '$\\frac{N}{2}\\log_2 N$.' }; },
     ];
     mountGenerator($('#sim'), { generate: () => pick(GEN)(), label: 'Nova questão' });
   </script>
