@@ -212,3 +212,38 @@ test('cap. 4: árvore geradora', () => {
   const p = R.spanningTree({ 1: ['X', 'Y'], 2: ['X', 'Y'] });
   assert.deepEqual(p.designated, { X: 1, Y: 1 });
 });
+
+test('sockets: servidor faz socket → bind → listen → accept; accept cria socket novo', async () => {
+  const { CODE, socketSteps } = await import('../periodo-07/redes-de-computadores/modulo-1/visualizacoes/sockets.js');
+  const steps = socketSteps();
+  const lines = CODE.split('\n');
+  const order = steps.slice(0, 4).map(s => lines[s.line - 1]);
+  assert.ok(/SOCKET/.test(order[0]) && /BIND/.test(order[1]) && /LISTEN/.test(order[2]) && /accept/.test(order[3]));
+  assert.ok(steps.some(s => s.sockets.includes('c')));
+  assert.deepEqual(steps.find(s => s.seg.length === 3).seg.map(g => g.txt), ['SYN', 'SYN + ACK', 'ACK']);
+});
+
+test('malhas: Omega, Batcher-Banyan, HOL, Clos e TSI', async () => {
+  const M = await import('../periodo-07/redes-de-computadores/modulo-1/visualizacoes/malhas.js');
+  for (let s = 0; s < 16; s++) for (let d = 0; d < 16; d++) assert.equal(M.omegaRoute(s, d, 4).at(-1).out, d);
+  assert.deepEqual(M.omegaRoute(5, 2, 3).map(h => h.bit), [0, 1, 0]);
+  const ident = [0, 1, 2, 3, 4, 5, 6, 7].map(i => [i, i]);
+  assert.ok(M.omegaRouteAll(ident, 3).every(r => r.blockedAt == null));
+  assert.ok(M.omegaRouteAll([[0, 0], [4, 1]], 3).some(r => r.blockedAt === 0));     // disputam o mesmo comutador/saída
+  const r = rng(11);
+  let omegaBlocked = 0;
+  for (let t = 0; t < 500; t++) {
+    const p = [0, 1, 2, 3, 4, 5, 6, 7];
+    for (let i = 7; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+    const pairs = p.map((d, i) => [i, d]);
+    assert.ok(M.batcherThenBanyan(pairs, 3).every(x => x.blockedAt == null));
+    if (M.omegaRouteAll(pairs, 3).some(x => x.blockedAt != null)) omegaBlocked++;
+  }
+  close(omegaBlocked / 500, 1 - 4096 / 40320, 0.05);        // a Omega 8×8 realiza só 2^12 das 8! permutações
+  close(M.holThroughput(rng(1), 2, 20000), 0.75, 0.01);
+  close(M.holThroughput(rng(2), 8, 20000), M.HOL_TABLE[8], 0.01);
+  assert.equal(M.crossbarPoints(1000), 1e6);
+  assert.equal(M.closPoints(1000, 50, 99), 237600);
+  assert.ok(M.closNonBlocking(10, 19) && !M.closNonBlocking(10, 18));
+  assert.deepEqual(M.tsi(['a', 'b', 'c', 'd'], [2, 0, 3, 1]), ['c', 'a', 'd', 'b']);
+});

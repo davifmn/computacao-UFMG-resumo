@@ -13,6 +13,7 @@ folha de fórmulas, pegadinhas e um simulado com questões numéricas infinitas.
 | [2 · Camada física](tutoriais/cap2-camada-fisica.html) | Fourier, Nyquist, Shannon, meios guiados e sem fio, satélites, códigos de linha, modulação, FDM/TDM/CDMA, telefonia (PCM, T1, SONET, ADSL), comutação, celular, cabo | 2.2–2.5, 2.7, 2.9, 2.10, 2.12, 2.13, 2.15, 2.16, 2.20, 2.22–2.28, 2.31, 2.34, 2.37–2.40, 2.42–2.49 |
 | [3 · Camada de enlace](tutoriais/cap3-camada-de-enlace.html) | Serviços, enquadramento, Hamming, CRC, checksum, protocolos 1–6, janela deslizante, PPP, ADSL/ATM | 3.1–3.12, 3.15–3.18, 3.20, 3.22, 3.24, 3.27, 3.28, 3.31–3.38 |
 | [4 · Subcamada MAC](tutoriais/cap4-subcamada-mac.html) | Alocação estática × dinâmica, ALOHA, CSMA/CD, livres de colisão, MACA, Ethernet (clássica a 10G), 802.11, pontes, spanning tree, VLANs | 4.1–4.4, 4.6–4.11, 4.13–4.20, 4.24, 4.25, 4.36–4.41 |
+| [Sockets](tutoriais/sockets.html) (aula 13) | Primitivas de Berkeley, ciclo de vida cliente/servidor, fluxo de bytes, ordem de rede, UDP; exemplos em C e Python | Tanenbaum 6.1.3–6.1.4 |
 
 ## 🎬 Visualizações
 
@@ -29,12 +30,16 @@ folha de fórmulas, pegadinhas e um simulado com questões numéricas infinitas.
 | 📡 | [Acesso múltiplo](visualizacoes/acesso-multiplo.html) | Vazão de ALOHA/CSMA, simulador, recuo exponencial, contagem regressiva e árvore |
 | 🔌 | [Ethernet e Wi-Fi](visualizacoes/ethernet-wifi.html) | Quadro e enchimento, quadro mínimo, eficiência, terminais oculto e exposto |
 | 🌉 | [Pontes e spanning tree](visualizacoes/pontes.html) | Aprendizado reverso na Fig. 4-41(b) (problema 4.38) e árvore geradora |
+| 🔀 | [Malhas de comutação](visualizacoes/malhas-de-comutacao.html) | Aula 16 (complemento): barra cruzada, Omega/Banyan com autorroteamento e bloqueio, Batcher, HOL (58,6%), VOQ, Clos e TSI |
 
 ## 💻 Código
 
 [`codigo/redes.py`](codigo/redes.py): Nyquist, Shannon, CDMA, bit e byte stuffing, Hamming,
 CRC, checksum da Internet, janela deslizante, ALOHA e Ethernet em Python puro. Os testes no
 final conferem os exemplos e exercícios do livro. Rode `python3 redes.py`.
+
+[`codigo/sockets.py`](codigo/sockets.py): servidor TCP com uma thread por cliente, mensagens
+delimitadas por tamanho e eco UDP; testa-se sozinho em `localhost` (`python3 sockets.py`).
 
 ## Convenções
 
