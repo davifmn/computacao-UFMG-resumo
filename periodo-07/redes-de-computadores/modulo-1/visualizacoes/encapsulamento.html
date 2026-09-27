@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Encapsulamento · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Encapsulamento</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 1 (Tanenbaum, seções 1.3 e 1.4)</div>
+    <h1>Encapsulamento: a viagem de uma mensagem pelas camadas</h1>
+    <p class="lead">Cada camada trata o que recebe de cima como uma "caixa fechada" e põe sua própria etiqueta (o <b>cabeçalho</b>). No destino, cada camada tira só a etiqueta que a camada par colocou. Acompanhe uma requisição HTTP indo do host A ao host B através de um roteador.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Modelo">
+        <button class="btn" data-m="tcpip">Modelo do livro (5 camadas / TCP/IP)</button>
+        <button class="btn" data-m="osi">Nomes do modelo OSI</button>
+      </div>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>O que guardar</h2>
+      <ul>
+        <li><b>Camada n do emissor ↔ camada n do receptor:</b> elas conversam por um <b>protocolo</b> (comunicação virtual, horizontal). Os dados só se movem de verdade na vertical, até a camada física.</li>
+        <li><b>Interface:</b> o que uma camada oferece à de cima. <b>Serviço</b> é o que ela faz; <b>protocolo</b> é como ela faz (as regras entre pares). Trocar o protocolo sem mudar o serviço não afeta as outras camadas.</li>
+        <li><b>Unidades de dados (PDUs):</b> mensagem (aplicação) → segmento (transporte) → pacote (rede) → quadro (enlace) → bits (física).</li>
+        <li><b>Equipamentos:</b> hosts implementam as 5 camadas; roteadores vão até a camada de rede; switches e pontes até a de enlace; hubs e repetidores só a física (seção 4.8.4).</li>
+        <li><b>Custo do empilhamento:</b> cada cabeçalho ocupa banda. Com $n$ camadas de $h$ bytes cada e mensagens de $M$ bytes, a fração desperdiçada é $\frac{hn}{M + hn}$ (problema 1.16).</li>
+      </ul>
+      <p>Na Fig. 1-15 do livro, a camada 4 da origem ainda pode <b>fragmentar</b> a mensagem (M → M1, M2) quando a camada de baixo impõe um tamanho máximo. Aqui, para simplificar, a mensagem cabe num único pacote.</p>
+      <p>Volte para o <a href="../tutoriais/cap1-introducao.html">capítulo 1</a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../../engine/player.js';
+    import { COLORS } from '../../../../engine/scene.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    import { $, $$ } from '../../../../engine/page.js';
+    import { LAYERS, CODE, encapsulationSteps } from './encapsulamento.js';
+
+    const W = 900, H = 520;
+    const COL = { A: 110, R: 450, B: 790 };
+    const LY = i => 70 + i * 84;
+    let model = 'tcpip';
+
+    const player = new StepPlayer($('#player'), {
+      code: CODE, lang: 'python', width: W, height: H, codeTitle: 'Encapsulamento (pseudocódigo)', showVars: false,
+      render(step, s) {
+        const machines = [['A', 'Host A', 5], ['R', 'Roteador', 3], ['B', 'Host B', 5]];
+        for (const [m, name, n] of machines) {
+          s.text(`mt-${m}`, name, { x: COL[m], y: 30, size: 15, weight: 700, fill: COLORS.text });
+          LAYERS.forEach((L, i) => {
+            const present = m !== 'R' || i >= 5 - n;
+            if (!present) return;
+            const active = step.where === m && step.layer === i;
+            s.rect(`l-${m}-${i}`, { x: COL[m] - 90, y: LY(i) - 26, w: 180, h: 52, rx: 8, fill: active ? '#23303a' : COLORS.surface2, stroke: active ? COLORS[L.color] : COLORS.border, sw: active ? 2.5 : 1.2, layer: 'bg' });
+            const label = model === 'osi' ? L.osi : L.tcpip;
+            s.text(`lt-${m}-${i}`, label, { x: COL[m], y: LY(i) - 8, size: model === 'osi' && i === 0 ? 10 : 13, weight: 600, fill: COLORS[L.color], layer: 'bg' });
+            s.text(`le-${m}-${i}`, L.ex, { x: COL[m], y: LY(i) + 12, size: 10, fill: COLORS.faint, layer: 'bg' });
+          });
+        }
+        // meios físicos
+        s.path('wire1', `M ${COL.A + 90} ${LY(4)} L ${COL.R - 90} ${LY(4)}`, { stroke: step.where === 'wire1' ? COLORS.pink : COLORS.border, sw: 4, layer: 'bg' });
+        s.path('wire2', `M ${COL.R + 90} ${LY(4)} L ${COL.B - 90} ${LY(4)}`, { stroke: step.where === 'wire2' ? COLORS.pink : COLORS.border, sw: 4, layer: 'bg' });
+        // protocolos entre pares (linhas tracejadas)
+        [0, 1].forEach(i => s.line(`peer${i}`, COL.A + 90, LY(i), COL.B - 90, LY(i), { stroke: COLORS.faint, sw: 1, dash: '4 6', opacity: 0.5, layer: 'bg' }));
+        s.text('peer-l', 'protocolo fim a fim (camadas pares)', { x: COL.R, y: LY(0), size: 11, fill: COLORS.faint, layer: 'bg' });
+
+        // a unidade de dados atual
+        const cx = step.where === 'wire1' ? (COL.A + COL.R) / 2 : step.where === 'wire2' ? (COL.R + COL.B) / 2 : COL[step.where];
+        const cy = step.where.startsWith('wire') ? LY(4) - 50 : LY(step.layer) + 44;
+        const widths = step.parts.map(p => (p.k === 'M' ? 110 : 44));
+        const total = widths.reduce((a, b) => a + b, 0);
+        let x = cx - total / 2;
+        step.parts.forEach((p, i) => {
+          s.rect(`p-${p.k}`, { x, y: cy - 13, w: widths[i] - 2, h: 26, rx: 4, fill: COLORS[p.color], stroke: 'none', layer: 'nodes' });
+          s.text(`pt-${p.k}`, p.k === 'M' ? 'dados' : p.label, { x: x + widths[i] / 2, y: cy, size: 12, weight: 700, fill: '#0b0e12' });
+          x += widths[i];
+        });
+        const L = LAYERS[step.layer];
+        s.text('pdu', step.where.startsWith('wire') ? '0110100101…' : L.pdu, { x: cx, y: cy + 26, size: 12, mono: true, fill: COLORS.muted });
+      },
+    });
+
+    function run() {
+      $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === model));
+      const i = player.index;
+      player.load(encapsulationSteps());
+      if (i) player.go(i);
+    }
+    $$('[data-m]').forEach(b => b.addEventListener('click', () => { model = b.dataset.m; run(); }));
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Até qual camada um <b>roteador</b> processa os dados?', options: ['Rede', 'Transporte', 'Enlace', 'Aplicação'], answer: 0, explain: 'Ele precisa ler o endereço IP para rotear, mas não o cabeçalho TCP.' },
+      { q: 'Qual cabeçalho é <b>trocado</b> a cada salto, e qual segue (quase) igual de ponta a ponta?', options: ['Enlace é trocado; IP segue', 'IP é trocado; enlace segue', 'Os dois são trocados', 'Nenhum é trocado'], answer: 0, explain: 'O quadro só vale num enlace (endereços MAC locais). O pacote IP vai da origem ao destino; o roteador só decrementa o TTL e recalcula o checksum.' },
+      { q: 'Mensagens de 1000 bytes passam por 4 camadas que acrescentam 20 bytes de cabeçalho cada. Que fração da banda é gasta com cabeçalhos?', options: ['$80/1080 \\approx 7{,}4\\%$', '$20/1000 = 2\\%$', '$80/1000 = 8\\%$', '$4\\%$'], answer: 0, explain: '$\\frac{hn}{M + hn} = \\frac{4 \\cdot 20}{1000 + 80}$ (problema 1.16).' },
+    ]);
+  </script>
+</body>
+</html>

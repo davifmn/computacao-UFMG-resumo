@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enquadramento · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .strip { display: flex; flex-wrap: wrap; gap: 4px; padding: 12px 14px; align-items: center; }
+    .cell { min-width: 34px; padding: 6px 7px; text-align: center; font: 600 14px var(--mono); border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); }
+    .cell.count { border-color: var(--yellow); color: var(--yellow); }
+    .cell.flag { background: #3a2d10; border-color: var(--orange); color: var(--orange); }
+    .cell.esc { background: #2b1f3d; border-color: var(--purple); color: var(--purple); }
+    .cell.ins { outline: 2px solid var(--green); outline-offset: 1px; }
+    .cell.bad { background: #3d1c1c; border-color: var(--red); color: var(--red); }
+    .cell.bit { min-width: 22px; padding: 5px 4px; }
+    .cell.f0 { background: rgba(88,196,221,.15); } .cell.f1 { background: rgba(131,193,103,.15); } .cell.f2 { background: rgba(247,143,179,.15); } .cell.f3 { background: rgba(177,137,245,.15); }
+    .lbl { font-size: 13px; color: var(--muted); padding: 10px 14px 0; }
+    .row-in { display: flex; gap: 10px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+    .row-in input[type=text] { font-family: var(--mono); min-width: 380px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Enquadramento</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 3 (seção 3.1.2)</div>
+    <h1>Onde começa e onde termina um quadro?</h1>
+    <p class="lead">A camada física entrega só um rio de bits. A camada de enlace precisa marcar as fronteiras dos quadros de um jeito que o receptor consiga reencontrá-las, <b>mesmo quando os próprios dados contêm os marcadores</b>.</p>
+
+    <h2>1. Contagem de bytes</h2>
+    <p>O primeiro byte de cada quadro diz quantos bytes o quadro tem, <b>incluindo ele mesmo</b>. O exemplo é o da Fig. 3-3, em que a contagem do quadro 2 muda de 5 para 7. Corrompa uma contagem e veja o receptor se perder: a partir daí, todas as fronteiras ficam erradas.</p>
+    <div class="panel">
+      <div class="row-in">
+        <label>Quadros (separe por |) <input id="bc-in" type="text" value="1 2 3 4 | 6 7 8 9 | 0 1 2 3 4 5 6 | 7 8 9 0 1 2 3"></label>
+        <label>Corromper a contagem do quadro <select id="bc-bad"><option value="-1">nenhum</option><option value="1" selected>2</option><option value="2">3</option></select></label>
+        <label>para <input id="bc-val" type="number" value="7" style="width:60px"></label>
+      </div>
+      <div class="lbl">O que foi transmitido (contagens em amarelo):</div>
+      <div class="strip" id="bc-tx"></div>
+      <div class="lbl">Como o receptor divide o fluxo (cada cor é um quadro que ele acha que recebeu):</div>
+      <div class="strip" id="bc-rx"></div>
+      <div class="lbl" id="bc-msg" style="padding-bottom:12px"></div>
+    </div>
+
+    <h2>2. Bytes de flag com inserção de bytes (byte stuffing)</h2>
+    <p>Cada quadro fica entre dois bytes <b>FLAG</b>. Se FLAG ou ESC aparecem nos dados, o transmissor insere um <b>ESC</b> antes (em verde); o receptor remove todo ESC e aceita o byte seguinte literalmente (Fig. 3-4). Use os tokens <code>FLAG</code> e <code>ESC</code>.</p>
+    <div class="panel">
+      <div class="row-in">
+        <label>Dados <input id="bs-in" type="text" value="A B ESC C ESC FLAG FLAG D"></label>
+        <button class="btn small" data-bs="A FLAG B">A FLAG B</button>
+        <button class="btn small" data-bs="A ESC B">A ESC B</button>
+        <button class="btn small" data-bs="A ESC FLAG B">A ESC FLAG B</button>
+        <button class="btn small" data-bs="A ESC ESC B">A ESC ESC B</button>
+        <button class="btn small" data-bs="A B ESC C ESC FLAG FLAG D">Problema 3.3</button>
+      </div>
+      <div class="lbl">Transmitido:</div>
+      <div class="strip" id="bs-tx"></div>
+      <div class="lbl">Recuperado pelo receptor:</div>
+      <div class="strip" id="bs-rx" style="padding-bottom:14px"></div>
+    </div>
+
+    <h2>3. Bits de flag com inserção de bits (bit stuffing)</h2>
+    <p>A flag é <b>01111110</b>. Depois de <b>cinco 1s seguidos</b> nos dados, o transmissor insere um <b>0</b> (em verde). O receptor, ao ver cinco 1s seguidos de um 0, remove o 0. Seis 1s seguidos só podem ser uma flag (Fig. 3-5).</p>
+    <div class="panel">
+      <div class="row-in">
+        <label>Bits <input id="bit-in" type="text" value="011011111111111111110010"></label>
+        <button class="btn small" data-bit="011011111111111111110010">Fig. 3-5</button>
+        <button class="btn small" data-bit="0111101111101111110">Problema 3.6</button>
+        <button class="btn small" data-bit="01111110">a própria flag</button>
+      </div>
+      <div class="lbl">Transmitido (com flags):</div>
+      <div class="strip" id="bit-tx"></div>
+      <div class="lbl">Recuperado pelo receptor:</div>
+      <div class="strip" id="bit-rx"></div>
+      <div class="lbl" id="bit-msg" style="padding-bottom:12px"></div>
+    </div>
+
+    <section class="prose">
+      <h2>Comparação</h2>
+      <table class="data">
+        <tr><th>Método</th><th>Vantagem</th><th>Problema</th><th>Onde</th></tr>
+        <tr><td>Contagem de bytes</td><td>simples, sem sobrecarga nos dados</td><td>um erro na contagem desincroniza tudo</td><td>raramente sozinho (Ethernet usa preâmbulo + tamanho)</td></tr>
+        <tr><td>Flag + byte stuffing</td><td>ressincroniza procurando a próxima FLAG</td><td>até 100% de sobrecarga; preso a bytes de 8 bits</td><td>PPP</td></tr>
+        <tr><td>Flag + bit stuffing</td><td>quadros com qualquer número de bits; sobrecarga pequena</td><td>precisa trabalhar bit a bit</td><td>HDLC, USB</td></tr>
+        <tr><td>Violação de código</td><td>sem sobrecarga nos dados</td><td>depende da codificação física ter símbolos sobrando</td><td>4B/5B, Manchester</td></tr>
+      </table>
+      <p>Volte ao <a href="../tutoriais/cap3-camada-de-enlace.html">capítulo 3</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, $$, h, pick, randInt } from '../../../../engine/page.js';
+    import { byteCount, byteStuff, byteUnstuff, bitStuff, bitUnstuff } from './redes.js';
+
+    const cell = (txt, cls = '') => h('span', { class: `cell ${cls}` }, String(txt));
+
+    // ---------- contagem de bytes ----------
+    function drawBC() {
+      const frames = $('#bc-in').value.split('|').map(f => f.trim().split(/\s+/).filter(Boolean)).filter(f => f.length);
+      const stream = byteCount(frames);
+      const bad = +$('#bc-bad').value, val = +$('#bc-val').value;
+      // posição da contagem de cada quadro
+      const starts = []; let pos = 0; frames.forEach(f => { starts.push(pos); pos += f.length + 1; });
+      const rx = [...stream];
+      if (bad >= 0 && bad < frames.length) rx[starts[bad]] = val;
+      $('#bc-tx').replaceChildren(...rx.map((b, i) => cell(b, (starts.includes(i) ? 'count ' : '') + (bad >= 0 && i === starts[bad] ? 'bad' : ''))));
+      // receptor
+      const cells = []; let i = 0, k = 0, lost = false;
+      while (i < rx.length) {
+        const c = +rx[i];
+        if (!(c >= 1)) { cells.push(cell(rx[i], 'bad')); i++; lost = true; continue; }
+        for (let j = i; j < Math.min(i + c, rx.length); j++) cells.push(cell(rx[j], `f${k % 4} ${j === i ? 'count' : ''}`));
+        if (i !== starts[k]) lost = true;
+        i += c; k++;
+        if (i < rx.length) cells.push(h('span', { class: 'c-faint' }, '│'));
+      }
+      $('#bc-rx').replaceChildren(...cells);
+      $('#bc-msg').innerHTML = lost || (bad >= 0 && val !== frames[bad]?.length + 1)
+        ? '<span class="c-red">O receptor perdeu o sincronismo: depois do erro, ele lê bytes de dados como se fossem contagens. Mesmo pedindo retransmissão, não sabe quantos bytes pular para achar o próximo quadro.</span>'
+        : '<span class="c-green">Tudo certo: as fronteiras coincidem.</span>';
+    }
+    ['#bc-in', '#bc-val'].forEach(s => $(s).addEventListener('input', drawBC));
+    $('#bc-bad').addEventListener('change', drawBC);
+    drawBC();
+
+    // ---------- byte stuffing ----------
+    function drawBS() {
+      const toks = $('#bs-in').value.trim().split(/\s+/).filter(Boolean).map(t => (/^(flag|esc)$/i.test(t) ? t.toUpperCase() : t));
+      const { out, inserted } = byteStuff(toks);
+      $('#bs-tx').replaceChildren(...out.map((t, i) => cell(t, `${t === 'FLAG' ? 'flag' : t === 'ESC' ? 'esc' : ''} ${inserted.includes(i) ? 'ins' : ''}`)));
+      $('#bs-rx').replaceChildren(...byteUnstuff(out).map(t => cell(t, t === 'FLAG' ? 'flag' : t === 'ESC' ? 'esc' : '')));
+    }
+    $('#bs-in').addEventListener('input', drawBS);
+    $$('[data-bs]').forEach(b => b.addEventListener('click', () => { $('#bs-in').value = b.dataset.bs; drawBS(); }));
+    drawBS();
+
+    // ---------- bit stuffing ----------
+    function drawBit() {
+      const bits = $('#bit-in').value.replace(/[^01]/g, '').split('').map(Number);
+      const { out, inserted } = bitStuff(bits);
+      const FLAG = [0, 1, 1, 1, 1, 1, 1, 0];
+      $('#bit-tx').replaceChildren(
+        ...FLAG.map(b => cell(b, 'bit flag')), h('span', { class: 'c-faint' }, '│'),
+        ...out.map((b, i) => cell(b, `bit ${inserted.includes(i) ? 'ins' : ''}`)),
+        h('span', { class: 'c-faint' }, '│'), ...FLAG.map(b => cell(b, 'bit flag')));
+      const back = bitUnstuff(out);
+      $('#bit-rx').replaceChildren(...back.map(b => cell(b, 'bit')));
+      $('#bit-msg').innerHTML = `${bits.length} bits de dados → ${out.length} transmitidos (+${inserted.length} inseridos). Recuperação ${back.join('') === bits.join('') ? '<span class="c-green">correta</span>' : '<span class="c-red">incorreta</span>'}.`;
+    }
+    $('#bit-in').addEventListener('input', drawBit);
+    $$('[data-bit]').forEach(b => b.addEventListener('click', () => { $('#bit-in').value = b.dataset.bit; drawBit(); }));
+    drawBit();
+
+    // ---------- exercícios ----------
+    mountGenerator($('#gen'), {
+      generate() {
+        if (Math.random() < 0.5) {
+          let s = '';
+          while (s.length < 18) s += Math.random() < 0.3 ? '0' : '1'.repeat(randInt(1, 7));
+          s = s.slice(0, 18);
+          const out = bitStuff(s.split('').map(Number)).out.join('');
+          return { q: `Qual a sequência transmitida (sem as flags) após o bit stuffing de <code>${s}</code>?`, input: true, answer: out, check: v => v.replace(/\s/g, '') === out, explain: 'Insira um 0 depois de cada grupo de cinco 1s consecutivos (a contagem recomeça depois do 0 inserido).' };
+        }
+        const toks = Array.from({ length: 7 }, () => pick(['A', 'B', 'C', 'D', 'FLAG', 'ESC', 'ESC', 'FLAG']));
+        const out = byteStuff(toks).out.slice(1, -1).join(' ');
+        return { q: `Com byte stuffing, qual o conteúdo transmitido entre as FLAGs de início e fim para <code>${toks.join(' ')}</code>?`, input: true, answer: out, check: v => v.trim().toUpperCase().split(/\s+/).join(' ') === out, explain: 'Cada FLAG ou ESC dos dados recebe um ESC antes.' };
+      },
+    });
+  </script>
+</body>
+</html>

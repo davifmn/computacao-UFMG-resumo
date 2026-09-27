@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisão Prova 1 · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+  <style>
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .cards .callout { margin: 0; }
+    .cards .callout h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Revisão da prova 1</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 1 · capítulos 1 a 4 do Tanenbaum</div>
+    <h1>Revisão para a prova 1</h1>
+    <p class="lead">Tudo o que costuma cair, numa página só: a folha de fórmulas, as pegadinhas clássicas, um roteiro de estudo e um <b>simulado</b> que gera questões numéricas novas de todos os capítulos.</p>
+    <nav class="chapnav"><a href="cap1-introducao.html">Cap. 1</a><a href="cap2-camada-fisica.html">Cap. 2</a><a href="cap3-camada-de-enlace.html">Cap. 3</a><a href="cap4-subcamada-mac.html">Cap. 4</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>Roteiro de estudo</h2>
+        <ol>
+          <li>Leia cada capítulo e abra as visualizações indicadas (os links ▶ dentro dos capítulos).</li>
+          <li>Tente os <b>exercícios do livro</b> de cada capítulo antes de abrir a solução (os marcados com 📌 são os mais prováveis).</li>
+          <li>Faça o <a href="#simulado">simulado</a> até acertar com folga; cada clique gera uma questão nova.</li>
+          <li>Na véspera, releia a folha de fórmulas e as pegadinhas.</li>
+        </ol>
+        <table class="data">
+          <tr><th>Capítulo</th><th>Visualizações</th></tr>
+          <tr><td>1. Introdução</td><td><a href="../visualizacoes/encapsulamento.html">Encapsulamento</a></td></tr>
+          <tr><td>2. Camada física</td><td><a href="../visualizacoes/sinais.html">Sinais, Nyquist e Shannon</a> · <a href="../visualizacoes/codificacao.html">Codificação e modulação</a> · <a href="../visualizacoes/multiplexacao.html">Multiplexação e CDMA</a> · <a href="../visualizacoes/comutacao.html">Circuitos × pacotes</a></td></tr>
+          <tr><td>3. Enlace</td><td><a href="../visualizacoes/enquadramento.html">Enquadramento</a> · <a href="../visualizacoes/deteccao-erros.html">Detecção e correção de erros</a> · <a href="../visualizacoes/janela-deslizante.html">Janela deslizante</a></td></tr>
+          <tr><td>4. MAC</td><td><a href="../visualizacoes/acesso-multiplo.html">Acesso múltiplo</a> · <a href="../visualizacoes/ethernet-wifi.html">Ethernet e Wi-Fi</a> · <a href="../visualizacoes/pontes.html">Pontes e spanning tree</a></td></tr>
+        </table>
+
+        <h2>Folha de fórmulas</h2>
+        <div class="cards">
+          <div class="callout"><h3>Atrasos (cap. 1–2)</h3>
+            <p>Transmissão: $t_f = L/R$ (bits / bps)<br>Propagação: $t_p = d/v$ ($v \approx 2 \times 10^8$ m/s no cobre e na fibra; $3 \times 10^8$ no ar)<br>Bits "no fio": $R \cdot t_p$<br>Prefixos: kbps = $10^3$, KB = $2^{10}$ bytes</p></div>
+          <div class="callout"><h3>Capacidade (cap. 2)</h3>
+            <p>Nyquist: $2B\log_2 V$ &nbsp; Shannon: $B\log_2(1 + S/N)$<br>$S/N = 10^{\text{dB}/10}$; a resposta é o <b>menor</b> dos dois<br>bps = baud × bits/símbolo<br>$\lambda f = c$; $\Delta f = c\,\Delta\lambda/\lambda^2$</p></div>
+          <div class="callout"><h3>Telefonia e comutação (cap. 2)</h3>
+            <p>PCM: 8000 × 8 = 64 kbps; T1 = 193 × 8000 = 1,544 Mbps; E1 = 2,048 Mbps; STS-1 = 51,84 Mbps<br>Circuitos: $s + x/b + kd$<br>Pacotes: $x/b + (k-1)p/b + kd$; ótimo $p = \sqrt{hx/(k-1)}$</p></div>
+          <div class="callout"><h3>Códigos (cap. 3)</h3>
+            <p>Detectar $d$: distância $d+1$; corrigir $d$: $2d+1$<br>Hamming: $(m + r + 1) \le 2^r$; verificação nas potências de 2; síndrome = posição<br>CRC: acrescenta $r$ zeros, divide por $G(x)$ (XOR), anexa o resto; detecta rajadas ≤ $r$</p></div>
+          <div class="callout"><h3>Janela deslizante (cap. 3)</h3>
+            <p>$BD = R \cdot t_p / L$ (quadros)<br>$U \le \frac{w}{1 + 2BD}$; 100% com $w \ge 2BD + 1$<br>Parar-e-esperar: $\frac{t_f}{t_f + 2t_p}$<br>GBN: $w \le 2^n - 1$; SR: $w \le 2^{n-1}$</p></div>
+          <div class="callout"><h3>MAC (cap. 4)</h3>
+            <p>M/M/1: $T = 1/(\mu C - \lambda)$; $N$ canais estáticos: $NT$<br>ALOHA: $S = Ge^{-2G}$ (0,184); com slots $Ge^{-G}$ (0,368)<br>Tentativas: $e^{G}$; slot de disputa: $2\tau$; quadro mín.: $2\tau R$<br>Ethernet: $\frac{1}{1 + 2BLe/cF}$; recuo em $[0, 2^i - 1]$</p></div>
+        </div>
+
+        <h2>Pegadinhas</h2>
+        <ul>
+          <li><b>Nyquist × Shannon</b>: um sinal binário nunca passa de $2B$, mesmo com S/N enorme (problema 2.4). E converta dB antes de usar Shannon.</li>
+          <li><b>Serviço × protocolo</b>, <b>sem fio × móvel</b>, <b>largura de banda</b> em Hz × em bps.</li>
+          <li><b>Contagem de bytes inclui o próprio byte</b> de contagem.</li>
+          <li><b>Bit stuffing</b>: o 0 é inserido depois de cinco 1s <b>dos dados</b>, mesmo que o bit seguinte seja 0; a contagem recomeça depois do 0 inserido.</li>
+          <li><b>Hamming</b>: os bits são numerados da <b>esquerda</b> e a partir de <b>1</b>; o erro pode estar num bit de verificação.</li>
+          <li><b>CRC</b>: acrescentar $r$ = <b>grau</b> do gerador (número de bits − 1) zeros, não o número de bits.</li>
+          <li><b>Checksum</b>: o vai-um volta para o bit menos significativo (complemento de 1), e no fim ainda se inverte o resultado.</li>
+          <li><b>Janela</b>: Go-Back-N usa $2^n - 1$, repetição seletiva $2^{n-1}$. E o "+1" do $2BD + 1$.</li>
+          <li><b>Tempo de ida e volta</b>: no parar-e-esperar o ciclo é $t_f + 2t_p$ (com ACK desprezível); se o ACK vai de carona num quadro de dados, some mais um $t_f$ (problema 3.32).</li>
+          <li><b>Manchester</b>: siga a convenção do livro (0 = baixo→alto) salvo se o enunciado disser outra; baud = 2 × bps.</li>
+          <li><b>ALOHA</b>: $G$ inclui as retransmissões; $S = G\,P_0$.</li>
+          <li><b>Quadro mínimo Ethernet</b>: 64 bytes do destino ao CRC (dados ≥ 46); o preâmbulo não conta.</li>
+          <li><b>MACA × 802.11</b>: o MACA resolve o terminal exposto (quem só ouve o RTS pode transmitir); o 802.11 não (o NAV segura quem ouviu o RTS).</li>
+          <li><b>Ponte</b>: aprende pela <b>origem</b>, decide pelo <b>destino</b>; destino na porta de chegada → descarta.</li>
+        </ul>
+
+        <h2 id="simulado">Simulado</h2>
+        <p>Questões numéricas geradas na hora, sorteadas entre todos os capítulos. Números com vírgula ou ponto são aceitos (tolerância de 1%).</p>
+        <div id="sim"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc, fmt, pick, randInt } from '../../../../engine/page.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import * as R from '../visualizacoes/redes.js';
+    buildToc($('#toc'), $('#content'));
+
+    // Lê um número digitado; devolve as leituras possíveis ("1.200" pode ser 1,2 ou 1200 no padrão brasileiro).
+    const readings = v => {
+      const t = String(v).trim().replace(/\s|%/g, '');
+      const plain = +t.replace(',', '.').replace(/[^\d.eE+-]/g, '');
+      const br = +t.replace(/\./g, '').replace(',', '.').replace(/[^\d.eE+-]/g, '');
+      return [plain, br].filter(Number.isFinite);
+    };
+    const near = t => v => readings(v).some(x => Math.abs(x - t) <= Math.abs(t) * 0.01 + (Math.abs(t) < 1 ? 0.002 : 1e-9));
+    const bitsEq = t => v => String(v).replace(/[^01]/g, '') === t;
+    const rb = n => Array.from({ length: n }, () => randInt(0, 1));
+
+    const GEN = [
+      // cap. 1
+      () => { const L = pick([1500, 1000, 4000]) * 8, Rr = pick([1e6, 10e6, 100e6]), d = pick([100, 1000, 5000]) * 1e3, v = 2e8; const t = (L / Rr + d / v) * 1000;
+        return { q: `[Cap. 1] Um pacote de ${L / 8} bytes num enlace de ${Rr / 1e6} Mbps e ${d / 1000} km ($v = 2 \\times 10^8$ m/s). Tempo até o último bit chegar (ms)?`, input: true, answer: fmt(t, 3), check: near(t), explain: `Transmissão $${L}/${Rr} = ${fmt(L / Rr * 1000, 3)}$ ms + propagação $${d}/2 \\times 10^8 = ${fmt(d / v * 1000, 3)}$ ms.` }; },
+      () => { const n = pick([3, 4, 5]), h = pick([10, 20, 40]), M = pick([500, 1000, 1460]); const f = 100 * h * n / (M + h * n);
+        return { q: `[Cap. 1] ${n} camadas acrescentam ${h} bytes cada a mensagens de ${M} bytes. Fração da banda gasta com cabeçalhos (%)?`, input: true, answer: fmt(f, 2), check: near(f), explain: `$\\frac{hn}{M + hn} = \\frac{${h * n}}{${M + h * n}}$.` }; },
+      // cap. 2
+      () => { const B = pick([3000, 4000, 6e6]), V = pick([2, 4, 8, 16]); const a = R.nyquist(B, V);
+        return { q: `[Cap. 2] Canal sem ruído de ${fmt(B, 0)} Hz com ${V} níveis. Taxa máxima (bps)?`, input: true, answer: String(a), check: near(a), explain: `$2B\\log_2 V = ${a}$.` }; },
+      () => { const B = pick([3000, 4000, 1e6]), db = pick([10, 20, 30, 40]); const a = R.shannon(B, db);
+        return { q: `[Cap. 2] Canal de ${fmt(B, 0)} Hz com S/N de ${db} dB. Capacidade de Shannon (bps)?`, input: true, answer: fmt(a, 0), check: near(a), explain: `$S/N = ${R.dbToRatio(db)}$; $B\\log_2(1 + S/N) \\approx ${fmt(a, 0)}$.` }; },
+      () => { const B = pick([3000, 4000]), db = pick([20, 30]); const a = Math.min(R.nyquist(B, 2), R.shannon(B, db));
+        return { q: `[Cap. 2] Sinal <b>binário</b>, canal de ${B} Hz, S/N de ${db} dB. Taxa máxima (bps)?`, input: true, answer: String(a), check: near(a), explain: `Nyquist binário: $2B = ${2 * B}$; Shannon daria ${fmt(R.shannon(B, db), 0)}. Vale o menor.` }; },
+      () => { const pts = pick([4, 16, 32, 64]), baud = pick([1200, 2400, 4000]); const a = baud * Math.log2(pts);
+        return { q: `[Cap. 2] Modem com constelação de ${pts} pontos a ${baud} baud. Taxa (bps)?`, input: true, answer: String(a), check: near(a), explain: `${baud} × $\\log_2 ${pts}$ = ${a}.` }; },
+      () => { const s = {}; Object.keys(R.CHIPS).forEach(k => { s[k] = pick([1, 0, null]); }); if (Object.values(s).every(x => x == null)) s.B = 0; const sig = R.cdmaCombine(s); const t = pick(Object.keys(R.CHIPS)); const ans = s[t] == null ? 'nada' : String(s[t]);
+        return { q: `[Cap. 2] CDMA com os chips da Fig. 2-28 recebe $(${sig.join('\\ ')})$. O que <b>${t}</b> enviou (1, 0 ou nada)?`, input: true, answer: ans, check: v => v.trim().toLowerCase() === ans, explain: `$\\frac{1}{8} S \\cdot ${t} = ${R.cdmaDecode(sig)[t]}$.` }; },
+      () => { const x = pick([8000, 40000]), b = pick([8000, 64000]), k = pick([2, 3, 4]), p = pick([1000, 2000]), s = pick([0.5, 1]); const c = s + x / b, pk = x / b + (k - 1) * p / b;
+        return { q: `[Cap. 2] Mensagem de ${x} bits, ${k} enlaces a ${b} bps, propagação desprezível. Circuitos com setup de ${s} s ou pacotes de ${p} bits: qual o <b>menor</b> tempo total (s)?`, input: true, answer: fmt(Math.min(c, pk), 4), check: near(Math.min(c, pk)), explain: `Circuitos: ${fmt(c, 4)} s; pacotes: $x/b + (k-1)p/b = ${fmt(pk, 4)}$ s.` }; },
+      // cap. 3
+      () => { let s = ''; while (s.length < 16) s += Math.random() < 0.3 ? '0' : '1'.repeat(randInt(2, 7)); s = s.slice(0, 16); const o = R.bitStuff(s.split('').map(Number)).out.join('');
+        return { q: `[Cap. 3] Bit stuffing de <code>${s}</code> (sem as flags)?`, input: true, answer: o, check: bitsEq(o), explain: 'Um 0 depois de cada cinco 1s seguidos.' }; },
+      () => { const toks = Array.from({ length: 6 }, () => pick(['A', 'B', 'FLAG', 'ESC'])); const o = R.byteStuff(toks).out.slice(1, -1).join(' ');
+        return { q: `[Cap. 3] Byte stuffing de <code>${toks.join(' ')}</code> (sem as FLAGs das pontas)?`, input: true, answer: o, check: v => v.trim().toUpperCase().split(/\s+/).join(' ') === o, explain: 'ESC antes de cada FLAG ou ESC dos dados.' }; },
+      () => { const G = pick([[1, 0, 0, 1], [1, 0, 1, 1], [1, 0, 0, 1, 1]]); const M = [1, ...rb(randInt(6, 9))]; const r = R.crc(M, G).remainder.join('');
+        return { q: `[Cap. 3] CRC: quadro <code>${M.join('')}</code>, gerador <code>${G.join('')}</code>. Resto?`, input: true, answer: r, check: bitsEq(r), explain: `Transmitido: <code>${R.crc(M, G).transmitted.join('')}</code>.` }; },
+      () => { const m = pick([4, 7, 8, 11, 16, 32, 64, 1000]); const r = R.hammingCheckBits(m);
+        return { q: `[Cap. 3] Bits de verificação de Hamming para ${m} bits de dados?`, input: true, answer: String(r), explain: `$${m} + ${r} + 1 \\le 2^{${r}}$.` }; },
+      () => { const d = rb(pick([4, 7, 8])); const w = R.hammingEncode(d).word; const p = randInt(1, w.length); const rx = w.map((b, i) => (i === p - 1 ? b ^ 1 : b));
+        return { q: `[Cap. 3] Palavra de Hamming recebida <code>${rx.join('')}</code> (paridade par, ≤ 1 erro). Posição do bit errado?`, input: true, answer: String(p), explain: `Síndrome ${R.hammingDecode(rx).failed.join(' + ')} = ${p}.` }; },
+      () => { const w = Array.from({ length: 4 }, () => randInt(0, 15)); const c = R.internetChecksum(w, 4).checksum.toString(2).padStart(4, '0');
+        return { q: `[Cap. 3] Checksum da Internet (palavras de 4 bits) de <code>${w.map(x => x.toString(2).padStart(4, '0')).join(' ')}</code>?`, input: true, answer: c, check: bitsEq(c), explain: 'Soma em complemento de 1 e inverte.' }; },
+      () => { const rate = pick([1e6, 50e3, 64e3, 1.544e6]), L = pick([1000, 4000, 8000]), tp = pick([0.01, 0.25, 0.27]); const W = pick([1, 7, 15]); const u = 100 * R.utilization({ W, frameBits: L, rate, prop: tp });
+        return { q: `[Cap. 3] ${fmt(rate, 0)} bps, quadros de ${L} bits, propagação de ${tp * 1000} ms, janela ${W}. Utilização máxima (%)?`, input: true, answer: fmt(u, u < 10 ? 3 : 2), check: near(u), explain: `$BD = ${fmt(rate * tp / L, 3)}$; $\\min(1, w/(1 + 2BD))$.` }; },
+      () => { const rate = pick([1e6, 1.544e6, 50e3]), L = pick([1000, 512, 4000]), tp = pick([0.018, 0.25, 0.27]); const w = R.windowFor100({ frameBits: L, rate, prop: tp }); const sr = Math.random() < 0.5; const n = sr ? Math.ceil(Math.log2(w)) + 1 : Math.ceil(Math.log2(w + 1));
+        return { q: `[Cap. 3] ${fmt(rate, 0)} bps, quadros de ${L} bits, propagação de ${tp * 1000} ms. Quantos bits de sequência para ocupar o canal com <b>${sr ? 'repetição seletiva' : 'Go-Back-N'}</b>?`, input: true, answer: String(n), explain: `Janela $2BD + 1 = ${w}$; ${sr ? `$2^{n-1} \\ge ${w}$` : `$2^n - 1 \\ge ${w}$`} → $n = ${n}$.` }; },
+      // cap. 4
+      () => { const G = pick([0.5, 1, 2]); const slotted = Math.random() < 0.5; const S = slotted ? R.alohaSlotted(G) : R.alohaPure(G);
+        return { q: `[Cap. 4] Vazão do ALOHA ${slotted ? 'com slots' : 'puro'} com $G = ${String(G).replace('.', ',')}$?`, input: true, answer: fmt(S, 3), check: near(S), explain: slotted ? '$Ge^{-G}$' : '$Ge^{-2G}$' }; },
+      () => { const rate = pick([10e6, 100e6]), L = pick([1000, 2500, 200]); const m = R.minFrameBits({ length: L, velocity: 2e8, rate });
+        return { q: `[Cap. 4] CSMA/CD, ${L} m, $v = 2 \\times 10^8$ m/s, ${rate / 1e6} Mbps. Quadro mínimo (bits)?`, input: true, answer: fmt(m, 0), check: near(m), explain: `$2L/v \\cdot R$.` }; },
+      () => { const C = 1e8, len = 1e4, lam = pick([90, 900, 5000, 9000]); const T = 1e6 / (C / len - lam);
+        return { q: `[Cap. 4] Canal de 100 Mbps, quadros de 10 000 bits em média, ${lam} quadros/s. Atraso médio (μs)?`, input: true, answer: fmt(T, 1), check: near(T), explain: `$1/(\\mu C - \\lambda) = 1/(10\\,000 - ${lam})$.` }; },
+      () => { const i = randInt(1, 12); const hi = 2 ** Math.min(i, 10) - 1;
+        return { q: `[Cap. 4] Depois da ${i}ª colisão, qual o maior número de slots que o recuo exponencial binário pode sortear?`, input: true, answer: String(hi), explain: `$2^{\\min(i,10)} - 1$${i > 10 ? ' (congelado em 1023 após 10 colisões)' : ''}.` }; },
+      () => { const p = pick([10, 30, 45, 46, 60]); const pad = Math.max(0, 46 - p);
+        return { q: `[Cap. 4] Quantos bytes de enchimento num quadro Ethernet com ${p} bytes de dados?`, input: true, answer: String(pad), explain: 'Dados mínimos de 46 bytes.' }; },
+    ];
+    mountGenerator($('#sim'), { generate: () => pick(GEN)(), label: 'Nova questão' });
+  </script>
+</body>
+</html>

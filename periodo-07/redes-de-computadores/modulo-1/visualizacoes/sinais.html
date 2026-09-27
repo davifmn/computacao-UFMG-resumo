@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sinais e Capacidade · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 7em 1fr 4.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .calc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .calc .panel { padding-bottom: 12px; }
+    .calc label { display: grid; grid-template-columns: 9em 1fr; gap: 8px; align-items: center; padding: 4px 14px; font-size: 14px; color: var(--muted); }
+    .big { font: 800 24px var(--mono); padding: 4px 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Sinais, Nyquist e Shannon</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 2 (seção 2.1)</div>
+    <h1>Por que um canal tem taxa máxima</h1>
+    <p class="lead">Um sinal digital é uma soma de senoides (<b>série de Fourier</b>). Um canal real deixa passar só uma faixa de frequências (sua <b>largura de banda</b>), então as harmônicas altas se perdem e o sinal chega "arredondado". Abaixo, o caractere ASCII <b>b</b> (01100010), o exemplo da Fig. 2-1 do livro.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="sig" aria-label="Sinal e aproximação de Fourier"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Sinal</div>
+          <div class="ctl">
+            <span>bits</span><input id="bits" type="text" value="01100010" style="font-family:var(--mono)"><span></span>
+            <span>harmônicas</span><input id="H" type="range" min="1" max="64" value="4"><output id="H-o"></output>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Canal telefônico (3 kHz)</div>
+          <div class="ctl">
+            <span>taxa (bps)</span><select id="rate"><option value="">—</option><option>300</option><option>600</option><option>1200</option><option selected>2400</option><option>4800</option><option>9600</option><option>19200</option><option>38400</option></select><span></span>
+          </div>
+          <div class="readout" id="phone"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Calculadora de capacidade</h2>
+    <div class="calc">
+      <div class="panel"><div class="panel-title">Nyquist (sem ruído)</div>
+        <label>B (Hz) <input id="nB" type="number" value="3000"></label>
+        <label>V (níveis) <input id="nV" type="number" value="2"></label>
+        <div class="big c-blue" id="nyq"></div><div class="readout c-muted" style="font-size:13px">$2B\log_2 V$</div></div>
+      <div class="panel"><div class="panel-title">Shannon (com ruído)</div>
+        <label>B (Hz) <input id="sB" type="number" value="3000"></label>
+        <label>S/N (dB) <input id="sdb" type="number" value="30"></label>
+        <div class="big c-green" id="sha"></div><div class="readout c-muted" style="font-size:13px" id="sha-r"></div></div>
+      <div class="panel"><div class="panel-title">Conversão de decibéis</div>
+        <label>dB <input id="db" type="number" value="20"></label>
+        <label>razão S/N <input id="ratio" type="number" value="100"></label>
+        <div class="readout c-muted" style="font-size:13px">$\text{dB} = 10 \log_{10}(S/N)$: 10 dB = 10×, 20 dB = 100×, 30 dB = 1000×.</div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Os dois teoremas</h2>
+      <p><b>Nyquist (1924)</b>: um sinal de largura de banda $B$ é completamente reconstruído com $2B$ amostras por segundo, então amostrar mais rápido é inútil. Se o sinal tem $V$ níveis discretos, a taxa máxima num canal <b>sem ruído</b> é</p>
+      <p>$$ \text{taxa máxima} = 2B \log_2 V \ \text{bits/s} $$</p>
+      <p><b>Shannon (1948)</b>: num canal com ruído térmico e relação sinal-ruído $S/N$, a taxa máxima, com <b>qualquer</b> número de níveis, é</p>
+      <p>$$ \text{taxa máxima} = B \log_2\left(1 + \frac{S}{N}\right) \ \text{bits/s} $$</p>
+      <div class="callout warn"><p><b>Pegadinha (problema 2.4):</b> os dois limites valem ao mesmo tempo, então a resposta é o <b>menor</b> deles. Um sinal <b>binário</b> ($V = 2$) num canal de 3 kHz com S/N de 20 dB: Shannon dá ≈ 19,97 kbps, mas Nyquist limita a $2 \cdot 3000 \cdot \log_2 2 = 6$ kbps. Resposta: <b>6 kbps</b>. Outra pegadinha: S/N em dB precisa ser convertido para razão antes de entrar na fórmula de Shannon.</p></div>
+      <p><b>Largura de banda</b> tem dois sentidos: para engenheiros, é a faixa de frequências (Hz) que o meio deixa passar; para cientistas da computação, é a taxa máxima (bps). Os dois se relacionam justamente por Nyquist e Shannon.</p>
+      <p>Volte ao <a href="../tutoriais/cap2-camada-fisica.html">capítulo 2</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, fmt, pick, randInt, renderMath } from '../../../../engine/page.js';
+    import { fourier, nyquist, shannon, dbToRatio, ratioToDb } from './redes.js';
+
+    const W = 900, H = 460;
+    const scene = new Scene($('#sig'), { width: W, height: H });
+    scene.setAnimated(false);
+
+    function draw() {
+      const bits = $('#bits').value.replace(/[^01]/g, '').split('').map(Number);
+      if (!bits.length) return;
+      const rate = +$('#rate').value;
+      let Hn = +$('#H').value;
+      if (rate) { Hn = Math.max(0, Math.floor(3000 / (rate / bits.length))); $('#H').value = Math.max(1, Hn); }
+      $('#H-o').value = Hn;
+      const F = fourier(bits, Hn);
+      const X0 = 40, X1 = W - 20, Y = v => 150 - v * 100;
+      const X = t => X0 + t * (X1 - X0);
+      scene.frame(s => {
+        s.line('ax0', X0, Y(0), X1, Y(0), { stroke: COLORS.border, sw: 1 });
+        s.line('ax1', X0, Y(1), X1, Y(1), { stroke: COLORS.border, sw: 1, dash: '3 5' });
+        // sinal original
+        let d = '';
+        bits.forEach((b, k) => { d += `${k ? 'L' : 'M'} ${X(k / bits.length)} ${Y(b)} L ${X((k + 1) / bits.length)} ${Y(b)} `; });
+        s.path('orig', d, { stroke: COLORS.faint, sw: 2.5 });
+        bits.forEach((b, k) => s.text(`bit${k}`, b, { x: X((k + 0.5) / bits.length), y: 26, size: 14, mono: true, fill: COLORS.muted }));
+        // reconstrução
+        let r = '';
+        for (let i = 0; i <= 600; i++) { const t = i / 600; r += `${i ? 'L' : 'M'} ${X(t).toFixed(1)} ${Y(Hn ? F.at(t) : F.c / 2).toFixed(1)} `; }
+        s.path('rec', r, { stroke: COLORS.blue, sw: 3 });
+        s.text('lbl', `em azul: aproximação com ${Hn} harmônica(s); em cinza: sinal original`, { x: X1, y: Y(0) + 40, size: 13, anchor: 'end', fill: COLORS.blue });
+        // espectro
+        const SY = 430, SH = 150, n = 32, bw = (X1 - X0) / n;
+        s.text('spec', 'amplitudes rms das harmônicas (as que o canal deixa passar em azul)', { x: X0, y: SY - SH - 20, size: 12, anchor: 'start', fill: COLORS.muted });
+        const full = fourier(bits, n);
+        const mx = Math.max(...full.rms.slice(1), 1e-9);
+        for (let k = 1; k <= n; k++) {
+          const hh = (full.rms[k] / mx) * SH;
+          s.rect(`sp${k}`, { x: X0 + (k - 1) * bw + 2, y: SY - hh, w: bw - 4, h: hh, rx: 2, fill: k <= Hn ? COLORS.blue : COLORS.surface3, stroke: 'none' });
+          if (k % 4 === 0 || k === 1) s.text(`spl${k}`, k, { x: X0 + (k - 0.5) * bw, y: SY + 12, size: 10, mono: true, fill: COLORS.faint });
+        }
+      });
+      $('#phone').innerHTML = rate
+        ? `<div>Com ${rate} bps, cada caractere de ${bits.length} bits dura ${fmt(bits.length / rate * 1000, 2)} ms: a 1ª harmônica tem $f = ${rate}/${bits.length} = ${fmt(rate / bits.length, 1)}$ Hz.</div><div>Harmônicas que passam em 3 kHz: <b>${Hn}</b>.</div>${Hn < 1 ? '<div class="c-red">Nenhuma passa: impossível transmitir!</div>' : Hn < 3 ? '<div class="c-orange">Pouquíssimas: o receptor terá dificuldade para decidir os bits.</div>' : ''}`
+        : '<div class="c-muted">Escolha uma taxa para ver quantas harmônicas cabem num canal de voz (Fig. 2-3).</div>';
+      renderMath($('#phone'));
+    }
+    $('#bits').addEventListener('input', draw);
+    $('#H').addEventListener('input', () => { $('#rate').value = ''; draw(); });
+    $('#rate').addEventListener('change', draw);
+    draw();
+
+    function calc() {
+      const n = nyquist(+$('#nB').value, +$('#nV').value);
+      $('#nyq').textContent = `${fmt(n, 0)} bps`;
+      const sB = +$('#sB').value, sdb = +$('#sdb').value;
+      $('#sha').textContent = `${fmt(shannon(sB, sdb), 0)} bps`;
+      $('#sha-r').textContent = `S/N = 10^(${sdb}/10) = ${fmt(dbToRatio(sdb), 2)}`;
+    }
+    for (const id of ['nB', 'nV', 'sB', 'sdb']) $(`#${id}`).addEventListener('input', calc);
+    $('#db').addEventListener('input', () => { $('#ratio').value = +dbToRatio(+$('#db').value).toPrecision(6); });
+    $('#ratio').addEventListener('input', () => { $('#db').value = +ratioToDb(+$('#ratio').value).toFixed(3); });
+    calc();
+
+    const near = (v, target) => Math.abs(v - target) <= Math.max(1, Math.abs(target) * 0.01);
+    const parse = v => +String(v).replace(/\./g, '').replace(',', '.').replace(/[^\d.eE+-]/g, '');
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['nyq', 'sha', 'min', 'db']);
+        if (kind === 'nyq') {
+          const B = pick([3000, 4000, 6e6, 1e6]), V = pick([2, 4, 8, 16]);
+          const ans = nyquist(B, V);
+          return { q: `Canal <b>sem ruído</b> de ${fmt(B, 0)} Hz, sinal com ${V} níveis. Taxa máxima em bps?`, input: true, answer: String(ans), check: v => near(parse(v), ans), explain: `Nyquist: $2 \\cdot ${B} \\cdot \\log_2 ${V} = ${ans}$ bps.` };
+        }
+        if (kind === 'sha') {
+          const B = pick([3000, 4000, 1e6]), db = pick([10, 20, 30, 40]);
+          const ans = Math.round(shannon(B, db));
+          return { q: `Canal de ${fmt(B, 0)} Hz com S/N de ${db} dB. Capacidade de Shannon em bps (arredonde)?`, input: true, answer: String(ans), check: v => near(parse(v), ans), explain: `$S/N = 10^{${db}/10} = ${dbToRatio(db)}$; $${B} \\log_2(1 + ${dbToRatio(db)}) \\approx ${ans}$ bps.` };
+        }
+        if (kind === 'min') {
+          const B = pick([3000, 4000]), db = pick([20, 30]), V = 2;
+          const ans = Math.min(nyquist(B, V), shannon(B, db));
+          return { q: `Sinal <b>binário</b> num canal de ${B} Hz com S/N de ${db} dB. Taxa máxima alcançável em bps?`, input: true, answer: String(Math.round(ans)), check: v => near(parse(v), ans), explain: `Shannon daria ${fmt(shannon(B, db), 0)} bps, mas com 2 níveis Nyquist limita a $2 \\cdot ${B} = ${nyquist(B, V)}$. O menor vence.` };
+        }
+        const r = pick([10, 100, 1000, 2, 1e4]);
+        return { q: `Uma razão S/N de ${fmt(r, 0)} equivale a quantos dB?`, input: true, answer: String(ratioToDb(r).toFixed(1)), check: v => near(parse(v), ratioToDb(r)), explain: `$10 \\log_{10} ${r} = ${ratioToDb(r).toFixed(2)}$ dB.` };
+      },
+    });
+  </script>
+</body>
+</html>

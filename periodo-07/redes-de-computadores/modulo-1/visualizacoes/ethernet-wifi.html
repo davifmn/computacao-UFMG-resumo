@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ethernet e Wi-Fi · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    .ctl { display: grid; grid-template-columns: 8em minmax(0, 1fr) 5em; gap: 8px; align-items: center; padding: 6px 14px; font-size: 14px; color: var(--muted); }
+    .ctl input { min-width: 0; width: 100%; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 5px; }
+    .frame { display: flex; margin: 14px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); min-height: 64px; }
+    .fld { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 6px 4px; font-size: 12px; border-right: 1px solid var(--bg); min-width: 44px; text-align: center; overflow: hidden; }
+    .fld b { font: 700 13px var(--mono); }
+    .row-in { display: flex; gap: 10px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Ethernet e Wi-Fi</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 4 (seções 4.2.5, 4.3 e 4.4)</div>
+    <h1>Ethernet e 802.11 por dentro</h1>
+    <p class="lead">O quadro Ethernet e seu enchimento, por que existe um tamanho mínimo de quadro, a eficiência do CSMA/CD e os problemas do meio sem fio (terminal oculto e terminal exposto) com as soluções RTS/CTS do MACA e do 802.11.</p>
+
+    <h2>1. O quadro Ethernet</h2>
+    <div class="panel">
+      <div class="ctl" style="grid-template-columns: 10em minmax(0, 1fr) 6em"><span>dados (bytes)</span><input id="pl" type="range" min="0" max="1500" value="20"><output id="pl-o"></output></div>
+      <div class="frame" id="frame"></div>
+      <div class="readout" id="fr-r"></div>
+    </div>
+
+    <h2>2. Tamanho mínimo e eficiência do CSMA/CD</h2>
+    <div class="lab">
+      <div class="stage"><svg id="eff" aria-label="Eficiência da Ethernet"></svg></div>
+      <div class="panel">
+        <div class="ctl"><span>taxa B (Mbps)</span><input id="B" type="range" min="1" max="1000" value="10"><output id="B-o"></output></div>
+        <div class="ctl"><span>cabo L (m)</span><input id="L" type="range" min="50" max="5000" step="50" value="2500"><output id="L-o"></output></div>
+        <div class="ctl"><span>propagação v</span><input id="v" type="range" min="0.5" max="3" step="0.05" value="2"><output id="v-o"></output></div>
+        <div class="readout" id="eff-r"></div>
+      </div>
+    </div>
+
+    <h2>3. Terminais oculto e exposto</h2>
+    <p>Estações numa linha; cada uma alcança só as vizinhas (círculos). O que importa é a interferência <b>no receptor</b>. Escolha um cenário e veja quem sofre colisão, e o que o RTS/CTS muda.</p>
+    <div class="toolbar">
+      <button class="btn" data-sc="hidden">Terminal oculto</button>
+      <button class="btn" data-sc="exposed">Terminal exposto</button>
+      <button class="btn" data-sc="both">Duas transmissões independentes</button>
+    </div>
+    <div class="stage"><svg id="wl" aria-label="Estações sem fio"></svg></div>
+    <div class="panel"><div class="readout" id="wl-r"></div></div>
+
+    <section class="prose">
+      <h2>CSMA/CA do 802.11 em uma linha do tempo</h2>
+      <p>Espera o canal ficar livre por um <b>DIFS</b> → conta os slots do recuo aleatório (pausando se o canal ficar ocupado) → transmite → o receptor espera um <b>SIFS</b> e envia o <b>ACK</b>. Sem ACK: dobra o intervalo de recuo. Os outros ajustam o <b>NAV</b> pelo campo Duração do quadro e ficam quietos mesmo sem sentir portadora.</p>
+      <table class="data">
+        <tr><th></th><th>CSMA/CD (Ethernet clássica)</th><th>CSMA/CA (802.11)</th></tr>
+        <tr><td>Detecta colisão?</td><td>sim, enquanto transmite</td><td>não; infere pela falta de ACK</td></tr>
+        <tr><td>Recuo aleatório</td><td>só depois de colidir</td><td>antes de transmitir (evita colisões)</td></tr>
+        <tr><td>Confirmação</td><td>não tem</td><td>ACK para cada quadro</td></tr>
+        <tr><td>Portadora virtual</td><td>—</td><td>NAV (campo Duração), RTS/CTS opcional</td></tr>
+      </table>
+      <p>Volte ao <a href="../tutoriais/cap4-subcamada-mac.html">capítulo 4</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { Plot } from '../../../../engine/plot.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, $$, h, fmt, pick, renderMath } from '../../../../engine/page.js';
+    import { ethernetFrame, minFrameBits, wirelessOutcome } from './redes.js';
+
+    // ---------- 1. quadro ----------
+    const colors = [COLORS.faint, COLORS.blue, COLORS.teal, COLORS.purple, COLORS.green, COLORS.red, COLORS.yellow];
+    function drawFrame() {
+      const pl = +$('#pl').value; $('#pl-o').value = pl;
+      const f = ethernetFrame(pl);
+      const tot = f.fields.reduce((a, x) => a + x.bytes, 0);
+      $('#frame').replaceChildren(...f.fields.map((x, i) => x.bytes === 0 ? null : h('div', { class: 'fld', style: `flex:${Math.max(x.bytes, tot / 30)};background:${colors[i]}33;color:${colors[i]}` }, h('b', {}, `${x.bytes}`), x.nome)).filter(Boolean));
+      $('#fr-r').innerHTML = `<div>Quadro (destino → checksum): <b>${f.total} bytes</b> ${f.pad ? `— com <b class="c-red">${f.pad} bytes de enchimento</b> para chegar aos 64 bytes mínimos` : ''}</div>
+        <div class="c-muted">No fio ainda vão 8 bytes de preâmbulo e SOF, e 12 bytes de intervalo entre quadros. Dados abaixo de 46 bytes exigem enchimento; o máximo é 1500 (MTU).</div>`;
+    }
+    $('#pl').addEventListener('input', drawFrame);
+    drawFrame();
+
+    // ---------- 2. eficiência ----------
+    const es = new Scene($('#eff'), { width: 860, height: 380 });
+    es.setAnimated(false);
+    const plot = new Plot(es, { x: [0, 1600], y: [0, 1], box: [50, 20, 840, 350] });
+    function drawEff() {
+      const B = +$('#B').value * 1e6, L = +$('#L').value, v = +$('#v').value * 1e8;
+      $('#B-o').value = +$('#B').value; $('#L-o').value = L; $('#v-o').value = `${$('#v').value}e8`;
+      const eff = Fbytes => 1 / (1 + (2 * B * L * Math.E) / (v * Fbytes * 8));
+      const minBits = minFrameBits({ length: L, velocity: v, rate: B });
+      es.frame(s => {
+        plot.axes(s, { xLabel: 'tamanho do quadro F (bytes)', yLabel: 'eficiência' });
+        plot.fn(s, 'eff', x => (x <= 0 ? 0 : eff(x)), { stroke: COLORS.green, a: 1, b: 1600 });
+        const mB = minBits / 8;
+        if (mB <= 1600) { s.line('mf', plot.X(mB), plot.Y(0), plot.X(mB), plot.Y(1), { stroke: COLORS.red, sw: 1.5, dash: '5 4' }); s.text('mft', `mínimo ${fmt(mB, 0)} B`, { x: plot.X(mB) + 6, y: plot.Y(0.95), size: 12, anchor: 'start', fill: COLORS.red }); }
+        [64, 1024, 1518].forEach(F => s.circle(`p${F}`, { x: plot.X(F), y: plot.Y(eff(F)), r: 5, fill: COLORS.yellow, stroke: 'none' }));
+      });
+      $('#eff-r').innerHTML = `<div>$\\tau = L/v = ${fmt(L / v * 1e6, 2)}$ μs</div>
+        <div>Quadro mínimo: $2\\tau B = ${fmt(minBits, 0)}$ bits = <b>${fmt(minBits / 8, 1)} bytes</b></div>
+        <div>Eficiência $\\frac{1}{1 + 2BLe/cF}$: 64 B → <b>${fmt(100 * eff(64), 1)}%</b>, 1024 B → <b>${fmt(100 * eff(1024), 1)}%</b>, 1518 B → <b>${fmt(100 * eff(1518), 1)}%</b></div>
+        <div class="c-muted">Padrão clássico: 10 Mbps, 2500 m e 4 repetidores → ida e volta ≈ 50 μs → 512 bits (64 bytes). Aumente B ou L e veja o mínimo crescer e a eficiência cair.</div>`;
+      renderMath($('#eff-r'));
+    }
+    ['#B', '#L', '#v'].forEach(s => $(s).addEventListener('input', drawEff));
+    drawEff();
+
+    // ---------- 3. sem fio ----------
+    const SC = {
+      hidden: { names: ['A', 'B', 'C'], pos: [0, 1, 2], tx: [[0, 1], [2, 1]], text: 'A e C não se ouvem (estão fora do alcance uma da outra) e ambas transmitem para B: colisão em B. C é um <b>terminal oculto</b> para A. <b>RTS/CTS:</b> B responde o RTS de A com um CTS que C ouve, e C fica quieta.' },
+      exposed: { names: ['A', 'B', 'C', 'D'], pos: [0, 1, 2, 3], tx: [[1, 0], [2, 3]], text: 'B transmite para A e C quer transmitir para D. C ouve B e, com CSMA simples, desistiria, mas não haveria colisão: A não ouve C e D não ouve B. C é um <b>terminal exposto</b>. <b>MACA:</b> C ouviu o RTS de B mas não o CTS de A, então pode transmitir. <b>802.11:</b> C marca o NAV com o RTS de B e fica quieta (não resolve o exposto).' },
+      both: { names: ['A', 'B', 'C', 'D', 'E'], pos: [0, 1, 2.6, 3.6, 4.6], tx: [[0, 1], [4, 3]], text: 'Transmissões longe o bastante uma da outra não interferem: é possível reutilizar o canal espacialmente.' },
+    };
+    let sc = 'hidden';
+    const ws = new Scene($('#wl'), { width: 860, height: 230 });
+    ws.setAnimated(false);
+    function drawWL() {
+      const S = SC[sc];
+      const X = p => 90 + p * 160, Y = 120, R = 160 * 1.05;
+      const out = wirelessOutcome(S.pos, 1.05, S.tx);
+      ws.frame(s => {
+        S.pos.forEach((p, i) => s.circle(`rg${i}`, { x: X(p), y: Y, r: R, fill: 'none', stroke: COLORS.border, sw: 1, layer: 'bg' }));
+        out.forEach((o, k) => {
+          s.path(`tx${k}`, `M ${X(S.pos[o.src])} ${Y - 20} Q ${(X(S.pos[o.src]) + X(S.pos[o.dst])) / 2} ${Y - 70} ${X(S.pos[o.dst])} ${Y - 20}`, { stroke: o.ok ? COLORS.green : COLORS.red, sw: 3, arrow: true });
+          s.text(`txl${k}`, `${S.names[o.src]} → ${S.names[o.dst]}: ${o.ok ? 'recebido' : `colisão (interfere: ${o.interferers.map(i => S.names[i]).join(', ')})`}`, { x: 430, y: 196 + k * 18, size: 13, fill: o.ok ? COLORS.green : COLORS.red });
+        });
+        S.pos.forEach((p, i) => {
+          const sending = S.tx.some(([a]) => a === i);
+          s.circle(`st${i}`, { x: X(p), y: Y, r: 18, fill: sending ? COLORS.blue : COLORS.surface2, stroke: COLORS.blue, sw: 2 });
+          s.text(`sn${i}`, S.names[i], { x: X(p), y: Y, size: 15, weight: 700, fill: sending ? '#0b0e12' : COLORS.text });
+        });
+      });
+      $$('[data-sc]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sc === sc));
+      $('#wl-r').innerHTML = S.text;
+    }
+    $$('[data-sc]').forEach(b => b.addEventListener('click', () => { sc = b.dataset.sc; drawWL(); }));
+    drawWL();
+
+    // ---------- exercícios ----------
+    const near = (v, t) => Math.abs(+String(v).replace(',', '.') - t) <= Math.max(0.5, Math.abs(t) * 0.01);
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['pad', 'min', 'eff']);
+        if (kind === 'pad') {
+          const p = pick([10, 20, 30, 40, 46, 60, 100]);
+          const pad = Math.max(0, 46 - p);
+          return { q: `Um pacote de ${p} bytes vai num quadro Ethernet. Quantos bytes de enchimento?`, input: true, answer: String(pad), explain: `Os dados precisam de pelo menos 46 bytes: $\\max(0, 46 - ${p}) = ${pad}$.` };
+        }
+        if (kind === 'min') {
+          const L = pick([1000, 2000, 2500, 500]), B = pick([10e6, 100e6, 1e9]), v = 2e8;
+          const m = minFrameBits({ length: L, velocity: v, rate: B });
+          return { q: `CSMA/CD com ${L} m de cabo, $v = 2 \\times 10^8$ m/s e ${B / 1e6} Mbps. Quadro mínimo em bits?`, input: true, answer: fmt(m, 0), check: x => near(x, m), explain: `$2 \\cdot \\frac{L}{v} \\cdot B = 2 \\cdot ${L} / 2 \\times 10^8 \\cdot ${B} = ${fmt(m, 0)}$ bits.` };
+        }
+        const F = pick([64, 512, 1024, 1500]);
+        const e = 1 / (1 + (2 * 10e6 * 2500 * Math.E) / (2e8 * F * 8));
+        return { q: `Ethernet de 10 Mbps, 2500 m, $v = 2 \\times 10^8$ m/s. Eficiência com quadros de ${F} bytes (%)?`, input: true, answer: fmt(100 * e, 1), check: x => near(x, 100 * e), explain: `$\\frac{1}{1 + 2BLe/cF} = ${fmt(100 * e, 2)}\\%$.` };
+      },
+    });
+  </script>
+</body>
+</html>

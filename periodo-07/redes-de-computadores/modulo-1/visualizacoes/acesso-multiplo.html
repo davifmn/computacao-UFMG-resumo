@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acesso Múltiplo · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    .ctl { display: grid; grid-template-columns: 7em minmax(0, 1fr) 4em; gap: 8px; align-items: center; padding: 6px 14px; font-size: 14px; color: var(--muted); }
+    .ctl input { min-width: 0; width: 100%; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 5px; }
+    .slots { display: flex; flex-wrap: wrap; gap: 3px; padding: 10px 14px; }
+    .slot { width: 16px; height: 22px; border-radius: 3px; }
+    .s-ok { background: var(--green); } .s-col { background: var(--red); } .s-idle { background: var(--surface3); }
+    table.bits { border-collapse: collapse; margin: 8px 14px 14px; font-family: var(--mono); }
+    table.bits td, table.bits th { border: 1px solid var(--border); padding: 5px 10px; text-align: center; }
+    table.bits th { color: var(--muted); font-weight: 600; }
+    td.gone { color: var(--faint); text-decoration: line-through; }
+    td.one { color: var(--yellow); font-weight: 700; }
+    td.win { color: var(--green); font-weight: 700; }
+    .row-in { display: flex; gap: 12px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+    .row-in input[type=text] { font-family: var(--mono); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Acesso múltiplo</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 4 (seção 4.2)</div>
+    <h1>Quem fala agora? Protocolos de acesso múltiplo</h1>
+    <p class="lead">Quando muitas estações dividem um canal, cada protocolo troca <b>atraso</b> por <b>eficiência</b> de um jeito diferente. Veja as curvas de vazão do livro (Figs. 4-3 e 4-4), simule o ALOHA com slots e resolva disputas com recuo exponencial, contagem regressiva binária e percurso em árvore.</p>
+
+    <h2>1. Vazão × carga</h2>
+    <div class="lab">
+      <div class="stage"><svg id="thr" aria-label="Vazão em função da carga"></svg></div>
+      <div class="panel">
+        <div class="panel-title">Parâmetros</div>
+        <div class="ctl"><span>$a$ (prop./quadro)</span><input id="a" type="range" min="0" max="0.5" step="0.01" value="0.01"><output id="a-o"></output></div>
+        <div class="ctl"><span>carga $G$</span><input id="G" type="range" min="0" max="9" step="0.05" value="1"><output id="G-o"></output></div>
+        <div class="readout" id="thr-r"></div>
+      </div>
+    </div>
+
+    <h2>2. Simulador de ALOHA com slots</h2>
+    <p>$N$ estações; em cada slot, cada uma transmite com probabilidade $p$. A carga é $G = Np$ e o sucesso esperado por slot é $Np(1-p)^{N-1}$, máximo com $p = 1/N$ (tende a $1/e$).</p>
+    <div class="lab">
+      <div class="panel"><div class="slots" id="slots"></div></div>
+      <div class="panel">
+        <div class="ctl"><span>estações $N$</span><input id="sN" type="range" min="1" max="50" value="10"><output id="sN-o"></output></div>
+        <div class="ctl"><span>$p$</span><input id="sp" type="range" min="0.01" max="0.5" step="0.01" value="0.1"><output id="sp-o"></output></div>
+        <div class="ctl" style="grid-template-columns:1fr 1fr"><button class="btn small" id="sbest">p = 1/N</button><button class="btn small" id="sre">nova simulação</button></div>
+        <div class="readout" id="s-r"></div>
+      </div>
+    </div>
+
+    <h2>3. Recuo exponencial binário (CSMA/CD)</h2>
+    <p>$k$ estações colidiram. Na rodada $i$, cada uma sorteia um slot em $[0, 2^{\min(i,10)} - 1]$. A disputa acaba quando o menor slot sorteado é único.</p>
+    <div class="panel">
+      <div class="row-in"><label>estações $k$ <input id="bk" type="number" min="2" max="64" value="4" style="width:70px"></label><button class="btn small" id="bre">sortear de novo</button></div>
+      <div id="bo"></div>
+    </div>
+
+    <h2>4. Contagem regressiva binária</h2>
+    <p>Cada estação envia seu endereço do bit mais significativo para o menos; o canal faz o <b>OU</b>. Quem enviou 0 e ouviu 1 desiste (Fig. 4-8).</p>
+    <div class="panel">
+      <div class="row-in"><label>Endereços (binário) <input id="bc" type="text" value="0010 0100 1001 1010" size="30"></label></div>
+      <div id="bc-out"></div>
+    </div>
+
+    <h2>5. Percurso adaptativo em árvore</h2>
+    <p>As estações 1…$n$ são folhas de uma árvore binária. Um slot por nó visitado: se houver colisão, tenta a subárvore esquerda e depois a direita (busca em profundidade).</p>
+    <div class="panel">
+      <div class="row-in"><label>$n$ <select id="tn"><option>8</option><option selected>16</option><option>32</option></select></label><label>Prontas <input id="tr" type="text" value="2 3 5 7 11 13" size="24"></label><button class="btn small" id="tprime">Problema 4.9 (primos)</button></div>
+      <div class="stage" style="margin:0 14px 14px"><svg id="tree" aria-label="Percurso em árvore"></svg></div>
+      <div class="readout" id="tree-r"></div>
+    </div>
+
+    <section class="prose">
+      <p>Volte ao <a href="../tutoriais/cap4-subcamada-mac.html">capítulo 4</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { Plot } from '../../../../engine/plot.js';
+    import { rng } from '../../../../engine/random.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, h, fmt, pick, randInt, renderMath } from '../../../../engine/page.js';
+    import { alohaPure, alohaSlotted, csmaNonPersistent, csma1Persistent, slottedAlohaSim, slottedAlohaTheory, binaryBackoff, binaryCountdown, treeWalk } from './redes.js';
+
+    // ---------- 1. curvas ----------
+    const ts = new Scene($('#thr'), { width: 860, height: 420 });
+    ts.setAnimated(false);
+    const plot = new Plot(ts, { x: [0, 9], y: [0, 1], box: [50, 20, 840, 390] });
+    const CURVES = [
+      ['pure', 'ALOHA puro', G => alohaPure(G), COLORS.pink],
+      ['slot', 'ALOHA com slots', G => alohaSlotted(G), COLORS.purple],
+      ['c1', 'CSMA 1-persistente', (G, a) => csma1Persistent(G, a), COLORS.yellow],
+      ['cnp', 'CSMA não persistente', (G, a) => csmaNonPersistent(G, a), COLORS.green],
+    ];
+    function drawThr() {
+      const a = +$('#a').value, G = +$('#G').value;
+      $('#a-o').value = a; $('#G-o').value = G;
+      ts.frame(s => {
+        plot.axes(s, { xLabel: 'G (tentativas por tempo de quadro)', yLabel: 'S (vazão)' });
+        CURVES.forEach(([k, name, f, c], i) => {
+          plot.fn(s, k, x => (x <= 0 ? 0 : f(x, a)), { stroke: c, sw: 3, a: 0.001, b: 9 });
+          s.text(`lg${k}`, name, { x: 640, y: 40 + i * 22, size: 13, anchor: 'start', fill: c, weight: 600 });
+          const y = G <= 0 ? 0 : f(G, a);
+          s.circle(`pt${k}`, { x: plot.X(G), y: plot.Y(y), r: 5, fill: c, stroke: 'none' });
+        });
+        s.line('gl', plot.X(G), plot.Y(0), plot.X(G), plot.Y(1), { stroke: COLORS.faint, sw: 1, dash: '3 4' });
+      });
+      $('#thr-r').innerHTML = CURVES.map(([, name, f, c]) => `<div><span style="color:${c}">■</span> ${name}: <b>${fmt(G <= 0 ? 0 : f(G, a), 3)}</b></div>`).join('')
+        + `<div class="c-muted">Máximos: puro $1/2e \\approx 0{,}184$ ($G = 0{,}5$); com slots $1/e \\approx 0{,}368$ ($G = 1$). O CSMA piora quando $a$ cresce: a propagação deixa mais tempo para colisões.</div>`;
+      renderMath($('#thr-r'));
+    }
+    $('#a').addEventListener('input', drawThr); $('#G').addEventListener('input', drawThr);
+    drawThr();
+
+    // ---------- 2. ALOHA com slots ----------
+    let seed = 7;
+    function drawSlots() {
+      const N = +$('#sN').value, p = +$('#sp').value;
+      $('#sN-o').value = N; $('#sp-o').value = p;
+      const res = slottedAlohaSim(rng(seed), N, p, 300);
+      $('#slots').replaceChildren(...res.map(r => h('span', { class: `slot ${r.result === 'sucesso' ? 's-ok' : r.result === 'colisão' ? 's-col' : 's-idle'}`, title: r.who.length ? `estações ${r.who.join(', ')}` : 'vazio' })));
+      const cnt = k => res.filter(r => r.result === k).length;
+      $('#s-r').innerHTML = `<div>$G = Np = ${fmt(N * p, 2)}$</div>
+        <div><span class="c-green">■</span> sucessos: ${cnt('sucesso')} (${fmt(100 * cnt('sucesso') / res.length, 1)}%)</div>
+        <div><span class="c-red">■</span> colisões: ${cnt('colisão')}</div><div><span class="c-faint">■</span> vazios: ${cnt('vazio')}</div>
+        <div>Teoria: $Np(1-p)^{N-1} = ${fmt(100 * slottedAlohaTheory(N, p), 1)}\\%$</div>`;
+      renderMath($('#s-r'));
+    }
+    ['#sN', '#sp'].forEach(s => $(s).addEventListener('input', drawSlots));
+    $('#sbest').addEventListener('click', () => { $('#sp').value = Math.min(0.5, Math.max(0.01, 1 / +$('#sN').value)); drawSlots(); });
+    $('#sre').addEventListener('click', () => { seed++; drawSlots(); });
+    drawSlots();
+
+    // ---------- 3. recuo exponencial ----------
+    let bseed = 3;
+    function drawBO() {
+      const k = Math.max(2, Math.min(64, +$('#bk').value || 2));
+      const rounds = binaryBackoff(rng(bseed), k);
+      const rows = rounds.map(r => `<tr><td>${r.i}</td><td>0…${r.range - 1}</td><td>${r.picks.map((x, j) => `<span class="${x === r.min ? (r.done ? 'c-green' : 'c-red') : ''}">${String.fromCharCode(65 + (j % 26))}${j >= 26 ? j : ''}:${x}</span>`).join(' ')}</td><td>${r.done ? `<b class="c-green">estação ${String.fromCharCode(65 + (r.winner % 26))} vence no slot ${r.min}</b>` : '<span class="c-red">colisão no menor slot</span>'}</td></tr>`).join('');
+      $('#bo').innerHTML = `<table class="bits"><tr><th>colisão nº</th><th>intervalo</th><th>sorteios</th><th>resultado</th></tr>${rows}</table>
+        <div class="readout">Tempo de disputa: ${rounds.reduce((a, r) => a + r.min + 1, 0)} slots de 51,2 μs (aprox.). Com poucas estações, o intervalo pequeno resolve rápido; com muitas, ele dobra até ficar grande o suficiente.</div>`;
+    }
+    $('#bk').addEventListener('input', drawBO);
+    $('#bre').addEventListener('click', () => { bseed++; drawBO(); });
+    drawBO();
+
+    // ---------- 4. contagem regressiva binária ----------
+    function drawBC() {
+      const strs = $('#bc').value.trim().split(/\s+/).filter(x => /^[01]+$/.test(x));
+      if (!strs.length) return;
+      const bits = Math.max(...strs.map(s => s.length));
+      const ids = strs.map(s => parseInt(s, 2));
+      const { winner, steps } = binaryCountdown(ids, bits);
+      const aliveAt = steps.map(st => new Set(st.alive));
+      let html = `<table class="bits"><tr><th>estação</th>${steps.map((_, b) => `<th>bit ${b}</th>`).join('')}</tr>`;
+      ids.forEach(id => {
+        const s = id.toString(2).padStart(bits, '0');
+        html += `<tr><td>${s}</td>${steps.map((st, b) => aliveAt[b].has(id) ? `<td class="${s[b] === '1' ? 'one' : ''}">${s[b]}</td>` : '<td class="gone">—</td>').join('')}</tr>`;
+      });
+      html += `<tr><th>canal (OU)</th>${steps.map(st => `<td class="one">${st.channel}</td>`).join('')}</tr></table>`;
+      html += `<div class="readout"><div>Vence <b class="c-green">${winner.toString(2).padStart(bits, '0')}</b>, o maior endereço. ${steps.filter(s => s.dropped.length).map(s => `No bit ${s.bit}, desistem: ${s.dropped.map(x => x.toString(2).padStart(bits, '0')).join(', ')}.`).join(' ')}</div></div>`;
+      $('#bc-out').innerHTML = html;
+    }
+    $('#bc').addEventListener('input', drawBC);
+    drawBC();
+
+    // ---------- 5. percurso em árvore ----------
+    const tsc = new Scene($('#tree'), { width: 860, height: 250 });
+    tsc.setAnimated(false);
+    function drawTree() {
+      const n = +$('#tn').value;
+      const ready = [...new Set($('#tr').value.split(/[\s,]+/).map(Number).filter(x => x >= 1 && x <= n))];
+      const slots = treeWalk(ready, n);
+      const depth = Math.log2(n);
+      const pos = (lo, hi) => { const lvl = depth - Math.log2(hi - lo + 1); return { x: 20 + ((lo - 1 + hi) / 2 / n) * 820, y: 26 + lvl * (180 / depth) }; };
+      tsc.frame(s => {
+        // árvore completa esmaecida
+        const walk = (lo, hi) => {
+          const p = pos(lo, hi);
+          if (hi > lo) { const mid = Math.floor((lo + hi) / 2); [[lo, mid], [mid + 1, hi]].forEach(([a, b]) => { const q = pos(a, b); s.line(`e${a}-${b}`, p.x, p.y, q.x, q.y, { stroke: COLORS.border, sw: 1, layer: 'bg' }); walk(a, b); }); }
+        };
+        walk(1, n);
+        for (let i = 1; i <= n; i++) { const p = pos(i, i); s.text(`lf${i}`, i, { x: p.x, y: p.y + 20, size: n > 16 ? 9 : 12, mono: true, fill: ready.includes(i) ? COLORS.yellow : COLORS.faint, weight: ready.includes(i) ? 700 : 400 }); }
+        slots.forEach((sl, k) => {
+          const p = pos(sl.lo, sl.hi);
+          const c = sl.result === 'colisão' ? COLORS.red : sl.result === 'sucesso' ? COLORS.green : COLORS.muted;
+          s.circle(`n${sl.lo}-${sl.hi}`, { x: p.x, y: p.y, r: 11, fill: COLORS.surface2, stroke: c, sw: 2.5 });
+          s.text(`nk${sl.lo}-${sl.hi}`, k + 1, { x: p.x, y: p.y, size: 11, weight: 700, mono: true, fill: c });
+        });
+      });
+      $('#tree-r').innerHTML = `<div><b>${slots.length} slots.</b> ${slots.map((sl, k) => `<span class="${sl.result === 'colisão' ? 'c-red' : sl.result === 'sucesso' ? 'c-green' : 'c-muted'}">${k + 1}: {${sl.lo}–${sl.hi}} ${sl.who.length ? sl.who.join(',') : 'vazio'}</span>`).join(' · ')}</div>`;
+    }
+    $('#tn').addEventListener('change', drawTree); $('#tr').addEventListener('input', drawTree);
+    $('#tprime').addEventListener('click', () => { $('#tn').value = '16'; $('#tr').value = '2 3 5 7 11 13'; drawTree(); });
+    drawTree();
+
+    // ---------- exercícios ----------
+    const near = (v, t) => Math.abs(+String(v).replace(',', '.') - t) <= Math.max(0.002, Math.abs(t) * 0.01);
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['pure', 'slot', 'first', 'E', 'slotlen']);
+        if (kind === 'pure' || kind === 'slot') {
+          const G = pick([0.25, 0.5, 1, 1.5, 2]);
+          const S = kind === 'pure' ? alohaPure(G) : alohaSlotted(G);
+          return { q: `Vazão $S$ do ALOHA ${kind === 'pure' ? 'puro' : 'com slots'} com $G = ${String(G).replace('.', ',')}$? (3 casas)`, input: true, answer: fmt(S, 3), check: v => near(v, S), explain: kind === 'pure' ? `$S = Ge^{-2G} = ${fmt(S, 4)}$` : `$S = Ge^{-G} = ${fmt(S, 4)}$` };
+        }
+        if (kind === 'first') {
+          const G = pick([0.5, 1, 2, 3]);
+          return { q: `ALOHA com slots, $G = ${String(G).replace('.', ',')}$. Probabilidade de sucesso na 1ª tentativa? (3 casas)`, input: true, answer: fmt(Math.exp(-G), 3), check: v => near(v, Math.exp(-G)), explain: `$P_0 = e^{-G} = ${fmt(Math.exp(-G), 4)}$.` };
+        }
+        if (kind === 'E') {
+          const G = pick([0.5, 1, 2, 3]);
+          return { q: `ALOHA com slots, $G = ${String(G).replace('.', ',')}$. Número esperado de tentativas por quadro? (2 casas)`, input: true, answer: fmt(Math.exp(G), 2), check: v => near(v, Math.exp(G)), explain: `$E = e^{G} = ${fmt(Math.exp(G), 3)}$.` };
+        }
+        const L = pick([500, 1000, 2000, 2500]), v = pick([2e8, 2.46e8, 3e8 * 0.65]);
+        const slot = 2 * L / v * 1e6;
+        return { q: `CSMA/CD num cabo de ${L} m com propagação de ${fmt(v / 1e8, 2)} × 10⁸ m/s. Duração do slot de disputa em μs? (2 casas)`, input: true, answer: fmt(slot, 2), check: x => near(x, slot), explain: `$2\\tau = 2L/v = ${fmt(slot, 3)}$ μs.` };
+      },
+    });
+  </script>
+</body>
+</html>

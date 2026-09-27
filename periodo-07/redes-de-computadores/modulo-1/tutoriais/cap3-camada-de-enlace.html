@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 3 Camada de Enlace · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Cap. 3 · Camada de enlace</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 1 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 3</div>
+    <h1>Capítulo 3 — A camada de enlace de dados</h1>
+    <p class="lead">Como duas máquinas <b>adjacentes</b> (ligadas por um canal que entrega os bits na ordem em que foram enviados) trocam <b>quadros</b> de forma confiável e eficiente, apesar de erros, atraso de propagação e taxa finita. Enquadramento, códigos de detecção e correção de erros e os protocolos de parar-e-esperar e janela deslizante.</p>
+    <nav class="chapnav"><a href="cap2-camada-fisica.html">← Cap. 2</a><a href="cap4-subcamada-mac.html">Cap. 4 →</a><a href="revisao-prova-1.html">Revisão da prova 1</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>3.1 Questões de projeto</h2>
+        <p>Funções da camada de enlace: (1) oferecer uma interface de serviço bem definida à camada de rede; (2) lidar com erros de transmissão; (3) regular o fluxo para que um transmissor rápido não afogue um receptor lento. Para isso, ela encapsula os <b>pacotes</b> da camada de rede em <b>quadros</b>: cabeçalho, carga útil (payload) e trailer.</p>
+        <h3>Serviços oferecidos à camada de rede</h3>
+        <ul>
+          <li><b>Sem conexão e sem confirmação</b>: quadros independentes, sem recuperar perdas. Bom quando a taxa de erros é baixa (a recuperação fica com as camadas de cima) e para tráfego de tempo real. Ex.: <b>Ethernet</b>.</li>
+          <li><b>Sem conexão e com confirmação</b>: cada quadro é confirmado individualmente e retransmitido se o ACK não vier. Útil em canais não confiáveis. Ex.: <b>802.11 (Wi-Fi)</b>.</li>
+          <li><b>Orientado a conexão e com confirmação</b>: estabelece conexão, numera os quadros e garante que cada um é recebido exatamente uma vez e em ordem. Três fases: estabelecimento, transferência e liberação. Ex.: enlaces longos e não confiáveis (satélite, telefonia de longa distância).</li>
+        </ul>
+        <p>Confirmação na camada de enlace é uma <b>otimização</b>, nunca um requisito: a camada de transporte sempre pode confirmar fim a fim. Mas em canais ruins (sem fio), é muito melhor retransmitir um quadro perdido localmente do que a mensagem inteira.</p>
+
+        <h3>Enquadramento</h3>
+        <p>A camada física entrega um fluxo de bits, possivelmente com erros. A camada de enlace precisa quebrá-lo em quadros e saber onde cada um começa e termina. Quatro métodos:</p>
+        <ol>
+          <li><b>Contagem de bytes</b>: um campo no cabeçalho diz quantos bytes tem o quadro. Problema: se a contagem for corrompida, o receptor <b>perde o sincronismo</b> e não consegue achar o início do próximo quadro. Raramente usado sozinho.</li>
+          <li><b>Bytes de flag com inserção de bytes</b> (byte stuffing): cada quadro começa e termina com um byte especial, a <b>FLAG</b>. Dois FLAGs seguidos indicam o fim de um quadro e o início do próximo. Se a FLAG aparecer nos dados, o transmissor insere um byte de escape <b>ESC</b> antes dela; se aparecer um ESC nos dados, ele também ganha um ESC antes. O receptor remove os ESCs. Usado no <b>PPP</b>.</li>
+          <li><b>Bits de flag com inserção de bits</b> (bit stuffing): a flag é o padrão <b>01111110</b> (0x7E). Sempre que o transmissor encontra <b>cinco 1s seguidos</b> nos dados, insere um <b>0</b>. O receptor, ao ver cinco 1s seguidos de um 0, remove o 0. Assim a flag nunca aparece nos dados, e os quadros podem ter qualquer número de bits. Usado no HDLC e no USB.</li>
+          <li><b>Violações de codificação da camada física</b>: usar símbolos reservados que nunca aparecem nos dados (ex.: códigos que sobram no 4B/5B) para marcar início e fim.</li>
+        </ol>
+        <p>Muitos protocolos combinam métodos: a Ethernet e o 802.11 usam um preâmbulo para delimitar o início e um campo de tamanho para achar o fim.</p>
+        <p class="callout">▶ <a href="../visualizacoes/enquadramento.html">Visualização: contagem de bytes (e a perda de sincronismo), byte stuffing e bit stuffing</a></p>
+
+        <h3>Controle de erros e de fluxo</h3>
+        <p>Para garantir entrega confiável: o receptor envia <b>confirmações</b> (ACK positivas ou NAK negativas); <b>temporizadores</b> tratam quadros ou ACKs perdidos (o transmissor retransmite quando o tempo esgota); <b>números de sequência</b> permitem ao receptor distinguir retransmissões de quadros novos, evitando duplicatas.</p>
+        <p><b>Controle de fluxo</b>: evita que o transmissor envie mais rápido do que o receptor consegue processar. Duas abordagens: <b>baseada em feedback</b> (o receptor dá permissão ao transmissor; é a usada na camada de enlace) e <b>baseada em taxa</b> (limite embutido no protocolo; aparece na camada de transporte).</p>
+
+        <h2>3.2 Detecção e correção de erros</h2>
+        <p>Duas estratégias: <b>códigos de correção de erros</b> (FEC, <i>forward error correction</i>: redundância suficiente para o receptor deduzir o que foi enviado; bom em canais ruidosos como o sem fio, onde retransmitir também falharia) e <b>códigos de detecção de erros</b> (só o suficiente para perceber o erro e pedir retransmissão; bom em canais confiáveis como a fibra). Erros tendem a vir em <b>rajadas</b> (bursts), não isolados.</p>
+        <h3>Distância de Hamming</h3>
+        <p>Um quadro tem $m$ bits de dados e $r$ bits de verificação: uma <b>palavra de código</b> de $n = m + r$ bits (taxa do código $m/n$). A <b>distância de Hamming</b> entre duas palavras é o número de bits em que diferem (conte os 1s do XOR). A distância de um <b>código</b> é a menor distância entre duas palavras válidas.</p>
+        <div class="grid2">
+          <div class="callout"><p>Para <b>detectar</b> $d$ erros: distância $d + 1$.</p></div>
+          <div class="callout"><p>Para <b>corrigir</b> $d$ erros: distância $2d + 1$.</p></div>
+        </div>
+        <p>Exemplo do livro: o código {0000000000, 0000011111, 1111100000, 1111111111} tem distância 5: corrige erros duplos ou detecta quádruplos (não os dois ao mesmo tempo).</p>
+        <p><b>Limite inferior</b> para corrigir erros simples: cada uma das $2^m$ mensagens tem $n$ vizinhas inválidas a distância 1, e cada uma precisa de $n + 1$ padrões reservados. Então $(n + 1)2^m \le 2^n$, ou seja:</p>
+        <p>$$ (m + r + 1) \le 2^r $$</p>
+        <h3>Código de Hamming</h3>
+        <p>Os bits são numerados a partir de 1 (da esquerda). As posições que são <b>potências de 2</b> (1, 2, 4, 8, 16…) são bits de verificação; as demais recebem os dados. Cada bit de verificação força a paridade (par, no livro) de um conjunto de bits: o bit $k$ é coberto pelos bits de verificação cujas potências somam $k$ (ex.: $11 = 1 + 2 + 8$, então o bit 11 é verificado pelos bits 1, 2 e 8). No receptor, recalcula-se cada paridade; a soma das posições das verificações que falharam (a <b>síndrome</b>) é a posição do bit errado (0 = sem erro).</p>
+        <p>Exemplo do livro (Fig. 3-6): o caractere "A" = 1000001 (7 bits) vira <span class="kv">00100001001</span>; se o bit 5 for invertido, as verificações 1 e 4 falham e $1 + 4 = 5$ aponta o bit.</p>
+        <h3>Outros códigos de correção</h3>
+        <ul>
+          <li><b>Convolucionais binários</b>: não são de bloco; cada bit de saída depende da entrada atual e das anteriores (memória = <i>constraint length</i> $k$). Ex.: o código da NASA com $r = 1/2$ e $k = 7$, usado no 802.11. Decodificado pelo algoritmo de <b>Viterbi</b>, que usa decisões "suaves" (soft decision).</li>
+          <li><b>Reed-Solomon</b>: de bloco, opera sobre símbolos de $m$ bits (baseado em polinômios). Com $2t$ símbolos redundantes corrige até $t$ símbolos errados, por isso é ótimo para <b>rajadas</b> (um símbolo de 8 bits errado conta como 1 erro). Usado em DSL, CDs, DVDs e Blu-ray. Frequentemente combinado com códigos convolucionais.</li>
+          <li><b>LDPC</b> (Low-Density Parity Check): cada bit de saída depende de uma fração pequena dos bits de entrada (matriz esparsa); excelente para blocos grandes. Usado em 10 Gbps Ethernet, 802.11 e TV digital.</li>
+        </ul>
+        <h3>Códigos de detecção de erros</h3>
+        <ul>
+          <li><b>Paridade</b>: 1 bit que torna par (ou ímpar) o número de 1s. Distância 2: detecta qualquer número <b>ímpar</b> de erros. Contra rajadas longas, detecta com probabilidade de só 1/2. Melhoria: <b>entrelaçamento</b> (interleaving): monte os bits numa matriz de $k$ colunas e calcule uma paridade por coluna ($n$ bits de verificação); uma rajada de até $n$ bits é detectada. A <b>paridade 2D</b> (linhas e colunas) detecta todos os erros simples, duplos e triplos, mas não alguns quádruplos (os quatro cantos de um retângulo).</li>
+          <li><b>Checksum</b>: soma das palavras da mensagem. O <b>checksum da Internet</b> (IP, TCP, UDP) soma palavras de 16 bits em <b>complemento de 1</b> (o "vai-um" do bit mais alto volta para o bit menos significativo) e transmite o complemento do resultado; o receptor soma tudo, incluindo o checksum, e deve obter só 1s. É fraco: não detecta troca de ordem das palavras nem a inserção de zeros. O <b>checksum de Fletcher</b> inclui um componente posicional.</li>
+          <li><b>CRC</b> (Cyclic Redundancy Check), ou <b>código polinomial</b>: os bits são coeficientes de um polinômio sobre GF(2) (ex.: 110001 = $x^5 + x^4 + 1$). A aritmética é módulo 2: soma e subtração são <b>XOR</b>, sem vai-um. Transmissor e receptor combinam um <b>polinômio gerador</b> $G(x)$ de grau $r$, com o bit mais alto e o mais baixo iguais a 1.</li>
+        </ul>
+        <h3>Algoritmo do CRC</h3>
+        <ol>
+          <li>Acrescente $r$ zeros ao final do quadro $M(x)$, obtendo $x^r M(x)$.</li>
+          <li>Divida $x^r M(x)$ por $G(x)$ com divisão longa módulo 2.</li>
+          <li>Subtraia (XOR) o resto de $x^r M(x)$: o resultado $T(x)$ é o quadro transmitido (os dados seguidos do resto), e ele é divisível por $G(x)$.</li>
+          <li>O receptor divide o que recebeu por $G(x)$: resto diferente de zero indica erro.</li>
+        </ol>
+        <p>Exemplo do livro (Fig. 3-9): quadro 1101011111, gerador $x^4 + x + 1$ (10011) → resto 0010 → transmite <span class="kv">11010111110010</span>.</p>
+        <p><b>O que o CRC detecta</b>: se o erro é $E(x)$, o receptor recebe $T(x) + E(x)$, e o erro passa despercebido só se $G(x)$ dividir $E(x)$.</p>
+        <ul>
+          <li>Erros de 1 bit ($E = x^i$): todos detectados se $G(x)$ tem dois ou mais termos.</li>
+          <li>Dois erros isolados: detectados se $G(x)$ não dividir $x^k + 1$ para $k$ até o tamanho do quadro.</li>
+          <li>Número <b>ímpar</b> de erros: todos detectados se $(x + 1)$ é fator de $G(x)$.</li>
+          <li><b>Rajadas de tamanho ≤ $r$</b>: todas detectadas. Uma rajada de $r + 1$ passa com probabilidade $1/2^{r-1}$; rajadas mais longas, com $1/2^r$.</li>
+        </ul>
+        <p>O <b>CRC-32</b> do IEEE 802 (Ethernet, 802.11, PPP): $x^{32} + x^{26} + x^{23} + x^{22} + x^{16} + x^{12} + x^{11} + x^{10} + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1$. Detecta todas as rajadas de até 32 bits e todas as que afetam um número ímpar de bits. Na prática, é calculado em hardware com registradores de deslocamento.</p>
+        <p class="callout">▶ <a href="../visualizacoes/deteccao-erros.html">Visualização: paridade 2D, Hamming com síndrome, divisão longa do CRC e checksum da Internet</a></p>
+
+        <h2>3.3 Protocolos elementares</h2>
+        <p>Suposições: camadas física, de enlace e de rede são processos independentes; a máquina A quer mandar um fluxo longo de dados para B com um serviço confiável e orientado a conexão. A camada de enlace espera eventos (<code>wait_for_event</code>): chegada de quadro, erro de checksum, <b>timeout</b>… O quadro tem os campos <code>kind</code> (dados, ack, nak), <code>seq</code>, <code>ack</code> e <code>info</code>.</p>
+        <table class="data">
+          <tr><th>Protocolo</th><th>Canal</th><th>Ideia</th></tr>
+          <tr><td>1. Utopia (simplex)</td><td>sem erros, receptor infinitamente rápido</td><td>Transmite o mais rápido possível; sem controle de fluxo nem de erros.</td></tr>
+          <tr><td>2. Parar-e-esperar (stop-and-wait)</td><td>sem erros</td><td>O receptor manda um quadro fictício (ACK) depois de processar cada quadro; o transmissor espera por ele. Resolve o <b>controle de fluxo</b>. O tráfego é simplex, mas o canal precisa ser half-duplex.</td></tr>
+          <tr><td>3. Parar-e-esperar com ruído (<b>ARQ</b>/PAR)</td><td>com erros e perdas</td><td>Adiciona <b>temporizador</b> (retransmite se o ACK não vier) e <b>número de sequência de 1 bit</b> (0/1) para o receptor descartar duplicatas. Sem número de sequência, um ACK perdido faria o receptor aceitar o mesmo quadro duas vezes. ARQ = <i>Automatic Repeat reQuest</i>.</td></tr>
+        </table>
+        <p>O intervalo do temporizador deve ser longo o bastante para o quadro chegar, ser processado e o ACK voltar; se for curto demais, gera retransmissões desnecessárias.</p>
+
+        <h2>3.4 Protocolos de janela deslizante</h2>
+        <p>Agora os dados vão nos <b>dois sentidos</b>, e os ACKs pegam carona nos quadros de dados que vão no sentido contrário: <b>piggybacking</b>. Isso economiza banda (o campo <code>ack</code> custa poucos bits no cabeçalho, contra um quadro inteiro). Mas se não houver dados para enviar, o receptor não pode esperar para sempre: um <b>temporizador de ACK</b> auxiliar dispara o envio de um ACK separado.</p>
+        <p>O transmissor mantém uma <b>janela de transmissão</b>: os números de sequência que já enviou mas que ainda não foram confirmados (e que ele precisa guardar para eventual retransmissão). O receptor mantém uma <b>janela de recepção</b>: os números que aceita. Com números de $n$ bits, a sequência vai de 0 a $\text{MAX\_SEQ} = 2^n - 1$. As janelas não precisam ter o mesmo tamanho, e os quadros sempre são entregues à camada de rede <b>na ordem</b>.</p>
+        <h3>Protocolo 4: janela deslizante de 1 bit</h3>
+        <p>Janelas de tamanho 1 (é um parar-e-esperar bidirecional), com números de sequência 0 e 1. Um caso patológico: se os dois lados começam a transmitir ao mesmo tempo, metade dos quadros são duplicatas, apesar de não haver erros.</p>
+        <h3>Eficiência e produto banda-atraso</h3>
+        <p>O parar-e-esperar é desastroso em enlaces longos. Exemplo do livro: satélite de 50 kbps com 500 ms de ida e volta e quadros de 1000 bits. O quadro leva 20 ms para ser transmitido, e o ACK só chega em $t = 520$ ms: o transmissor fica bloqueado 96% do tempo (utilização de 4%). A solução é permitir até $w$ quadros pendentes.</p>
+        <p>O <b>produto banda-atraso</b> em quadros é $BD = \frac{\text{taxa} \times \text{atraso de ida}}{\text{bits por quadro}}$. Para ocupar o canal 100%:</p>
+        <div class="grid2">
+          <div class="callout"><p>$$ w = 2BD + 1 $$</p><p>(o $+1$ porque o ACK só sai depois que o quadro inteiro chegou)</p></div>
+          <div class="callout"><p>$$ \text{utilização} \le \frac{w}{1 + 2BD} $$</p><p>(ACKs de tamanho desprezível, sem tempo de processamento)</p></div>
+        </div>
+        <p>No exemplo: BD = 50 kbps × 250 ms / 1000 bits = 12,5 quadros, então $w = 26$. Com $w = 1$ (parar-e-esperar) e mais de um tempo de quadro de propagação, a eficiência fica abaixo de 50%. Esse uso de janela para ocupar o "cano" chama-se <b>pipelining</b>.</p>
+        <h3>Protocolo 5: Volta-N (Go-Back-N)</h3>
+        <p>O receptor tem janela de recepção <b>1</b>: descarta todos os quadros depois de um que chegou com erro (sem confirmá-los). Quando o temporizador do quadro perdido estoura, o transmissor <b>retransmite todos</b> os quadros não confirmados, a partir do perdido. É simples e usa pouca memória no receptor, mas desperdiça banda se os erros forem frequentes. Os ACKs são <b>cumulativos</b>: o ACK de $n$ confirma também $n-1, n-2, \dots$</p>
+        <p><b>Tamanho máximo da janela de transmissão: MAX_SEQ</b> (e não MAX_SEQ + 1). Contraexemplo com MAX_SEQ = 7: se a janela fosse 8, o transmissor enviaria os quadros 0–7, receberia o ACK 7, enviaria mais 8 quadros (0–7) e receberia de novo "ACK 7". Ele não saberia se o segundo lote chegou inteiro ou se foi todo perdido.</p>
+        <h3>Protocolo 6: Repetição Seletiva (Selective Repeat)</h3>
+        <p>O receptor <b>guarda</b> quadros corretos que chegaram fora de ordem (janela de recepção maior que 1), e só o quadro perdido é retransmitido quando <b>seu</b> temporizador estoura (há um temporizador por quadro). Os pacotes ainda são entregues à camada de rede em ordem. Com <b>NAK</b>: ao detectar um erro ou um quadro fora de ordem, o receptor envia um NAK para pedir a retransmissão antes do timeout (no máximo um NAK pendente por quadro: variável <code>no_nak</code>).</p>
+        <p><b>Tamanho máximo das janelas: (MAX_SEQ + 1)/2</b>. Contraexemplo com 3 bits e janela 7: o transmissor envia 0–6, todos chegam e o receptor avança a janela para {7, 0, 1, …, 5}. Todos os ACKs se perdem. O transmissor retransmite o quadro 0, que cai na <b>nova</b> janela do receptor e é aceito como um quadro novo: duplicata aceita! Com janela de metade do espaço, a janela nova e a antiga nunca se sobrepõem. O número de buffers do receptor também é o tamanho da janela, e não o espaço de sequência.</p>
+        <table class="data">
+          <tr><th></th><th>Parar-e-esperar</th><th>Go-Back-N</th><th>Repetição seletiva</th></tr>
+          <tr><td>Janela de transmissão</td><td>1</td><td>até $2^n - 1$</td><td>até $2^{n-1}$</td></tr>
+          <tr><td>Janela de recepção</td><td>1</td><td>1</td><td>= janela de transmissão</td></tr>
+          <tr><td>Em caso de erro</td><td>retransmite o quadro</td><td>retransmite tudo a partir do perdido</td><td>retransmite só o perdido</td></tr>
+          <tr><td>ACK</td><td>individual</td><td>cumulativo</td><td>individual (+ NAK)</td></tr>
+          <tr><td>Memória no receptor</td><td>mínima</td><td>mínima</td><td>buffers para a janela inteira</td></tr>
+          <tr><td>Temporizadores</td><td>1</td><td>1 por quadro pendente (só o mais antigo importa)</td><td>1 por quadro + temporizador de ACK</td></tr>
+        </table>
+        <p class="callout">▶ <a href="../visualizacoes/janela-deslizante.html">Visualização: diagramas de tempo de parar-e-esperar, Go-Back-N e repetição seletiva; clique para perder quadros e ACKs</a></p>
+
+        <h2>3.5 Exemplos de protocolos de enlace</h2>
+        <h3>Pacotes sobre SONET: PPP</h3>
+        <p>O <b>PPP</b> (Point-to-Point Protocol, RFC 1661) é usado em enlaces ponto a ponto, como pacotes IP sobre fibra SONET. Ele oferece três coisas: (1) enquadramento que delimita claramente os quadros e detecta erros; (2) o <b>LCP</b> (Link Control Protocol) para ativar e testar o enlace, negociar opções e desativá-lo; (3) um <b>NCP</b> (Network Control Protocol) para cada camada de rede suportada (ex.: obter endereço IP).</p>
+        <p>O quadro é inspirado no <b>HDLC</b>, mas é <b>orientado a bytes</b> (usa byte stuffing; o HDLC é orientado a bits e usa bit stuffing). Na prática, opera em modo "não numerado" (sem confirmação).</p>
+        <p class="kv">Flag 0x7E (1) | Endereço 0xFF (1) | Controle 0x03 (1) | Protocolo (1 ou 2) | Payload (padrão até 1500) | Checksum (2 ou 4) | Flag 0x7E (1)</p>
+        <ul>
+          <li>Stuffing: a FLAG 0x7E nos dados vira <b>0x7D 0x5E</b>. O escape é 0x7D, e o byte seguinte é XOR com 0x20. Basta uma flag entre dois quadros.</li>
+          <li>Endereço e controle são constantes e podem ser omitidos por negociação no LCP (economizando 2 bytes). O protocolo pode cair para 1 byte. O checksum de 4 bytes é o CRC-32.</li>
+        </ul>
+        <h3>ADSL</h3>
+        <p>Pilha no loop local: PPP → <b>AAL5</b> → <b>ATM</b> → ADSL (física). O <b>ATM</b> transmite <b>células</b> de tamanho fixo de <b>53 bytes</b> (5 de cabeçalho e 48 de carga útil; o 48 foi um meio-termo político entre 32 e 64), orientado a conexão (circuitos virtuais). O quadro AAL5 leva o protocolo e o payload do PPP (sem flags nem CRC do PPP), mais preenchimento (0 a 47 bytes) e um trailer de 8 bytes (2 sem uso, 2 de tamanho e 4 de CRC), de modo que o total é múltiplo de 48. Esse arranjo se chama <b>PPPoA</b>.</p>
+
+        <h2>Fórmulas do capítulo</h2>
+        <table class="data">
+          <tr><th>Conceito</th><th>Fórmula</th></tr>
+          <tr><td>Detectar $d$ / corrigir $d$ erros</td><td>distância $d + 1$ / $2d + 1$</td></tr>
+          <tr><td>Bits de verificação para corrigir 1 erro</td><td>$(m + r + 1) \le 2^r$</td></tr>
+          <tr><td>CRC</td><td>$T(x) = x^r M(x) - [x^r M(x) \bmod G(x)]$</td></tr>
+          <tr><td>Tempo de quadro</td><td>$t_f = \text{bits}/\text{taxa}$</td></tr>
+          <tr><td>Produto banda-atraso (em quadros)</td><td>$BD = \text{taxa} \times t_{\text{prop}} / \text{bits do quadro}$</td></tr>
+          <tr><td>Utilização com janela $w$</td><td>$\le \frac{w}{1 + 2BD} = \frac{w \, t_f}{t_f + 2 t_{\text{prop}}}$ (máximo 1)</td></tr>
+          <tr><td>Janela para 100%</td><td>$w \ge 2BD + 1$</td></tr>
+          <tr><td>Janela máxima Go-Back-N / Repetição seletiva</td><td>$2^n - 1$ / $2^{n-1}$</td></tr>
+          <tr><td>Transmissões esperadas (probabilidade de sucesso $p$)</td><td>$1/p$</td></tr>
+        </table>
+
+        <h2>Exercícios do livro resolvidos</h2>
+        <details class="prob exam"><summary><b>3.1</b> Um pacote é dividido em 10 quadros, cada um com 80% de chance de chegar intacto. Sem controle de erros no enlace, quantas vezes a mensagem precisa ser enviada, em média?</summary>
+          <p>A mensagem inteira chega com probabilidade $p = 0{,}8^{10} \approx 0{,}107$. O número de tentativas é geométrico, com média $1/p \approx$ <b>9,3</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.2</b> A: 01000111, B: 11100011, FLAG: 01111110, ESC: 11100000. Mostre os bits do quadro A B ESC FLAG com (a) contagem de bytes, (b) flags com byte stuffing, (c) flags com bit stuffing.</summary>
+          <p>(a) A contagem inclui o próprio byte: 5 → <span class="kv">00000101 01000111 11100011 11100000 01111110</span>.</p>
+          <p>(b) FLAG A B <b>ESC</b> ESC <b>ESC</b> FLAG FLAG → <span class="kv">01111110 01000111 11100011 11100000 11100000 11100000 01111110 01111110</span>.</p>
+          <p>(c) Nos dados A B ESC FLAG = <span class="kv">01000111 11100011 11100000 01111110</span>, insere-se um 0 depois de cada cinco 1s seguidos (em negrito), e põem-se as flags nas pontas: <span class="kv">01111110 0100011111<b>0</b>100011111<b>0</b>00000011111<b>0</b>10 01111110</span> (3 bits inseridos; o quadro deixa de ter um número inteiro de bytes).</p>
+        </details>
+        <details class="prob exam"><summary><b>3.3</b> Fragmento A B ESC C ESC FLAG FLAG D com byte stuffing. Qual a saída?</summary>
+          <p>Cada ESC e cada FLAG ganham um ESC antes: <b>A B ESC ESC C ESC ESC ESC FLAG ESC FLAG D</b>.</p>
+        </details>
+        <details class="prob"><summary><b>3.4</b> Qual a sobrecarga máxima do byte stuffing?</summary>
+          <p>Se todos os bytes dos dados forem FLAG ou ESC, cada um é duplicado: o payload dobra, ou seja, <b>100%</b> (mais as duas flags).</p>
+        </details>
+        <details class="prob"><summary><b>3.5</b> Um colega diz que basta uma flag entre dois quadros em vez de duas. Você concorda?</summary>
+          <p>Se os quadros vêm um atrás do outro, sim (o PPP faz isso). Mas se não há mais quadros por um tempo, o receptor precisa da flag inicial do próximo quadro para distinguir o início dele de ruído na linha. Então cada quadro precisa de flag de início e de fim, e uma flag compartilhada só funciona com quadros consecutivos.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.6</b> Transmitir 0111101111101111110 com bit stuffing.</summary>
+          <p>Insere-se um 0 depois de cada sequência de cinco 1s: <b>011110111110<u>0</u>11111<u>0</u>10</b> → <span class="kv">011110111110011111010</span>.</p>
+        </details>
+        <details class="prob"><summary><b>3.7</b> Quando um protocolo de malha aberta (Hamming) é preferível a um com retroalimentação (retransmissão)?</summary>
+          <p>Quando o atraso de ida e volta é enorme (sondas espaciais, satélites), quando não há canal de volta (difusão) ou quando a taxa de erros é tão alta que as retransmissões também falhariam. Também em tempo real, onde uma retransmissão chegaria tarde demais.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.8</b> Um bit de paridade para os bits ímpares e outro para os pares. Qual a distância de Hamming desse código?</summary>
+          <p><b>2</b>: um erro simples sempre altera uma das paridades, mas dois erros nos bits de mesma paridade passam despercebidos.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.9</b> Mensagens de 16 bits com Hamming. Quantos bits de verificação? Codifique 1101001100110101 (paridade par).</summary>
+          <p>$m = 16$: com $r = 5$, $16 + 5 + 1 = 22 \le 32$ (com $r = 4$, $21 &gt; 16$). <b>5 bits</b>, nas posições 1, 2, 4, 8 e 16 de uma palavra de 21 bits.</p>
+          <p>Transmitido: <span class="kv">011110110011001110101</span> (bits de verificação: p1 = 0, p2 = 1, p4 = 1, p8 = 1, p16 = 1).</p>
+        </details>
+        <details class="prob exam"><summary><b>3.10</b> Chega o código de Hamming de 12 bits 0xE4F. Qual o valor original (hex), se houver no máximo 1 erro?</summary>
+          <p>0xE4F = <span class="kv">1110 0100 1111</span>. Recalculando as paridades (posições 1, 2, 4, 8): só a verificação 2 falha → síndrome 2 → o bit 2 (um bit de verificação) está errado. Os dados (posições 3, 5, 6, 7, 9, 10, 11, 12) são <span class="kv">1010 1111</span> = <b>0xAF</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.11</b> Paridade de linhas e colunas. Detecta todos os erros simples? Duplos? Triplos? Mostre que não detecta alguns quádruplos.</summary>
+          <p>Simples: sim (falham uma linha e uma coluna). Duplos: sim (se estão na mesma linha, falham duas colunas; senão, falham linhas). Triplos: sim (alguma linha ou coluna terá um número ímpar de erros). Quádruplos: não, se os quatro erros formam os <b>cantos de um retângulo</b>: cada linha e cada coluna afetada tem 2 erros, e todas as paridades continuam certas.</p>
+        </details>
+        <details class="prob"><summary><b>3.12</b> Blocos de 1000 bits. Até que taxa de erro por bit a detecção com 1 bit de paridade mais retransmissão é melhor que Hamming?</summary>
+          <p>Hamming precisa de 10 bits por bloco ($1000 + 10 + 1 \le 1024$). A paridade custa 1 bit mais, com probabilidade $\approx 1001p$, retransmitir 1001 bits. Igualando: $1 + 1001 \cdot 1001 p = 10$ → $p \approx 9 \times 10^{-6}$. Abaixo dessa taxa, <b>detecção + retransmissão é melhor</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.15</b> Checksum da Internet (palavras de 4 bits) de 1001 1100 1010 0011?</summary>
+          <p>Soma em complemento de 1: $1001 + 1100 = 1\,0101$ → dá a volta: $0110$. $0110 + 1010 = 1\,0000$ → $0001$. $0001 + 0011 = 0100$. Complemento: <b>1011</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.16</b> Resto da divisão de $x^7 + x^5 + 1$ por $x^3 + 1$?</summary>
+          <p>10100001 ÷ 1001 (divisão módulo 2) → resto <b>111</b> = $x^2 + x + 1$.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.17</b> Transmitir 10011101 com CRC e gerador $x^3 + 1$. Inverta o 3º bit e mostre a detecção. Dê um erro não detectado.</summary>
+          <p>10011101<u>000</u> ÷ 1001 → resto <b>100</b> → transmite <span class="kv">10011101100</span>.</p>
+          <p>Com o 3º bit invertido, recebe-se 10<b>1</b>11101100; dividindo por 1001 o resto é 100 ≠ 0 → <b>erro detectado</b>.</p>
+          <p>Não detectado: qualquer erro que seja múltiplo do gerador, por exemplo inverter os bits 1 e 4 (padrão 1001): recebe-se <span class="kv">00001101100</span>, cujo resto é 000.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.18</b> CRC-32 em mensagem de 1024 bits. Detecta: (a) 1 erro; (b) 2 isolados; (c) 18 isolados; (d) 47 isolados; (e) rajada de 24; (f) rajada de 35?</summary>
+          <p>(a) Sim. (b) Sim (o CRC-32 não divide $x^k + 1$ para $k$ menor que o tamanho do quadro). (c) <b>Não necessariamente</b> (número par de erros, sem garantia). (d) Sim: número ímpar de erros. (e) Sim: rajada ≤ 32. (f) <b>Não necessariamente</b>: rajada &gt; 33 passa com probabilidade $1/2^{32}$.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.20</b> Canal de 4 kbps com atraso de propagação de 20 ms. Para que tamanhos de quadro o parar-e-esperar tem eficiência de pelo menos 50%?</summary>
+          <p>Eficiência $= \frac{t_f}{t_f + 2t_p} \ge \frac{1}{2}$ ⇔ $t_f \ge 2t_p = 40$ ms ⇔ quadro $\ge 4000 \times 0{,}04 =$ <b>160 bits</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.22</b> Tronco T1 de 3000 km, quadros de 64 bytes, protocolo 5, propagação de 6 μs/km. Quantos bits de sequência?</summary>
+          <p>Propagação: $3000 \times 6\,\mu s = 18$ ms. $t_f = 512 / 1{,}544 \times 10^6 \approx 0{,}332$ ms. $BD = 18/0{,}332 \approx 54{,}3$ quadros → janela $2BD + 1 \approx 110$ quadros. No Go-Back-N a janela é $2^n - 1$: $n = 7$ (127) basta, e $n = 6$ (63) não. <b>7 bits</b>.</p>
+        </details>
+        <details class="prob"><summary><b>3.24</b> Se <code>between</code> no protocolo 5 testasse $a \le b \le c$ em vez de $a \le b &lt; c$, haveria efeito?</summary>
+          <p>Sim: afetaria a <b>correção</b>. O ACK de um quadro ainda não enviado ($b = c$ = <code>next_frame_to_send</code>) seria aceito como válido.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.27</b> Planeta a $9 \times 10^{10}$ m, enlace de 64 Mbps, quadros de 32 KB, parar-e-esperar. Utilização?</summary>
+          <p>$t_p = 9 \times 10^{10} / 3 \times 10^8 = 300$ s. $t_f = 32 \times 1024 \times 8 / 64 \times 10^6 \approx 4{,}1$ ms. Utilização $= \frac{t_f}{t_f + 2t_p} \approx \frac{0{,}0041}{600} \approx$ <b>$6{,}8 \times 10^{-6}$</b> (0,00068%).</p>
+        </details>
+        <details class="prob exam"><summary><b>3.28</b> No problema anterior, que janela dá 100% de utilização?</summary>
+          <p>$BD = 300 / 0{,}004096 \approx 73\,242$ quadros; $w = 2BD + 1 \approx$ <b>146 486 quadros</b>.</p>
+        </details>
+        <details class="prob"><summary><b>3.31</b> O protocolo 6 funciona com MAX_SEQ = 4?</summary>
+          <p>Não. Com MAX_SEQ = 4 há 5 números de sequência, e NR_BUFS = 5/2 = 2 (divisão inteira). Mas o índice do buffer é calculado como <code>seq % NR_BUFS</code>, e com 5 números, 4 e 0 caem no mesmo buffer (4 % 2 = 0 % 2) estando ambos na janela, o que causa confusão. É preciso que o espaço de sequência seja potência de 2.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.32</b> Quadros de 1000 bits, 1 Mbps, satélite GEO com 270 ms de propagação, ACKs de carona em quadros de dados, sequência de 3 bits. Utilização máxima com (a) parar-e-esperar, (b) protocolo 5, (c) protocolo 6?</summary>
+          <p>$t_f = 1$ ms. Um ciclo: transmitir (1 ms), propagar (270), o ACK vem de carona num quadro de dados (1 ms) e volta (270): 542 ms. (a) $1/542 \approx$ <b>0,18%</b>. (b) Janela 7: $7/542 \approx$ <b>1,29%</b>. (c) Janela 4: $4/542 \approx$ <b>0,74%</b>.</p>
+        </details>
+        <details class="prob"><summary><b>3.33</b> Protocolo 6 em satélite de 50 kbps muito carregado: 40 bits de cabeçalho + 3960 de dados, 270 ms, 1% de erros nos dados, NAKs de 40 bits, sequência de 8 bits. Fração da banda desperdiçada?</summary>
+          <p>A janela é 128 quadros; $t_f = 80$ ms e o ciclo tem $80 + 540 = 620$ ms, ou seja, ~8 quadros. A janela é mais que suficiente e o canal fica cheio. Desperdício: cabeçalhos $40/4000 = 1\%$ mais 1% de quadros retransmitidos ≈ <b>2%</b> (os NAKs vão no sentido oposto).</p>
+        </details>
+        <details class="prob exam"><summary><b>3.34</b> Satélite de 64 kbps sem erros, quadros de 512 bytes, ACKs curtos, 270 ms. Vazão máxima com janela 1, 7, 15 e 127?</summary>
+          <p>$t_f = 4096/64000 = 64$ ms; ciclo $= 64 + 540 = 604$ ms. Vazão $= \min(64 \text{ kbps}, \frac{w \cdot 4096}{0{,}604})$: $w = 1$ → <b>6,78 kbps</b>; $w = 7$ → <b>47,5 kbps</b>; $w = 15$ → <b>64 kbps</b> (satura; bastaria $w \ge 604/64 \approx 9{,}4$); $w = 127$ → <b>64 kbps</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>3.35</b> Cabo de 100 km a taxa T1, propagação a 2/3 de $c$. Quantos bits cabem no cabo?</summary>
+          <p>$t_p = 10^5 / 2 \times 10^8 = 0{,}5$ ms; bits $= 1{,}544 \times 10^6 \times 0{,}5 \times 10^{-3} =$ <b>772 bits</b>.</p>
+        </details>
+        <details class="prob"><summary><b>3.36</b> Por que o PPP usa byte stuffing em vez de bit stuffing?</summary>
+          <p>Porque foi projetado para ser implementado em software, byte a byte (ex.: em modems e UARTs), e é muito mais simples tratar bytes inteiros. Além disso, com byte stuffing os quadros têm sempre um número inteiro de bytes.</p>
+        </details>
+        <details class="prob"><summary><b>3.37</b> Sobrecarga mínima e máxima do PPP (só a do próprio PPP)?</summary>
+          <p>Mínima: sem endereço e controle, protocolo de 1 byte, checksum de 2 e uma flag compartilhada com o quadro seguinte: <b>4 bytes</b> (5 contando as duas flags). Máxima: $1 + 1 + 1 + 2 + 4 + 1 =$ <b>10 bytes</b> de campos, mais o byte stuffing, que no pior caso dobra o payload.</p>
+        </details>
+        <details class="prob"><summary><b>3.38</b> Um pacote IP de 100 bytes via ADSL. Quantas células ATM?</summary>
+          <p>Payload AAL5: 2 bytes de protocolo PPP + 100 = 102; mais o trailer de 8 = 110, arredondado com preenchimento para 144 = 3 × 48. <b>3 células</b> (as duas primeiras só com dados, a última com o resto, o preenchimento e o trailer).</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Qual serviço de enlace a Ethernet oferece?', options: ['Sem conexão e sem confirmação', 'Sem conexão e com confirmação', 'Orientado a conexão com confirmação', 'Orientado a conexão sem confirmação'], answer: 0, explain: 'O 802.11 (Wi-Fi) é que confirma cada quadro.' },
+      { q: 'Um código com distância de Hamming 5 pode:', options: ['corrigir 2 erros ou detectar 4', 'corrigir 4 erros', 'detectar 5 erros', 'corrigir 3 erros'], answer: 0, explain: 'Detectar $d$: distância $d+1$. Corrigir $d$: $2d+1$.' },
+      { q: 'Por que no Go-Back-N a janela de transmissão é no máximo MAX_SEQ?', options: ['Com MAX_SEQ + 1 quadros, um ACK igual ao anterior seria ambíguo (lote todo recebido ou todo perdido?)', 'Porque o receptor tem janela 1', 'Porque os ACKs são individuais', 'Por causa do temporizador de ACK'], answer: 0, explain: 'É o exemplo com MAX_SEQ = 7 do livro.' },
+      { q: 'Com números de sequência de 3 bits, a janela máxima da repetição seletiva é:', options: ['4', '7', '8', '3'], answer: 0, explain: '$(\\text{MAX\\_SEQ}+1)/2 = 8/2$.' },
+      { q: 'Um CRC com gerador de grau $r$ detecta com certeza:', options: ['todas as rajadas de tamanho ≤ r', 'todas as rajadas de qualquer tamanho', 'só erros simples', 'qualquer número par de erros'], answer: 0, explain: 'Rajadas maiores passam com probabilidade $1/2^{r-1}$ ou $1/2^r$.' },
+      { q: 'Enlace de 1 Mbps, propagação de 10 ms, quadros de 1000 bits. Janela mínima para 100% de utilização?', options: ['21', '20', '11', '10'], answer: 0, explain: '$BD = 10^6 \\cdot 0{,}01 / 1000 = 10$; $2BD + 1 = 21$.' },
+      { q: 'No bit stuffing, o transmissor insere um 0 depois de:', options: ['cinco 1s consecutivos', 'seis 1s consecutivos', 'cada flag', 'quatro 1s consecutivos'], answer: 0, explain: 'Assim os dados nunca contêm 01111110.' },
+    ]);
+  </script>
+</body>
+</html>

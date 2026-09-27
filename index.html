@@ -101,7 +101,7 @@
     const future = h('section', { class: 'period', id: 'em-breve' },
       h('div', { class: 'period-head' }, h('h2', {}, 'Próximos períodos'), h('span', { class: 'badge warn' }, 'em construção')),
       h('div', { class: 'future' }, ...PERIODOS.filter(p => p.planejadas).map(p =>
-        h('div', { class: 'card', id: p.id }, h('h3', {}, `${p.numero}º período`), h('ul', {}, ...p.planejadas.map(n => h('li', {}, n)))))));
+        h('div', { class: 'card', id: p.disciplinas ? `${p.id}-planejadas` : p.id }, h('h3', {}, `${p.numero}º período${p.disciplinas ? ' (demais)' : ''}`), h('ul', {}, ...p.planejadas.map(n => h('li', {}, n)))))));
     root.append(future);
 
     // ---------- Animação decorativa: a grade dançando entre transformações ----------

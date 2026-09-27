@@ -241,6 +241,8 @@ svg.scene .mono { font-family: var(--mono); font-variant-ligatures: none; }
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 table.data { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 14px; }
 table.data th, table.data td { padding: 6px 12px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+/* em texto corrido, tabelas quebram linha em vez de vazar da página */
+.prose table.data th, .prose table.data td { white-space: normal; }
 table.data th { background: var(--surface-2); color: var(--muted); font-weight: 600; position: sticky; top: 0; }
 table.data td.t { color: var(--green); }
 table.data td.f { color: var(--red); }

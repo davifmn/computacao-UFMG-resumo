@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multiplexação e CDMA · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .stations { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .st { display: flex; gap: 4px; align-items: center; padding: 4px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .st b { width: 1.4em; text-align: center; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Multiplexação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 2 (seções 2.5.3–2.5.5)</div>
+    <h1>Muitos usuários, um só meio</h1>
+    <p class="lead">Existem três formas de dividir um canal. A <b>FDM</b> dá a cada um uma faixa de frequência o tempo todo. A <b>TDM</b> dá a cada um a banda inteira, por turnos. O <b>CDMA</b> deixa todos usarem tudo ao mesmo tempo e separa os sinais pela matemática (ortogonalidade).</p>
+
+    <div class="stage"><svg id="ftd" aria-label="FDM, TDM e CDMA no plano tempo × frequência"></svg></div>
+
+    <h2>CDMA passo a passo (chips da Fig. 2-28 do livro)</h2>
+    <p>Escolha o que cada estação envia. Enviar <b>1</b> é transmitir sua sequência de chips $S$; enviar <b>0</b> é transmitir $-S$; em silêncio, nada. O canal <b>soma</b> os sinais. O receptor recupera cada estação com o produto interno normalizado $\frac{1}{m}\,\text{sinal} \cdot S$.</p>
+    <div class="toolbar"><div class="stations" id="stations"></div>
+      <button class="btn small" id="p246">Problema 2.46</button>
+      <button class="btn small" id="p244">Problema 2.44</button>
+    </div>
+    <div class="stage"><svg id="cdma" aria-label="Soma dos chips e decodificação"></svg></div>
+
+    <section class="prose">
+      <h2>Comparação</h2>
+      <table class="data">
+        <tr><th></th><th>FDM</th><th>TDM</th><th>CDMA</th></tr>
+        <tr><td>Divide</td><td>frequência</td><td>tempo</td><td>código</td></tr>
+        <tr><td>Desperdício</td><td>bandas de guarda</td><td>tempos de guarda; slots ociosos</td><td>precisa de controle de potência</td></tr>
+        <tr><td>Exemplos</td><td>rádio AM/FM, ADSL (OFDM), WDM na fibra</td><td>T1/E1, SONET, GSM (junto com FDM)</td><td>3G (WCDMA, CDMA2000), IS-95</td></tr>
+      </table>
+      <div class="callout"><p><b>Por que o CDMA funciona:</b> se $S \cdot T = 0$ para chips diferentes e $S \cdot S = 1$, então $S \cdot (\pm S + \pm T + \dots) = \pm 1$, porque as outras estações somem do produto interno. Uma estação silenciosa dá 0. Dá para conferir a ortogonalidade contando coincidências: dois chips ortogonais concordam em exatamente metade das posições (problema 2.45).</p></div>
+      <p>Volte ao <a href="../tutoriais/cap2-camada-fisica.html">capítulo 2</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, $$, h, pick, renderMath } from '../../../../engine/page.js';
+    import { CHIPS, cdmaCombine, cdmaDecode } from './redes.js';
+
+    // ---------- FDM / TDM / CDMA no plano tempo × frequência ----------
+    const f = new Scene($('#ftd'), { width: 900, height: 250 });
+    f.setAnimated(false);
+    const pal = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.pink];
+    f.frame(s => {
+      ['FDM', 'TDM', 'CDMA'].forEach((name, k) => {
+        const x0 = 40 + k * 290, y0 = 30, w = 240, hh = 170;
+        s.text(`t${k}`, name, { x: x0 + w / 2, y: 16, size: 15, weight: 700 });
+        s.line(`ax${k}`, x0, y0 + hh, x0 + w, y0 + hh, { stroke: COLORS.muted, sw: 1.5 });
+        s.line(`ay${k}`, x0, y0, x0, y0 + hh, { stroke: COLORS.muted, sw: 1.5 });
+        s.text(`xl${k}`, 'tempo →', { x: x0 + w - 30, y: y0 + hh + 16, size: 11, fill: COLORS.muted });
+        s.text(`yl${k}`, 'freq.', { x: x0 - 20, y: y0 + 8, size: 11, fill: COLORS.muted });
+        for (let u = 0; u < 4; u++) {
+          if (k === 0) s.rect(`f${u}`, { x: x0 + 4, y: y0 + 4 + u * 42, w: w - 8, h: 34, rx: 4, fill: pal[u], stroke: 'none', opacity: 0.8 });
+          if (k === 1) for (let r = 0; r < 3; r++) s.rect(`t${u}-${r}`, { x: x0 + 4 + (r * 4 + u) * 19.6, y: y0 + 4, w: 16, h: hh - 8, rx: 3, fill: pal[u], stroke: 'none', opacity: 0.8 });
+          if (k === 2) s.rect(`c${u}`, { x: x0 + 4 + u * 6, y: y0 + 4 + u * 6, w: w - 30, h: hh - 30, rx: 4, fill: pal[u], stroke: 'none', opacity: 0.28 });
+        }
+      });
+      s.text('ng', 'as faixas cinza entre os blocos são as bandas/tempos de guarda', { x: 450, y: 244, size: 12, fill: COLORS.faint });
+    });
+
+    // ---------- CDMA ----------
+    const sends = { A: 1, B: 0, C: null, D: 1 };
+    const opts = [['1', 1], ['0', 0], ['—', null]];
+    function stationsUI() {
+      const box = $('#stations'); box.innerHTML = '';
+      for (const st of Object.keys(CHIPS)) {
+        const div = h('div', { class: 'st' }, h('b', {}, st));
+        for (const [lbl, v] of opts) {
+          const b = h('button', { class: 'btn small', 'aria-pressed': String(sends[st] === v) }, lbl);
+          b.addEventListener('click', () => { sends[st] = v; stationsUI(); drawCdma(); });
+          div.append(b);
+        }
+        box.append(div);
+      }
+    }
+    const cs = new Scene($('#cdma'), { width: 900, height: 480 });
+    cs.setAnimated(false);
+    function drawCdma(given) {
+      const signal = given ?? cdmaCombine(sends);
+      const dec = cdmaDecode(signal);
+      const X0 = 200, cw = 56, rowH = 58;
+      cs.frame(s => {
+        const rows = given ? [] : Object.keys(CHIPS).filter(st => sends[st] != null).map(st => [st, CHIPS[st].map(c => (sends[st] ? c : -c)), sends[st] ? `${st} envia 1 → S` : `${st} envia 0 → −S`]);
+        let y = 30;
+        const drawRow = (key, label, vals, color, bold) => {
+          s.text(`l-${key}`, label, { x: X0 - 14, y, size: 13, anchor: 'end', weight: bold ? 700 : 500, fill: color });
+          vals.forEach((v, i) => {
+            s.rect(`r-${key}-${i}`, { x: X0 + i * cw, y: y - 16, w: cw - 6, h: 32, rx: 6, fill: COLORS.surface2, stroke: bold ? color : COLORS.border, sw: bold ? 2 : 1 });
+            s.text(`v-${key}-${i}`, (v > 0 ? '+' : '') + v, { x: X0 + i * cw + cw / 2 - 3, y, size: 15, mono: true, weight: 700, fill: v > 0 ? COLORS.green : v < 0 ? COLORS.red : COLORS.muted });
+          });
+          y += rowH;
+        };
+        rows.forEach(([st, vals, label]) => drawRow(st, label, vals, COLORS.text, false));
+        if (!given) s.line('sumline', X0, y - 30, X0 + 8 * cw - 6, y - 30, { stroke: COLORS.muted, sw: 1.5 });
+        drawRow('sum', 'sinal no canal (soma)', signal, COLORS.yellow, true);
+        y += 6;
+        s.text('dech', 'Decodificação: (1/8) · sinal · S', { x: X0, y, size: 14, anchor: 'start', weight: 700, fill: COLORS.blue });
+        y += 34;
+        Object.entries(dec).forEach(([st, v], k) => {
+          const verdict = v === 1 ? 'enviou 1' : v === -1 ? 'enviou 0' : v === 0 ? 'não transmitiu' : 'inválido!';
+          s.text(`d-${st}`, `${st}: ${v > 0 ? '+' : ''}${+v.toFixed(3)} → ${verdict}`, { x: X0 + (k % 2) * 300, y: y + Math.floor(k / 2) * 30, size: 15, anchor: 'start', mono: true, fill: v === 0 ? COLORS.muted : v === 1 ? COLORS.green : v === -1 ? COLORS.red : COLORS.orange });
+        });
+        s.text('chipsref', 'Chips: ' + Object.entries(CHIPS).map(([k, c]) => `${k} = (${c.map(x => (x > 0 ? '+1' : '−1')).join(' ')})`).join('   '), { x: 450, y: 466, size: 10.5, mono: true, fill: COLORS.faint });
+      });
+    }
+    $('#p246').addEventListener('click', () => { $$('#stations .btn').forEach(b => b.setAttribute('aria-pressed', 'false')); drawCdma([-1, 1, -3, 1, -1, -3, 1, 1]); });
+    $('#p244').addEventListener('click', () => { Object.assign(sends, { A: 0, B: 0, C: 0, D: null }); stationsUI(); drawCdma(); });
+    stationsUI(); drawCdma();
+
+    mountGenerator($('#gen'), {
+      generate() {
+        const st = Object.keys(CHIPS);
+        const s = {};
+        st.forEach(k => { s[k] = pick([1, 0, null]); });
+        if (st.every(k => s[k] == null)) s.A = 1;
+        const sig = cdmaCombine(s);
+        const target = pick(st);
+        const ans = s[target] == null ? 'nada' : String(s[target]);
+        return {
+          q: `Um receptor CDMA recebe $(${sig.join('\\ ')})$. Usando os chips da Fig. 2-28, o que a estação <b>${target}</b> enviou? Responda 1, 0 ou "nada".`,
+          input: true, answer: ans,
+          check: v => String(v).trim().toLowerCase().replace('-', '') === ans,
+          explain: `$\\frac{1}{8}\\,\\text{sinal} \\cdot ${target} = ${cdmaDecode(sig)[target]}$, então ${ans === 'nada' ? 'a estação ficou em silêncio' : `o bit foi ${ans}`}.`,
+        };
+      },
+    });
+    renderMath(document.body);
+  </script>
+</body>
+</html>

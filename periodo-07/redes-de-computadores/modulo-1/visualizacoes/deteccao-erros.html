@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detecção de Erros · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .row-in { display: flex; gap: 12px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+    .row-in input[type=text] { font-family: var(--mono); }
+    .bits { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 14px; }
+    .b { width: 38px; text-align: center; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); cursor: pointer; user-select: none; }
+    .b .v { font: 700 17px var(--mono); padding: 4px 0 2px; }
+    .b .p { font: 11px var(--mono); color: var(--faint); padding-bottom: 3px; }
+    .b.chk { border-color: var(--yellow); } .b.chk .v { color: var(--yellow); }
+    .b.flip { background: #3d1c1c; border-color: var(--red); }
+    .b.fix { outline: 2px solid var(--green); outline-offset: 1px; }
+    .b.cov { background: rgba(88,196,221,.18); }
+    .note { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    pre.div { margin: 0 14px 14px; padding: 12px 16px; font: 15px/1.5 var(--mono); background: var(--surface2); border-radius: 8px; overflow-x: auto; }
+    pre.div .q { color: var(--yellow); } pre.div .g { color: var(--blue); } pre.div .r { color: var(--green); font-weight: 700; } pre.div .m { color: var(--faint); }
+    table.grid2d { border-collapse: collapse; margin: 10px 14px 14px; }
+    table.grid2d td { width: 34px; height: 34px; text-align: center; font: 700 16px var(--mono); border: 1px solid var(--border); cursor: pointer; }
+    table.grid2d td.par { color: var(--yellow); background: var(--surface2); cursor: default; }
+    table.grid2d td.flip { background: #3d1c1c; color: var(--red); }
+    table.grid2d td.fail { outline: 2px solid var(--red); outline-offset: -3px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Detecção e correção de erros</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 3 (seção 3.2)</div>
+    <h1>Detectando e corrigindo erros</h1>
+    <p class="lead">Adicionar redundância é o único jeito de perceber que um bit mudou no caminho. Com pouca redundância dá para <b>detectar</b> o erro (paridade, checksum, CRC); com mais, dá para <b>corrigir</b> (Hamming). Em todas as seções, <b>clique num bit para invertê-lo</b> e simular um erro de transmissão.</p>
+
+    <h2>1. Código de Hamming (corrige 1 erro)</h2>
+    <div class="panel">
+      <div class="row-in">
+        <label>Dados <input id="hm-in" type="text" value="1000001" size="20"></label>
+        <button class="btn small" data-hm="1000001">"A" (Fig. 3-6)</button>
+        <button class="btn small" data-hm="1101001100110101">Problema 3.9</button>
+        <span class="c-muted" id="hm-r"></span>
+      </div>
+      <div class="bits" id="hm-bits"></div>
+      <div class="note" id="hm-note"></div>
+    </div>
+
+    <h2>2. CRC: divisão longa módulo 2</h2>
+    <div class="panel">
+      <div class="row-in">
+        <label>Quadro <input id="crc-m" type="text" value="1101011111" size="18"></label>
+        <label>Gerador <input id="crc-g" type="text" value="10011" size="10"></label>
+        <button class="btn small" data-crc="1101011111,10011">Fig. 3-9</button>
+        <button class="btn small" data-crc="10011101,1001">Problema 3.17</button>
+        <button class="btn small" data-crc="10100001,1001">Problema 3.16</button>
+      </div>
+      <div class="note" id="crc-head"></div>
+      <pre class="div" id="crc-div"></pre>
+      <div class="note" style="padding-bottom:0">Quadro transmitido (dados + resto). Clique para corromper e o receptor divide de novo:</div>
+      <div class="bits" id="crc-bits"></div>
+      <div class="note" id="crc-note"></div>
+    </div>
+
+    <h2>3. Checksum da Internet (complemento de 1)</h2>
+    <div class="panel">
+      <div class="row-in">
+        <label>Palavras (binário, separadas por espaço) <input id="cs-in" type="text" value="1001 1100 1010 0011" size="40"></label>
+        <button class="btn small" data-cs="1001 1100 1010 0011">Problema 3.15</button>
+      </div>
+      <pre class="div" id="cs-steps"></pre>
+    </div>
+
+    <h2>4. Paridade bidimensional</h2>
+    <p>Paridade par em cada linha e cada coluna (em amarelo), mais o bit do canto. Inverta 1, 2, 3 e depois 4 bits nos cantos de um retângulo: o último caso passa despercebido (problema 3.11).</p>
+    <div class="panel">
+      <div class="row-in"><button class="btn small" id="p2-reset">Zerar erros</button><button class="btn small" id="p2-rect">Erro em retângulo</button><span id="p2-msg"></span></div>
+      <table class="grid2d" id="p2"></table>
+    </div>
+
+    <section class="prose">
+      <h2>Qual usar?</h2>
+      <table class="data">
+        <tr><th>Código</th><th>Redundância</th><th>Garante</th></tr>
+        <tr><td>Paridade simples</td><td>1 bit</td><td>detecta número ímpar de erros</td></tr>
+        <tr><td>Paridade 2D</td><td>$n + k + 1$ bits</td><td>detecta até 3 erros; corrige 1 (cruzando linha e coluna)</td></tr>
+        <tr><td>Checksum da Internet</td><td>16 bits</td><td>fraco: não pega troca de ordem nem zeros inseridos</td></tr>
+        <tr><td>CRC de grau $r$</td><td>$r$ bits</td><td>rajadas ≤ $r$; ímpares se $(x+1) \mid G(x)$</td></tr>
+        <tr><td>Hamming</td><td>$r$ com $m + r + 1 \le 2^r$</td><td>corrige 1 erro (distância 3)</td></tr>
+      </table>
+      <p>Volte ao <a href="../tutoriais/cap3-camada-de-enlace.html">capítulo 3</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, $$, h, pick, randInt, renderMath } from '../../../../engine/page.js';
+    import { hammingEncode, hammingDecode, hammingCheckBits, crc, crcCheck, bitsToPoly, internetChecksum, parity2d } from './redes.js';
+
+    const toBits = s => s.replace(/[^01]/g, '').split('').map(Number);
+    const isPow2 = i => (i & (i - 1)) === 0;
+
+    // ---------- Hamming ----------
+    let hmWord = [], hmFlip = new Set(), hover = null;
+    function hmLoad() { const e = hammingEncode(toBits($('#hm-in').value) || [0]); hmWord = e.word; hmFlip = new Set(); drawHM(); }
+    function drawHM() {
+      const data = toBits($('#hm-in').value);
+      if (!data.length) return;
+      const e = hammingEncode(data);
+      const rx = hmWord.map((b, i) => (hmFlip.has(i + 1) ? b ^ 1 : b));
+      const d = hammingDecode(rx);
+      $('#hm-r').textContent = `m = ${e.word.length - e.r} bits de dados → r = ${e.r} bits de verificação (${e.word.length - e.r} + ${e.r} + 1 ≤ 2^${e.r} = ${2 ** e.r}); n = ${e.n}`;
+      const cov = hover ? e.coverage[hover] : [];
+      $('#hm-bits').replaceChildren(...rx.map((b, i) => {
+        const pos = i + 1;
+        const el = h('div', { class: `b ${isPow2(pos) ? 'chk' : ''} ${hmFlip.has(pos) ? 'flip' : ''} ${d.syndrome === pos ? 'fix' : ''} ${cov.includes(pos) ? 'cov' : ''}`, title: isPow2(pos) ? `bit de verificação p${pos}: passe o mouse para ver o que ele cobre` : `bit de dados; ${pos} = ${[1, 2, 4, 8, 16, 32].filter(p => pos & p).join(' + ')}` }, h('div', { class: 'v' }, String(b)), h('div', { class: 'p' }, String(pos)));
+        el.addEventListener('click', () => { hmFlip.has(pos) ? hmFlip.delete(pos) : hmFlip.add(pos); drawHM(); });
+        if (isPow2(pos)) { el.addEventListener('mouseenter', () => { hover = pos; drawHM(); }); el.addEventListener('mouseleave', () => { hover = null; drawHM(); }); }
+        return el;
+      }));
+      const lines = Object.entries(e.coverage).map(([p, list]) => {
+        const par = list.reduce((a, i) => a ^ rx[i - 1], 0);
+        return `<div>p${p} cobre {${list.join(', ')}}: paridade = ${par} ${par ? '<span class="c-red">✗ falhou</span>' : '<span class="c-green">✓</span>'}</div>`;
+      }).join('');
+      const verdict = d.syndrome === 0
+        ? '<b class="c-green">Síndrome 0: nenhum erro detectado.</b>'
+        : d.syndrome <= rx.length
+          ? `<b class="c-orange">Síndrome = ${d.failed.join(' + ')} = ${d.syndrome} → o bit ${d.syndrome} é corrigido (contorno verde).</b> Dados recuperados: <code>${d.data.join('')}</code> ${d.data.join('') === data.join('') ? '<span class="c-green">(corretos)</span>' : '<span class="c-red">(errados! houve mais de 1 erro, e o Hamming "corrige" o bit errado)</span>'}`
+          : `<b class="c-red">Síndrome ${d.syndrome} aponta para fora da palavra: erro múltiplo.</b>`;
+      $('#hm-note').innerHTML = `<div class="c-muted">Palavra transmitida: <code>${hmWord.join('')}</code> (bits de verificação em amarelo nas posições potência de 2)</div>${lines}<div>${verdict}</div>`;
+    }
+    $('#hm-in').addEventListener('input', hmLoad);
+    $$('[data-hm]').forEach(b => b.addEventListener('click', () => { $('#hm-in').value = b.dataset.hm; hmLoad(); }));
+    hmLoad();
+
+    // ---------- CRC ----------
+    let crcTx = [], crcFlip = new Set();
+    function crcLoad() {
+      const M = toBits($('#crc-m').value), G = toBits($('#crc-g').value);
+      if (!M.length || G.length < 2 || G[0] !== 1) { $('#crc-head').textContent = 'O gerador precisa começar com 1 e ter pelo menos 2 bits.'; return; }
+      const res = crc(M, G);
+      crcTx = res.transmitted; crcFlip = new Set();
+      const r = G.length - 1;
+      $('#crc-head').innerHTML = `$G(x) = ${bitsToPoly(G).replace(/\^(\d+)/g, '^{$1}')}$ tem grau $r = ${r}$: acrescentam-se ${r} zeros ao quadro e divide-se por <code>${G.join('')}</code>.`;
+      renderMath($('#crc-head'));
+      // divisão longa alinhada
+      const work = [...M, ...Array(r).fill(0)];
+      const L = work.length;
+      let txt = '';
+      txt += `${G.join('')} ) ${M.join('')}<span class="m">${'0'.repeat(r)}</span>\n`;
+      const pad = ' '.repeat(G.length + 3);
+      res.rows.forEach(row => {
+        const off = pad + ' '.repeat(row.pos);
+        if (row.pos > 0) txt += `${off}${row.before.join('')}\n`;
+        txt += `${off}<span class="${row.quotientBit ? 'g' : 'm'}">${row.sub.join('')}</span>   <span class="m">${row.quotientBit ? '← bit líder 1: XOR com o gerador' : '← bit líder 0: XOR com 0000…'}</span>\n`;
+        txt += `${off}${'-'.repeat(G.length)}\n`;
+      });
+      txt += `${pad}${' '.repeat(L - r)}<span class="r">${res.remainder.join('')}</span>   <span class="m">← resto (os últimos ${r} bits)</span>\n`;
+      txt += `\n<span class="q">quociente = ${res.quotient.join('')}</span> (não é usado)   <span class="r">resto = ${res.remainder.join('')}</span>   transmitido = ${M.join('')}<span class="r">${res.remainder.join('')}</span>`;
+      $('#crc-div').innerHTML = txt;
+      drawCRC();
+    }
+    function drawCRC() {
+      const G = toBits($('#crc-g').value);
+      const rx = crcTx.map((b, i) => (crcFlip.has(i) ? b ^ 1 : b));
+      const M = toBits($('#crc-m').value).length;
+      $('#crc-bits').replaceChildren(...rx.map((b, i) => {
+        const el = h('div', { class: `b ${i >= M ? 'chk' : ''} ${crcFlip.has(i) ? 'flip' : ''}` }, h('div', { class: 'v' }, String(b)), h('div', { class: 'p' }, String(i + 1)));
+        el.addEventListener('click', () => { crcFlip.has(i) ? crcFlip.delete(i) : crcFlip.add(i); drawCRC(); });
+        return el;
+      }));
+      const rem = crcCheck(rx, G);
+      const ok = rem.every(x => x === 0);
+      $('#crc-note').innerHTML = `Resto no receptor: <code>${rem.join('')}</code> → ${ok ? (crcFlip.size ? '<b class="c-red">erro NÃO detectado!</b> O padrão de erro é múltiplo do gerador.' : '<b class="c-green">quadro aceito</b>') : '<b class="c-orange">erro detectado</b> (resto ≠ 0)'}`;
+    }
+    ['#crc-m', '#crc-g'].forEach(s => $(s).addEventListener('input', crcLoad));
+    $$('[data-crc]').forEach(b => b.addEventListener('click', () => { const [m, g] = b.dataset.crc.split(','); $('#crc-m').value = m; $('#crc-g').value = g; crcLoad(); }));
+    crcLoad();
+
+    // ---------- Checksum ----------
+    function drawCS() {
+      const words = $('#cs-in').value.trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return;
+      const w = words[0].length;
+      const vals = words.map(x => parseInt(x.replace(/[^01]/g, '') || '0', 2));
+      const res = internetChecksum(vals, w);
+      const bin = v => v.toString(2).padStart(w, '0');
+      let txt = `palavras de ${w} bits; soma em complemento de 1:\n\n`;
+      let acc = 0;
+      res.steps.forEach((st, i) => {
+        if (i === 0) { txt += `  ${bin(st.add)}\n`; acc = st.sum; return; }
+        const raw = acc + st.add;
+        txt += `+ ${bin(st.add)}\n= ${raw.toString(2).padStart(w, '0')}${st.carry ? `   <span class="m">← vai-um: descarta o bit ${w + 1} e soma 1</span>\n= ${bin(st.sum)}` : ''}\n`;
+        acc = st.sum;
+      });
+      txt += `\nsoma      = ${bin(res.sum)}\n<span class="r">checksum  = ${bin(res.checksum)}</span>   <span class="m">← complemento (inverte todos os bits)</span>\n`;
+      const verify = internetChecksum([...vals, res.checksum], w).sum;
+      txt += `\nreceptor: soma de tudo + checksum = ${bin(verify)} ${verify === 2 ** w - 1 ? '<span class="r">(só 1s: OK)</span>' : ''}`;
+      $('#cs-steps').innerHTML = txt;
+    }
+    $('#cs-in').addEventListener('input', drawCS);
+    $$('[data-cs]').forEach(b => b.addEventListener('click', () => { $('#cs-in').value = b.dataset.cs; drawCS(); }));
+    drawCS();
+
+    // ---------- Paridade 2D ----------
+    const DATA = [[1, 0, 1, 1, 0, 0, 1], [0, 1, 1, 0, 1, 0, 0], [1, 1, 0, 0, 0, 1, 1], [0, 0, 1, 1, 1, 1, 0]];
+    const par = parity2d(DATA);
+    let p2Flip = new Set();
+    function drawP2() {
+      const R = DATA.length, C = DATA[0].length;
+      const rx = DATA.map((row, i) => row.map((b, j) => (p2Flip.has(`${i},${j}`) ? b ^ 1 : b)));
+      const now = parity2d(rx);
+      const badR = now.rowP.map((p, i) => p !== par.rowP[i]);
+      const badC = now.colP.map((p, j) => p !== par.colP[j]);
+      const tbl = $('#p2'); tbl.innerHTML = '';
+      rx.forEach((row, i) => {
+        const tr = h('tr');
+        row.forEach((b, j) => {
+          const td = h('td', { class: p2Flip.has(`${i},${j}`) ? 'flip' : '' }, String(b));
+          td.addEventListener('click', () => { const k = `${i},${j}`; p2Flip.has(k) ? p2Flip.delete(k) : p2Flip.add(k); drawP2(); });
+          tr.append(td);
+        });
+        tr.append(h('td', { class: `par ${badR[i] ? 'fail' : ''}` }, String(par.rowP[i])));
+        tbl.append(tr);
+      });
+      const tr = h('tr');
+      par.colP.forEach((p, j) => tr.append(h('td', { class: `par ${badC[j] ? 'fail' : ''}` }, String(p))));
+      tr.append(h('td', { class: 'par' }, String(par.corner)));
+      tbl.append(tr);
+      const n = p2Flip.size, det = badR.some(Boolean) || badC.some(Boolean);
+      let msg = n === 0 ? 'Sem erros.' : det ? `<span class="c-orange">${n} erro(s): detectado (${badR.filter(Boolean).length} linha(s) e ${badC.filter(Boolean).length} coluna(s) falham).</span>` : `<span class="c-red">${n} erros NÃO detectados!</span>`;
+      if (n === 1 && det) msg += ' <span class="c-green">Com um erro só, o cruzamento da linha e da coluna diz qual bit corrigir.</span>';
+      $('#p2-msg').innerHTML = msg;
+      void R; void C;
+    }
+    $('#p2-reset').addEventListener('click', () => { p2Flip = new Set(); drawP2(); });
+    $('#p2-rect').addEventListener('click', () => { p2Flip = new Set(['0,1', '0,4', '2,1', '2,4']); drawP2(); });
+    drawP2();
+
+    // ---------- exercícios ----------
+    const rb = n => Array.from({ length: n }, () => randInt(0, 1));
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['crc', 'r', 'syn', 'cs']);
+        if (kind === 'crc') {
+          const G = pick([[1, 0, 0, 1], [1, 0, 1, 1], [1, 1, 0, 1], [1, 0, 0, 1, 1]]);
+          const M = [1, ...rb(randInt(6, 9))];
+          const rem = crc(M, G).remainder.join('');
+          return { q: `Quadro <code>${M.join('')}</code>, gerador <code>${G.join('')}</code>. Qual o resto do CRC?`, input: true, answer: rem, check: v => v.replace(/\s/g, '') === rem, explain: `Acrescente ${G.length - 1} zeros e divida módulo 2; o quadro transmitido é <code>${crc(M, G).transmitted.join('')}</code>.` };
+        }
+        if (kind === 'r') {
+          const m = pick([4, 7, 8, 11, 16, 26, 32, 57, 64, 100, 1000]);
+          const r = hammingCheckBits(m);
+          return { q: `Quantos bits de verificação o Hamming precisa para corrigir erros simples em ${m} bits de dados?`, input: true, answer: String(r), explain: `Menor $r$ com $${m} + r + 1 \\le 2^r$: $${m} + ${r} + 1 = ${m + r + 1} \\le ${2 ** r}$.` };
+        }
+        if (kind === 'syn') {
+          const data = rb(pick([4, 7, 8]));
+          const w = hammingEncode(data).word;
+          const pos = randInt(1, w.length);
+          const rx = w.map((b, i) => (i === pos - 1 ? b ^ 1 : b));
+          return { q: `Chega a palavra de Hamming (paridade par) <code>${rx.join('')}</code> com no máximo 1 erro. Qual a posição do bit errado (numerando da esquerda a partir de 1)?`, input: true, answer: String(pos), explain: `As verificações que falham somam ${hammingDecode(rx).failed.join(' + ')} = ${pos}.` };
+        }
+        const words = Array.from({ length: 4 }, () => randInt(0, 15));
+        const c = internetChecksum(words, 4).checksum.toString(2).padStart(4, '0');
+        return { q: `Checksum da Internet com palavras de 4 bits: <code>${words.map(x => x.toString(2).padStart(4, '0')).join(' ')}</code>?`, input: true, answer: c, check: v => v.replace(/\s/g, '') === c, explain: 'Some em complemento de 1 (o vai-um volta para o bit menos significativo) e inverta o resultado.' };
+      },
+    });
+  </script>
+</body>
+</html>

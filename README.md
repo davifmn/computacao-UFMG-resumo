@@ -80,9 +80,15 @@ python3 -m http.server 8000     # ou: npx serve
 | [Cálculo Diferencial e Integral II](periodo-03/calculo-diferencial-e-integral-2/) · MAT039 | Taylor · Superfícies 3D · Descida do gradiente | Python |
 | [Probabilidade](periodo-03/probabilidade/) · EST032 | Distribuições · TCL e Galton · Bayes e Monty Hall | Python |
 
+### 7º período
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Redes de Computadores · Módulo 1](periodo-07/redes-de-computadores/modulo-1/) · DCC023 | **Tutoriais:** caps. 1–4 do Tanenbaum com exercícios resolvidos · Revisão da prova 1 com simulado · Encapsulamento · Nyquist/Shannon · Codificação · CDMA · Circuitos × pacotes · Enquadramento · Hamming/CRC · Janela deslizante · ALOHA/CSMA · Ethernet/Wi-Fi · Pontes | Python |
+
 ### Próximos períodos
 
-Os períodos 4 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+Os períodos 4 a 6, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
 "em construção" no site. Ideias já planejadas: grafos, BFS/DFS e Dijkstra (Algoritmos I), autômatos (FTC), escalonamento de processos (SO)...
 
 ## Estrutura do repositório

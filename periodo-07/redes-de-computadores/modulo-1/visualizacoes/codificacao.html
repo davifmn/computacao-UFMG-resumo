@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codificação e Modulação · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .prose table.data td, .prose table.data th { white-space: normal; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Codificação e modulação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 2 (seção 2.5)</div>
+    <h1>Transformando bits em sinais</h1>
+    <p class="lead">Na <b>banda base</b>, os bits viram níveis de tensão diretamente (<b>códigos de linha</b>). Na <b>banda passante</b>, eles modulam uma portadora senoidal, em amplitude, frequência ou fase (<b>modulação digital</b>). Digite os bits e compare as formas de onda (Figs. 2-20 e 2-21 do livro).</p>
+
+    <div class="toolbar">
+      <label>Bits <input id="bits" type="text" value="0100101110" size="24" style="font-family:var(--mono)"></label>
+      <div class="chips" id="presets"><button class="btn small">0000000000</button><button class="btn small">1111111111</button><button class="btn small">0001110101</button></div>
+    </div>
+    <div class="stage"><svg id="codes" aria-label="Códigos de linha"></svg></div>
+
+    <section class="prose">
+      <h2>Comparação dos códigos de linha</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Código</th><th>Regra</th><th>Banda mínima para B bps</th><th>Recuperação de relógio</th><th>Equilíbrio (sem DC)</th></tr>
+          <tr><td>NRZ</td><td>1 = alto, 0 = baixo</td><td>B/2</td><td>ruim (sequências longas iguais)</td><td>não</td></tr>
+          <tr><td>NRZI</td><td>1 = transição, 0 = sem transição</td><td>B/2</td><td>resolve os 1s, não os 0s</td><td>não</td></tr>
+          <tr><td>Manchester</td><td>XOR com o relógio: 0 = baixo→alto, 1 = alto→baixo*</td><td>B (dobro!)</td><td>ótima (transição no meio de todo bit)</td><td>sim</td></tr>
+          <tr><td>Bipolar (AMI)</td><td>0 = 0 V, 1 = alterna +/−</td><td>B/2</td><td>ruim com muitos 0s</td><td>sim</td></tr>
+          <tr><td>4B/5B + NRZI</td><td>4 bits viram 5 (nunca mais de 3 zeros seguidos)</td><td>B · 5/8</td><td>boa</td><td>parcial</td></tr>
+          <tr><td>MLT-3</td><td>1 = avança no ciclo 0, +1, 0, −1</td><td>B/4</td><td>usa 4B/5B junto</td><td>—</td></tr>
+        </table>
+      </div>
+      <p class="c-muted" style="font-size:14px">* Convenção do livro (Fig. 2-20). O padrão IEEE 802.3 usa a oposta; na prova, siga a do enunciado. O preset 0001110101 é o problema 4.14.</p>
+      <p>O problema dos códigos simples é a <b>recuperação do relógio</b>: com uma longa sequência de 0s em NRZ, o receptor não sabe quantos bits passaram. O <b>Manchester</b> (Ethernet clássica de 10 Mbps) resolve com uma transição no meio de cada bit, mas precisa do dobro da banda: a taxa de sinalização (<b>baud</b>) é o dobro da taxa de bits. O <b>4B/5B</b> (Fast Ethernet) garante transições com apenas 25% de sobrecarga.</p>
+      <div class="callout"><p><b>Baud × bps:</b> a <b>taxa de símbolos</b> (baud) é o número de mudanças de sinal por segundo. Cada símbolo carrega $\log_2 V$ bits, então bps = baud × $\log_2 V$. Na Ethernet clássica com Manchester, 10 Mbps = 20 Mbaud (problema 4.13).</p></div>
+    </section>
+
+    <h2>Modulação digital e constelações</h2>
+    <div class="toolbar">
+      <div class="chips" id="consts">
+        <button class="btn small" data-c="bpsk">BPSK (1 bit/símbolo)</button>
+        <button class="btn small" data-c="qpsk">QPSK (2)</button>
+        <button class="btn small" data-c="qam16">QAM-16 (4)</button>
+        <button class="btn small" data-c="qam64">QAM-64 (6)</button>
+      </div>
+      <label>Taxa de símbolos (baud) <input id="baud" type="number" value="2400" style="width:90px"></label>
+    </div>
+    <div class="lab">
+      <div class="stage"><svg id="mod" aria-label="Formas de onda moduladas"></svg></div>
+      <div class="panel"><div class="panel-title">Constelação</div><svg id="const" aria-label="Diagrama de constelação" style="display:block;width:100%"></svg><div class="readout" id="const-info"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>ASK, FSK, PSK e QAM</h2>
+      <ul>
+        <li><b>ASK</b> (chaveamento por amplitude): amplitudes diferentes para 0 e 1.</li>
+        <li><b>FSK</b> (por frequência): frequências diferentes.</li>
+        <li><b>PSK</b> (por fase): desloca a fase da portadora. BPSK usa 2 fases (0° e 180°); QPSK usa 4 (2 bits por símbolo).</li>
+        <li><b>QAM</b>: combina amplitude <b>e</b> fase. Cada ponto da constelação é um símbolo: QAM-16 leva 4 bits por símbolo e QAM-64 leva 6. Os pontos vizinhos diferem em um bit só (<b>código de Gray</b>): um erro pequeno de leitura corrompe um bit só.</li>
+      </ul>
+      <p>Mais pontos significam mais bits por símbolo, mas pontos mais próximos e, portanto, mais sensíveis a ruído. É o equilíbrio entre Nyquist ($\log_2 V$ bits por símbolo) e Shannon (o ruído limita quantos níveis dá para distinguir). Problema 2.22: uma constelação com os pontos (1,1), (1,−1), (−1,1), (−1,−1) tem 4 símbolos, então 2 bits por símbolo, e a 1200 baud atinge <b>2400 bps</b>.</p>
+      <p>Volte ao <a href="../tutoriais/cap2-camada-fisica.html">capítulo 2</a>.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { $, $$, fmt } from '../../../../engine/page.js';
+    import { lineCode, encode4b5b, constellation } from './redes.js';
+
+    const W = 900;
+    const CODES = [['nrz', 'NRZ'], ['nrzi', 'NRZI'], ['manchester', 'Manchester'], ['ami', 'Bipolar (AMI)'], ['mlt3', 'MLT-3']];
+    const cs = new Scene($('#codes'), { width: W, height: 110 + CODES.length * 80 + 70 });
+    cs.setAnimated(false);
+
+    function drawCodes() {
+      const bits = $('#bits').value.replace(/[^01]/g, '').slice(0, 24).split('').map(Number);
+      if (!bits.length) return;
+      const X0 = 150, X1 = W - 20, bw = (X1 - X0) / bits.length;
+      const wave = (levels, y, amp) => {
+        let d = '';
+        levels.forEach((lv, i) => {
+          const x0 = X0 + (i * bw) / 2, x1 = x0 + bw / 2, yy = y - lv * amp;
+          d += `${i ? 'L' : 'M'} ${x0.toFixed(1)} ${yy.toFixed(1)} L ${x1.toFixed(1)} ${yy.toFixed(1)} `;
+        });
+        return d;
+      };
+      cs.frame(s => {
+        bits.forEach((b, i) => {
+          s.text(`b${i}`, b, { x: X0 + (i + 0.5) * bw, y: 20, size: 15, weight: 700, mono: true, fill: COLORS.yellow });
+          s.line(`g${i}`, X0 + i * bw, 32, X0 + i * bw, 100 + CODES.length * 80, { stroke: COLORS.border, sw: 1, dash: '2 5', layer: 'bg' });
+        });
+        // relógio
+        const clk = bits.flatMap(() => [-1, 1]);   // relógio: baixo→alto em cada bit (Fig. 2-20)
+        s.text('clk-l', 'Relógio', { x: X0 - 12, y: 60, size: 13, anchor: 'end', fill: COLORS.muted });
+        s.path('clk', wave(clk, 60, 16), { stroke: COLORS.muted, sw: 1.5 });
+        CODES.forEach(([k, name], j) => {
+          const y = 130 + j * 80;
+          s.text(`cl-${k}`, name, { x: X0 - 12, y, size: 13, anchor: 'end', weight: 600, fill: COLORS.text });
+          s.line(`z-${k}`, X0, y, X1, y, { stroke: COLORS.border, sw: 1, dash: '3 4', layer: 'bg' });
+          s.path(`w-${k}`, wave(lineCode(bits, k), y, 22), { stroke: [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.pink, COLORS.purple][j], sw: 2.5 });
+        });
+        // 4B/5B
+        const y5 = 130 + CODES.length * 80;
+        const five = encode4b5b(bits);
+        s.text('fb-l', `4B/5B: ${five.join('')}`, { x: X0, y: y5, size: 13, anchor: 'start', mono: true, fill: COLORS.teal });
+      });
+    }
+    $('#bits').addEventListener('input', drawCodes);
+    $$('#presets button').forEach(b => b.addEventListener('click', () => { $('#bits').value = b.textContent; drawCodes(); }));
+    drawCodes();
+
+    // ---------- Modulação ----------
+    const ms = new Scene($('#mod'), { width: W, height: 380 });
+    ms.setAnimated(false);
+    const cst = new Scene($('#const'), { width: 320, height: 320 });
+    cst.setAnimated(false);
+    let kind = 'qpsk';
+    function drawMod() {
+      const bits = $('#bits').value.replace(/[^01]/g, '').slice(0, 12).split('').map(Number);
+      const X0 = 90, X1 = W - 20, bw = (X1 - X0) / Math.max(1, bits.length), cyc = 2;
+      const rows = [
+        ['ASK', (b, t) => (b ? 1 : 0.25) * Math.sin(2 * Math.PI * cyc * t)],
+        ['FSK', (b, t) => Math.sin(2 * Math.PI * (b ? 2 * cyc : cyc) * t)],
+        ['PSK', (b, t) => Math.sin(2 * Math.PI * cyc * t + (b ? Math.PI : 0))],
+      ];
+      ms.frame(s => {
+        bits.forEach((b, i) => {
+          s.text(`mb${i}`, b, { x: X0 + (i + 0.5) * bw, y: 20, size: 15, weight: 700, mono: true, fill: COLORS.yellow });
+          s.line(`mg${i}`, X0 + i * bw, 32, X0 + i * bw, 370, { stroke: COLORS.border, sw: 1, dash: '2 5', layer: 'bg' });
+        });
+        rows.forEach(([name, f], j) => {
+          const y = 90 + j * 110;
+          s.text(`ml${j}`, name, { x: X0 - 12, y, size: 14, anchor: 'end', weight: 700 });
+          let d = '';
+          bits.forEach((b, i) => { for (let k = 0; k <= 40; k++) { const t = k / 40; d += `${i || k ? 'L' : 'M'} ${(X0 + (i + t) * bw).toFixed(1)} ${(y - 36 * f(b, t)).toFixed(1)} `; } });
+          s.path(`mw${j}`, d, { stroke: [COLORS.blue, COLORS.green, COLORS.pink][j], sw: 2 });
+        });
+      });
+      const pts = constellation(kind);
+      const m = Math.max(...pts.map(p => Math.abs(p.x)), 1) + 1;
+      const C = v => 160 + (v / m) * 140;
+      cst.frame(s => {
+        s.line('cx', 10, 160, 310, 160, { stroke: COLORS.border, sw: 1 });
+        s.line('cy', 160, 10, 160, 310, { stroke: COLORS.border, sw: 1 });
+        pts.forEach((p, i) => {
+          s.circle(`p${i}`, { x: C(p.x), y: C(-p.y), r: pts.length > 16 ? 4 : 6, fill: COLORS.yellow, stroke: 'none' });
+          if (pts.length <= 16) s.text(`pl${i}`, p.bits, { x: C(p.x), y: C(-p.y) - 13, size: 11, mono: true, fill: COLORS.muted });
+        });
+      });
+      const k = Math.log2(pts.length), baud = +$('#baud').value;
+      $('#const-info').innerHTML = `<div>${pts.length} símbolos → <b>${k} bit(s)</b> por símbolo</div><div>${fmt(baud, 0)} baud × ${k} = <b>${fmt(baud * k, 0)} bps</b></div>`;
+    }
+    $$('#consts [data-c]').forEach(b => b.addEventListener('click', () => { kind = b.dataset.c; $$('#consts [data-c]').forEach(x => x.setAttribute('aria-pressed', x === b)); drawMod(); }));
+    $('#consts [data-c=qpsk]').setAttribute('aria-pressed', 'true');
+    $('#baud').addEventListener('input', drawMod);
+    $('#bits').addEventListener('input', drawMod);
+    drawMod();
+  </script>
+</body>
+</html>
