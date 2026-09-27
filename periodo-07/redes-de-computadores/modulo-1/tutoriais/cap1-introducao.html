@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 1 Introdução · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Cap. 1 · Introdução</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 1 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 1</div>
+    <h1>Capítulo 1 — Introdução</h1>
+    <p class="lead">O vocabulário e a organização de todo o resto do livro: para que servem as redes, como são classificadas, como o software de rede é organizado em <b>camadas</b> e os dois modelos de referência, <b>OSI</b> e <b>TCP/IP</b>.</p>
+    <nav class="chapnav"><a href="cap2-camada-fisica.html">Cap. 2 →</a><a href="revisao-prova-1.html">Revisão da prova 1</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>1.1 Usos das redes de computadores</h2>
+        <p>Uma <b>rede de computadores</b> é um conjunto de computadores autônomos interconectados por uma única tecnologia. Um <b>sistema distribuído</b> é diferente: é um software (o <i>middleware</i>) que faz um conjunto de computadores independentes parecer, para o usuário, um sistema único e coerente. O sistema distribuído roda <b>sobre</b> uma rede.</p>
+        <h3>Aplicações comerciais</h3>
+        <ul>
+          <li><b>Compartilhamento de recursos</b>: impressoras, dados e programas disponíveis para todos, independentemente da localização física.</li>
+          <li><b>Modelo cliente-servidor</b>: os dados ficam em <b>servidores</b> e os usuários os acessam por máquinas <b>clientes</b>. O cliente envia uma requisição, o servidor processa e devolve uma resposta. É o modelo da Web.</li>
+          <li><b>Comunicação</b>: e-mail, VoIP (telefonia pela Internet), videoconferência e documentos compartilhados.</li>
+          <li><b>Comércio eletrônico</b> (e-commerce): empresas vendendo e se relacionando com clientes e fornecedores pela rede.</li>
+        </ul>
+        <h3>Aplicações domésticas</h3>
+        <ul>
+          <li>Acesso a informação remota: a Web, notícias, bibliotecas digitais.</li>
+          <li><b>Peer-to-peer (P2P)</b>: não há distinção fixa entre clientes e servidores, e cada participante (par) pode fazer os dois papéis (ex.: BitTorrent).</li>
+          <li>Comunicação pessoa a pessoa: mensagens instantâneas, redes sociais, wikis.</li>
+          <li>Entretenimento (streaming, jogos) e <b>computação ubíqua</b> (dispositivos embarcados, medidores inteligentes, "Internet das coisas").</li>
+        </ul>
+        <h3>Usuários móveis</h3>
+        <p>Notebooks e celulares acessam a rede sem fio. Atenção à distinção: <b>sem fio</b> (wireless) e <b>móvel</b> são coisas diferentes. Um desktop numa rede Wi-Fi é sem fio mas não é móvel; um notebook ligado por cabo num hotel é móvel mas não é sem fio. Aplicações móveis típicas: pagamentos (NFC), localização (GPS) e redes de sensores.</p>
+        <h3>Questões sociais</h3>
+        <p><b>Neutralidade da rede</b> (tratar todo tráfego igualmente), direitos autorais (compartilhamento P2P, notificações do DMCA), <b>privacidade</b> (cookies, localização, vigilância), anonimato e desinformação.</p>
+
+        <h2>1.2 Hardware de rede</h2>
+        <p>Não existe uma taxonomia única, mas duas dimensões se destacam: a <b>tecnologia de transmissão</b> e a <b>escala</b>.</p>
+        <h3>Tecnologia de transmissão</h3>
+        <ul>
+          <li><b>Enlaces de difusão (broadcast)</b>: um único canal compartilhado; um pacote enviado por uma máquina é recebido por todas, e cada uma olha o campo de endereço para saber se é para ela. É possível enviar para todos (<b>broadcasting</b>) ou para um grupo (<b>multicasting</b>).</li>
+          <li><b>Enlaces ponto a ponto</b>: conectam pares de máquinas; um pacote pode passar por várias máquinas intermediárias. Com um único emissor e um único receptor, chama-se <b>unicasting</b>.</li>
+          <li>Regra geral: redes pequenas e geograficamente localizadas tendem a usar difusão; redes maiores, ponto a ponto.</li>
+        </ul>
+        <div class="figure">
+          <table class="data">
+            <tr><th>Distância entre processadores</th><th>Processadores localizados em</th><th>Exemplo</th></tr>
+            <tr><td>1 m</td><td>metro quadrado</td><td>PAN (rede pessoal)</td></tr>
+            <tr><td>10 m – 1 km</td><td>sala, prédio, campus</td><td>LAN (rede local)</td></tr>
+            <tr><td>10 km</td><td>cidade</td><td>MAN (rede metropolitana)</td></tr>
+            <tr><td>100 – 1000 km</td><td>país, continente</td><td>WAN (rede de longa distância)</td></tr>
+            <tr><td>10 000 km</td><td>planeta</td><td>a Internet</td></tr>
+          </table>
+          <div class="cap">Classificação por escala (adaptada da Fig. 1-6 do livro).</div>
+        </div>
+        <h3>PAN, LAN, MAN e WAN</h3>
+        <ul>
+          <li><b>PAN</b> (<i>Personal Area Network</i>): dispositivos em torno de uma pessoa, como fone e mouse <b>Bluetooth</b> (arquitetura mestre-escravo) ou RFID.</li>
+          <li><b>LAN</b> (<i>Local Area Network</i>): rede privada num prédio ou campus. Sem fio: <b>IEEE 802.11 (Wi-Fi)</b>, com um <b>ponto de acesso (AP)</b>. Cabeada: <b>Ethernet (IEEE 802.3)</b>, hoje comutada: cada computador liga-se a uma porta de um <b>switch</b>. Taxas de 100 Mbps a 10 Gbps, pouco atraso e poucos erros. Uma LAN pode ser dividida logicamente em <b>VLANs</b>. A alocação do canal pode ser <b>estática</b> (fatias fixas de tempo) ou <b>dinâmica</b> (centralizada ou descentralizada).</li>
+          <li><b>MAN</b> (<i>Metropolitan Area Network</i>): cobre uma cidade, como as redes de TV a cabo e o WiMAX (802.16).</li>
+          <li><b>WAN</b> (<i>Wide Area Network</i>): país ou continente. Os computadores que rodam os programas dos usuários são os <b>hosts</b>. A <b>sub-rede</b> (<i>subnet</i>) é formada pelas <b>linhas de transmissão</b> e pelos <b>elementos de comutação</b> (<b>roteadores</b>), e a operadora é um <b>ISP</b>. O algoritmo que escolhe o caminho é o <b>algoritmo de roteamento</b>; a decisão local de para onde mandar cada pacote é o <b>encaminhamento</b> (<i>forwarding</i>). Variações: <b>VPN</b> (enlaces virtuais sobre a Internet) e WANs via satélite ou celular.</li>
+        </ul>
+        <h3>Inter-redes (internetworks)</h3>
+        <p>Uma coleção de redes interconectadas é uma <b>inter-rede</b> (<i>internet</i> com minúscula). A <b>Internet</b> é a inter-rede mundial específica. O dispositivo que conecta redes diferentes, fazendo a tradução necessária, é chamado genericamente de <b>gateway</b>. Como a conversão costuma ser feita na camada de rede, o gateway típico é um <b>roteador</b>. Cuidado com os termos: "sub-rede" (roteadores + linhas de uma WAN) é diferente de "rede" (sub-rede + hosts) e de "inter-rede" (várias redes).</p>
+
+        <h2>1.3 Software de rede</h2>
+        <h3>1.3.1 Hierarquias de protocolos</h3>
+        <p>Para reduzir a complexidade, as redes são organizadas como uma pilha de <b>camadas</b>, cada uma construída sobre a anterior. A camada $n$ de uma máquina "conversa" com a camada $n$ da outra máquina, chamada <b>camada par</b> (<i>peer</i>). As regras dessa conversa formam o <b>protocolo</b> da camada $n$.</p>
+        <ul>
+          <li>Na verdade, nenhum dado passa diretamente da camada $n$ de uma máquina para a de outra: cada camada passa dados e controle para a de <b>baixo</b>, até o <b>meio físico</b>, onde ocorre a comunicação real.</li>
+          <li>Entre camadas adjacentes há uma <b>interface</b>, que define as operações e os serviços que a camada de baixo oferece à de cima. Interfaces limpas permitem trocar a implementação de uma camada sem afetar as outras.</li>
+          <li>O conjunto de camadas e protocolos é a <b>arquitetura de rede</b>. A lista de protocolos usados por um sistema, um por camada, é a <b>pilha de protocolos</b>.</li>
+          <li>A analogia do livro: dois <b>filósofos</b> (camada 3), um que fala urdu e outro chinês, conversam por meio de <b>tradutores</b> (camada 2) que combinam uma língua neutra (holandês, depois trocada por inglês sem afetar os filósofos) e de <b>secretárias</b> (camada 1) que escolhem o meio (e-mail, fax…).</li>
+        </ul>
+        <p><b>Encapsulamento</b>: cada camada acrescenta um <b>cabeçalho</b> com informação de controle (endereços, números de sequência, tamanhos) e passa o resultado para baixo. A camada de enlace costuma acrescentar também um <b>trailer</b>. Se a camada de baixo impõe um tamanho máximo, a mensagem é quebrada em pedaços, cada um com seu cabeçalho. No destino, cada camada retira o seu cabeçalho e passa o resto para cima.</p>
+        <div class="callout tip"><p>▶ <a href="../visualizacoes/encapsulamento.html"><b>Visualização: encapsulamento</b></a>: uma mensagem descendo e subindo as pilhas, atravessando um roteador.</p></div>
+
+        <h3>1.3.2 Questões de projeto das camadas</h3>
+        <div class="table-wrap">
+          <table class="data">
+            <tr><th>Questão</th><th>Mecanismos</th></tr>
+            <tr><td><b>Confiabilidade</b></td><td>códigos de detecção e correção de erros; roteamento que desvia de enlaces ou roteadores com defeito</td></tr>
+            <tr><td><b>Evolução</b></td><td>protocolos em camadas; <b>endereçamento</b> (identificar emissor e receptor); <b>internetworking</b> (redes diferentes); <b>escalabilidade</b> (funcionar bem quando a rede cresce)</td></tr>
+            <tr><td><b>Alocação de recursos</b></td><td><b>multiplexação</b> estatística (compartilhar a capacidade conforme a demanda); <b>controle de fluxo</b> (não afogar um receptor lento); <b>controle de congestionamento</b> (não sobrecarregar a rede); <b>qualidade de serviço</b> (QoS: garantias para tráfego em tempo real)</td></tr>
+            <tr><td><b>Segurança</b></td><td>confidencialidade, autenticação e integridade contra ameaças como a escuta e a alteração de mensagens</td></tr>
+          </table>
+        </div>
+
+        <h3>1.3.3 Serviços orientados a conexão × sem conexão</h3>
+        <ul>
+          <li><b>Orientado a conexão</b>: modelado no sistema telefônico. Estabelece a conexão, usa e libera. Funciona como um tubo: os bits saem na ordem em que entraram. Às vezes há <b>negociação</b> de parâmetros (tamanho máximo de mensagem, qualidade de serviço).</li>
+          <li><b>Sem conexão</b>: modelado no sistema postal. Cada mensagem carrega o endereço completo e é roteada independentemente, podendo chegar fora de ordem. Um serviço sem conexão não confiável é um <b>serviço de datagramas</b> (como um telegrama, sem confirmação).</li>
+          <li><b>Confiável</b> significa que nunca perde dados, normalmente usando <b>confirmações</b> (acknowledgements), o que custa atraso e sobrecarga.</li>
+          <li>Confiável e orientado a conexão ainda se divide em <b>sequência de mensagens</b> (os limites entre mensagens são preservados, ex.: páginas de um livro) e <b>fluxo de bytes</b> (<i>byte stream</i>, sem limites: dois envios de 1024 bytes podem ser lidos como um bloco de 2048). O TCP é um fluxo de bytes.</li>
+          <li>Outros: <b>datagrama com confirmação</b> (carta registrada) e <b>requisição-resposta</b> (cliente-servidor).</li>
+        </ul>
+        <div class="table-wrap">
+          <table class="data">
+            <tr><th></th><th>Serviço</th><th>Exemplo</th></tr>
+            <tr><td rowspan="3">Orientado a conexão</td><td>Fluxo de mensagens confiável</td><td>sequência de páginas</td></tr>
+            <tr><td>Fluxo de bytes confiável</td><td>download de um filme</td></tr>
+            <tr><td>Conexão não confiável</td><td>voz sobre IP</td></tr>
+            <tr><td rowspan="3">Sem conexão</td><td>Datagrama não confiável</td><td>lixo eletrônico (spam)</td></tr>
+            <tr><td>Datagrama com confirmação</td><td>carta registrada</td></tr>
+            <tr><td>Requisição-resposta</td><td>consulta a banco de dados</td></tr>
+          </table>
+        </div>
+        <p>Por que alguém escolheria um serviço não confiável? Porque, para voz e vídeo, é melhor um pequeno ruído ocasional do que o atraso de esperar retransmissões. E muitas aplicações não precisam de ordem.</p>
+
+        <h3>1.3.4 Primitivas de serviço</h3>
+        <p>Um serviço é especificado por um conjunto de <b>primitivas</b> (operações) disponíveis para o usuário, como as chamadas de sistema da interface de sockets. Para um serviço orientado a conexão simples (Fig. 1-17): <code>LISTEN</code> (espera uma conexão), <code>CONNECT</code> (estabelece a conexão), <code>ACCEPT</code> (aceita a conexão), <code>RECEIVE</code> (bloqueia até chegar uma mensagem), <code>SEND</code> (envia) e <code>DISCONNECT</code> (encerra). Uma interação cliente-servidor típica troca 6 pacotes: requisição de conexão, aceitação, requisição, resposta, desconexão e desconexão (Fig. 1-18). Por que não um protocolo sem conexão de 2 pacotes? Porque sem confirmações não há como lidar com perdas, mensagens duplicadas ou grandes demais.</p>
+
+        <h3>1.3.5 Serviços × protocolos</h3>
+        <div class="callout"><p><b>Serviço</b> é o conjunto de operações que uma camada oferece à camada de <b>cima</b> (a interface vertical: <i>o quê</i>). <b>Protocolo</b> é o conjunto de regras que governa o formato e o significado das mensagens trocadas entre entidades <b>pares</b> (horizontal: <i>como</i>). A camada pode trocar de protocolo à vontade, desde que não mude o serviço visível aos usuários. Analogia do livro: serviço = tipo abstrato de dados (as operações); protocolo = a implementação.</p></div>
+
+        <h2>1.4 Modelos de referência</h2>
+        <h3>1.4.1 O modelo OSI (7 camadas)</h3>
+        <p>Proposta da ISO (<i>Open Systems Interconnection</i>). Princípios: cada camada deve ter uma função bem definida, com fronteiras escolhidas para minimizar o fluxo de informação pelas interfaces, e o número de camadas deve ser grande o suficiente para não misturar funções e pequeno o suficiente para não ficar pesado.</p>
+        <div class="table-wrap">
+          <table class="data">
+            <tr><th>Camada</th><th>Função</th></tr>
+            <tr><td>7 Aplicação</td><td>protocolos usados diretamente pelos usuários (HTTP, transferência de arquivos, e-mail)</td></tr>
+            <tr><td>6 Apresentação</td><td>sintaxe e semântica da informação: estruturas de dados abstratas, codificação</td></tr>
+            <tr><td>5 Sessão</td><td>controle de diálogo (de quem é a vez), gerenciamento de tokens, sincronização (pontos de verificação)</td></tr>
+            <tr><td>4 Transporte</td><td>primeira camada <b>fim a fim</b>: divide em unidades menores, entrega na ordem, isola as camadas superiores da tecnologia</td></tr>
+            <tr><td>3 Rede</td><td>roteamento dos pacotes da origem ao destino, congestionamento, QoS, interconexão de redes heterogêneas</td></tr>
+            <tr><td>2 Enlace de dados</td><td>transforma o meio bruto numa linha livre de erros não detectados: quadros, confirmações, controle de fluxo; a subcamada MAC controla o acesso ao canal compartilhado</td></tr>
+            <tr><td>1 Física</td><td>transmissão de bits brutos: tensões, duração do bit, conectores, se é full-duplex</td></tr>
+          </table>
+        </div>
+        <p>Macete para decorar de baixo para cima: <b>F</b>ísica, <b>E</b>nlace, <b>R</b>ede, <b>T</b>ransporte, <b>S</b>essão, <b>A</b>presentação, <b>A</b>plicação.</p>
+        <h3>1.4.2 O modelo TCP/IP</h3>
+        <ul>
+          <li><b>Enlace</b>: descreve o que os enlaces precisam fazer para atender à camada de rede sem conexão. É mais uma interface entre hosts e enlaces do que uma camada propriamente dita.</li>
+          <li><b>Internet</b> (rede): o eixo da arquitetura. Um serviço de pacotes <b>sem conexão</b>: pacotes injetados em qualquer rede viajam independentemente até o destino, possivelmente fora de ordem. Protocolo oficial: <b>IP</b>, com o auxiliar <b>ICMP</b>.</li>
+          <li><b>Transporte</b>: <b>TCP</b> (confiável, orientado a conexão, fluxo de bytes, com controle de fluxo) e <b>UDP</b> (não confiável, sem conexão, para quem quer controle próprio ou rapidez: consultas únicas, voz e vídeo).</li>
+          <li><b>Aplicação</b>: não há sessão nem apresentação. Contém HTTP, SMTP, DNS, RTP etc.</li>
+        </ul>
+        <div class="callout"><p><b>O modelo usado no livro (1.4.3)</b> é híbrido, com <b>5 camadas</b>: física, enlace, rede, transporte e aplicação. Ele pega o modelo do OSI (sem sessão e apresentação) e dá mais atenção aos protocolos do TCP/IP. <b>Os capítulos 2 a 7 do livro seguem essas camadas de baixo para cima</b>, e o 8 trata de segurança.</p></div>
+        <h3>1.4.4 a 1.4.6 Comparação e críticas</h3>
+        <ul>
+          <li><b>OSI</b>: deixou explícitas as distinções entre <b>serviço, interface e protocolo</b>, e os protocolos ficam mais bem escondidos. Mas o <b>modelo veio antes dos protocolos</b>, e por isso não se encaixou bem na prática. Sem conexão × orientado a conexão: o OSI suporta os dois na camada de rede mas só orientado a conexão no transporte; o TCP/IP tem só sem conexão na rede e os dois no transporte.</li>
+          <li><b>Por que o OSI não pegou</b>: mau momento (chegou depois do TCP/IP já estar difundido nas universidades), má tecnologia (as camadas de sessão e apresentação quase vazias, enquanto enlace e rede ficaram sobrecarregadas; complexo demais), más implementações (lentas) e má política (visto como imposição de governos e operadoras).</li>
+          <li><b>Críticas ao TCP/IP</b>: não separa bem serviço, interface e protocolo; não é um modelo genérico (não serve para descrever outras pilhas); a "camada de enlace" não é uma camada de verdade, é uma interface; não distingue camada física de enlace; e alguns protocolos foram feitos às pressas e ficaram entrincheirados.</li>
+        </ul>
+        <div class="callout tip"><p><b>Resumo do livro:</b> o <i>modelo</i> OSI é muito útil para discutir redes, mas seus <i>protocolos</i> não pegaram. Com o TCP/IP é o contrário: o modelo é praticamente inexistente, mas os protocolos são muito usados.</p></div>
+
+        <h2>1.5 Redes de exemplo</h2>
+        <h3>A Internet</h3>
+        <ul>
+          <li><b>ARPANET</b> (fim dos anos 60): financiada pelo Departamento de Defesa dos EUA, projetada para <b>sobreviver</b> à perda de nós (comutação de pacotes, em vez da hierarquia frágil do sistema telefônico). Os computadores de comutação eram os <b>IMPs</b>. A pilha TCP/IP foi criada para interligar redes diferentes (Cerf e Kahn, 1974) e adotada oficialmente em 1983.</li>
+          <li><b>NSFNET</b> (anos 80): backbone para as universidades, que cresceu até virar a Internet comercial. A Web (Tim Berners-Lee, CERN, 1989) popularizou a rede.</li>
+          <li><b>Arquitetura atual</b>: o usuário se conecta a um <b>ISP</b> por DSL, cabo, fibra (FTTH), celular etc. O tráfego entra pelo <b>POP</b> (<i>Point of Presence</i>) e segue pelo backbone do ISP. ISPs trocam tráfego em <b>IXPs</b> (<i>Internet eXchange Points</i>) por meio de <b>peering</b> ou de trânsito pago. Os maiores ISPs, que não pagam trânsito, são os <b>tier 1</b>. O conteúdo fica em <b>data centers</b> (e em CDNs).</li>
+        </ul>
+        <h3>Redes de telefonia móvel de 3ª geração</h3>
+        <p>UMTS (WCDMA): uma rede de acesso por rádio (RAN) com estações-base (<b>Node B</b>) e controladores, ligada a um núcleo (<b>core network</b>) que, nas gerações mais antigas, era dividido em comutação de circuitos (voz) e de pacotes (dados). Ideias-chave: <b>células</b> para reuso de frequência, <b>handover</b> (troca de célula sem derrubar a chamada), localização do assinante e o <b>SIM card</b> para identificação e segurança. A tendência (4G/LTE) é ser totalmente IP.</p>
+        <h3>LANs sem fio: 802.11</h3>
+        <p>Clientes associados a <b>pontos de acesso</b> (ou em modo ad hoc). Problemas do meio sem fio: <b>desvanecimento por múltiplos caminhos</b> (combatido com diversidade e OFDM), alcance limitado, e uma estação que transmite não consegue detectar colisões. Por isso o 802.11 usa <b>CSMA/CA</b> (evitar colisões), detalhado no capítulo 4. Segurança: WEP (quebrado) e WPA2.</p>
+        <h3>RFID e redes de sensores</h3>
+        <p>Etiquetas RFID passivas, sem bateria, são energizadas pelo leitor e respondem com seu identificador (ex.: EPC, crachás, pedágios). Redes de sensores têm nós com bateria e sensores que se organizam em redes de múltiplos saltos (<i>multihop</i>).</p>
+
+        <h2>1.6 Padronização</h2>
+        <ul>
+          <li><b>Telecomunicações</b>: a <b>ITU</b> (União Internacional de Telecomunicações), com os setores ITU-T (telecomunicações), ITU-R (rádio) e ITU-D (desenvolvimento). Os padrões se chamam "recomendações".</li>
+          <li><b>Padrões internacionais</b>: <b>ISO</b> (padrões de tudo, inclusive o modelo OSI) e o <b>IEEE</b>, que tem o comitê <b>802</b> para LANs e MANs: <b>802.3 Ethernet</b>, <b>802.11 LANs sem fio</b>, 802.15 PANs/Bluetooth, 802.16 WiMAX, 802.1 visão geral e pontes/VLANs.</li>
+          <li><b>Internet</b>: <b>IAB</b> (Internet Architecture Board), <b>IETF</b> (engenharia, grupos de trabalho) e <b>IRTF</b> (pesquisa de longo prazo). Os documentos são os <b>RFCs</b> (<i>Request For Comments</i>), que percorrem as etapas de proposed standard até Internet standard, com o requisito de "consenso aproximado e código rodando". A Web é padronizada pelo <b>W3C</b>.</li>
+        </ul>
+
+        <h2>1.7 Unidades métricas</h2>
+        <div class="callout warn"><p><b>Pegadinha clássica:</b> para <b>taxas de transmissão</b>, os prefixos são potências de <b>10</b>: 1 kbps = $10^3$ bps e 1 Mbps = $10^6$ bps. Para <b>memória e armazenamento</b>, costuma-se usar potências de <b>2</b>: 1 KB = $2^{10}$ = 1024 bytes e 1 MB = $2^{20}$ bytes. Uma linha de 1 Mbps transmite $10^6$ bits/s, e não 1.048.576. Atenção também a bits (b) × bytes (B).</p></div>
+        <p>Prefixos pequenos: mili (m, $10^{-3}$), micro (μ, $10^{-6}$), nano (n, $10^{-9}$), pico (p, $10^{-12}$).</p>
+
+        <h2>Fórmulas e contas que aparecem neste capítulo</h2>
+        <ul>
+          <li><b>Tempo de transmissão</b> (empurrar os bits no enlace): $t_{trans} = \frac{L}{R}$ (tamanho em bits ÷ taxa).</li>
+          <li><b>Tempo de propagação</b> (o bit viajar): $t_{prop} = \frac{d}{v}$. No vácuo, $v = c = 3 \times 10^8$ m/s; em cobre e fibra, cerca de $\frac{2}{3}c = 2 \times 10^8$ m/s (≈ 5 μs/km).</li>
+          <li><b>"Comprimento" de um bit</b> no meio: $\frac{v}{R}$ metros.</li>
+          <li><b>Número médio de transmissões</b> quando cada tentativa falha com probabilidade $p$: $\frac{1}{1-p}$ (distribuição geométrica).</li>
+          <li><b>Sobrecarga de cabeçalhos</b>: $\frac{hn}{M + hn}$.</li>
+        </ul>
+
+        <h2>Problemas do livro resolvidos</h2>
+        <p class="c-muted">Enunciados resumidos dos problemas do final do capítulo 1. Tente resolver antes de abrir a solução!</p>
+        <details class="prob"><summary><b>1.1</b> O cão São Bernardo carrega 3 fitas de 7 GB a 18 km/h. Até que distância ele tem taxa maior que uma linha de 150 Mbps? E se a velocidade dobrar, se a capacidade das fitas dobrar, ou se a taxa da linha dobrar?</summary>
+          <p>Dados: $3 \times 7\text{ GB} = 21 \text{ GB} \approx 21 \times 8 \times 10^9 = 1{,}68 \times 10^{11}$ bits. Para percorrer $x$ km a 18 km/h, o cão leva $\frac{x}{18}$ h $= 200x$ s. A taxa do cão é $\frac{1{,}68 \times 10^{11}}{200x}$ bps, que deve superar $1{,}5 \times 10^{8}$: $\ x &lt; \frac{1{,}68 \times 10^{11}}{200 \times 1{,}5 \times 10^8} = 5{,}6$ km (≈ 6 km se usar 1 GB = $2^{30}$ bytes).</p>
+          <p>(i) Velocidade dobrada: o tempo cai pela metade, então <b>11,2 km</b>. (ii) Capacidade dobrada: <b>11,2 km</b>. (iii) Linha com o dobro da taxa: <b>2,8 km</b>. Moral: "nunca subestime a banda de uma caminhonete cheia de fitas" (mas a latência é horrível).</p>
+        </details>
+        <details class="prob"><summary><b>1.5</b> Chavear um pacote leva 10 μs. Isso pesa num sistema cliente (Nova York) e servidor (Califórnia)?</summary>
+          <p>A distância é de ~4000 km. Com $v = 2 \times 10^8$ m/s, a propagação leva $\frac{4 \times 10^6}{2 \times 10^8} = 20$ ms só de ida. Mesmo com dezenas de roteadores, $10 \times 10\,\mu s = 0{,}1$ ms, o que é desprezível (menos de 1%). O que domina é a velocidade da luz.</p>
+        </details>
+        <details class="prob"><summary><b>1.6</b> Satélite a 40 000 km de altura. Qual o melhor tempo de resposta a uma requisição?</summary>
+          <p>A requisição sobe e desce (80 000 km) e a resposta também (80 000 km): $\frac{160\,000 \times 10^3}{3 \times 10^8} \approx 533$ ms. Esse é o <b>melhor caso</b>, porque ignora transmissão, filas e processamento.</p>
+        </details>
+        <details class="prob"><summary><b>1.8</b> Cinco roteadores; entre cada par pode haver uma linha rápida, média, lenta ou nenhuma. Gerar e inspecionar cada topologia leva 100 ms. Quanto tempo para todas?</summary>
+          <p>São $\binom{5}{2} = 10$ pares, cada um com 4 opções: $4^{10} = 1\,048\,576$ topologias. $\times 0{,}1$ s $\approx 104\,858$ s ≈ <b>29 horas</b>.</p>
+        </details>
+        <details class="prob"><summary><b>1.9</b> Tempo em slots; cada um de $n$ hosts tenta usar o canal com probabilidade $p$ por slot. Que fração dos slots é desperdiçada com colisões?</summary>
+          <p>Um slot é de colisão se <b>dois ou mais</b> transmitem. $P(\text{ninguém}) = (1-p)^n$ e $P(\text{exatamente um}) = np(1-p)^{n-1}$. Logo, a fração com colisão é $1 - (1-p)^n - np(1-p)^{n-1}$. (É a base do ALOHA com slots, no capítulo 4.)</p>
+        </details>
+        <details class="prob"><summary><b>1.10</b> Duas razões para usar protocolos em camadas e uma desvantagem.</summary>
+          <p>Vantagens: (1) divide um problema de projeto enorme em pedaços menores e tratáveis; (2) é possível trocar a implementação (e até o protocolo) de uma camada sem afetar as outras, desde que o serviço não mude. Desvantagem: desempenho, porque cada camada acrescenta cabeçalhos e processamento e esconde informação que poderia ser útil para otimizar (ex.: a camada de transporte não sabe que a perda foi causada por ruído no sem fio).</p>
+        </details>
+        <details class="prob"><summary><b>1.11</b> Presidentes → departamentos jurídicos → engenheiros conversam direto entre si… Que princípio do modelo em camadas é violado?</summary>
+          <p>A comunicação deveria ser <b>entre pares da mesma camada</b> apenas através das camadas de baixo. Quando o engenheiro liga direto para o engenheiro da outra empresa (e os advogados conversam entre si ao lado), camadas de níveis diferentes se comunicam fora da pilha, o que viola a <b>disciplina de camadas</b>.</p>
+        </details>
+        <details class="prob"><summary><b>1.12</b> Fluxo de bytes confiável × fluxo de mensagens confiável: são idênticos?</summary>
+          <p>Não. No fluxo de mensagens, os <b>limites</b> são preservados: se o emissor manda duas mensagens de 1024 bytes, o receptor recebe duas mensagens de 1024. No fluxo de bytes, ele pode receber um bloco de 2048, ou 3 blocos de tamanhos quaisquer: o fluxo é só uma sequência de bytes.</p>
+        </details>
+        <details class="prob"><summary><b>1.15</b> Cada quadro é danificado com probabilidade $p$ (ACKs nunca se perdem). Quantas transmissões são necessárias em média?</summary>
+          <p>Uma transmissão bem-sucedida tem probabilidade $1 - p$, e o número de tentativas segue uma distribuição geométrica: $E = \sum_{k \ge 1} k\,p^{k-1}(1-p) = \frac{1}{1-p}$.</p>
+        </details>
+        <details class="prob"><summary><b>1.16</b> $n$ camadas, cada uma acrescenta $h$ bytes a mensagens de $M$ bytes. Que fração da banda são cabeçalhos?</summary>
+          <p>Cada mensagem vira $M + hn$ bytes no fio, dos quais $hn$ são cabeçalhos: fração $\frac{hn}{M + hn}$.</p>
+        </details>
+        <details class="prob"><summary><b>1.17</b> Diferença principal entre TCP e UDP.</summary>
+          <p>O TCP é orientado a conexão e confiável (entrega em ordem, com retransmissões, controle de fluxo e de congestionamento). O UDP é sem conexão e não confiável: só acrescenta as portas e um checksum ao IP.</p>
+        </details>
+        <details class="prob"><summary><b>1.22</b> Qual o comprimento de um bit no 802.3 original (10 Mbps, coaxial com $v = \frac{2}{3}c$)?</summary>
+          <p>$\frac{v}{R} = \frac{2 \times 10^8}{10^7} = 20$ metros por bit.</p>
+        </details>
+        <details class="prob"><summary><b>1.23</b> Imagem de 1600 × 1200 pixels, 3 bytes/pixel. Tempo de transmissão a 56 kbps, 1 Mbps, 10 Mbps, 100 Mbps e 1 Gbps?</summary>
+          <p>$1600 \times 1200 \times 3 = 5\,760\,000$ bytes $= 46\,080\,000$ bits. 56 kbps → 823 s (~14 min); 1 Mbps → 46 s; 10 Mbps → 4,6 s; 100 Mbps → 0,46 s; 1 Gbps → 46 ms.</p>
+        </details>
+        <details class="prob"><summary><b>1.27 e 1.28</b> Se mudar o algoritmo da camada $k$, o que acontece com $k-1$ e $k+1$? E se mudar o serviço da camada $k$?</summary>
+          <p>Mudar a <b>implementação</b> (algoritmo/protocolo) não afeta nenhuma outra camada, porque o serviço continua o mesmo: essa é a vantagem das camadas. Mudar o <b>serviço</b> oferecido pela camada $k$ afeta a camada $k+1$, que é quem o usa, mas não a $k-1$.</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Um desktop numa rede Wi-Fi é:', options: ['sem fio, mas não móvel', 'móvel, mas não sem fio', 'sem fio e móvel', 'nem sem fio nem móvel'], answer: 0, explain: 'Sem fio (wireless) e móvel são conceitos independentes (seção 1.1.3).' },
+      { q: 'Qual camada do OSI é a primeira verdadeiramente <b>fim a fim</b>?', options: ['Transporte', 'Rede', 'Enlace', 'Sessão'], answer: 0, explain: 'Nas camadas 1–3, cada máquina conversa com a vizinha imediata; a partir da 4, o programa da origem conversa com o do destino.' },
+      { q: 'Qual a diferença entre <b>serviço</b> e <b>protocolo</b>?', options: ['Serviço é o que a camada oferece à de cima; protocolo são as regras entre camadas pares', 'São sinônimos', 'Serviço é entre pares; protocolo é vertical', 'Protocolo é só para camadas baixas'], answer: 0, explain: 'Serviço = interface vertical ("o quê"); protocolo = conversa horizontal entre pares ("como").' },
+      { q: 'O modelo TCP/IP <b>não</b> tem quais camadas do OSI?', options: ['Sessão e apresentação', 'Transporte e rede', 'Enlace e física', 'Aplicação e sessão'], answer: 0, explain: 'Suas funções, quando necessárias, ficam dentro das aplicações.' },
+      { q: 'Uma linha de "1 Mbps" transmite quantos bits por segundo?', options: ['1 000 000', '1 048 576', '8 000 000', '1 024 000'], answer: 0, explain: 'Taxas usam potências de 10 (seção 1.7).' },
+      { q: 'O serviço de "datagrama não confiável" é:', options: ['sem conexão e sem confirmação', 'orientado a conexão e confiável', 'sem conexão e com confirmação', 'orientado a conexão e não confiável'], answer: 0, explain: 'Como um telegrama (ou o IP). Com confirmação seria o "datagrama confirmado", como uma carta registrada.' },
+    ]);
+  </script>
+</body>
+</html>

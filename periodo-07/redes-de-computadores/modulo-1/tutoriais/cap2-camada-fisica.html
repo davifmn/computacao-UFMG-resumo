@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 2 Camada Física · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Cap. 2 · Camada física</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 1 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 2</div>
+    <h1>Capítulo 2 — A camada física</h1>
+    <p class="lead">A base de tudo: os limites teóricos de um canal (Fourier, Nyquist, Shannon), os meios de transmissão guiados e sem fio, como bits viram sinais (codificação de linha e modulação), como vários sinais dividem um meio (FDM, TDM, CDMA) e os grandes sistemas que usam tudo isso: a rede telefônica, a telefonia móvel e a TV a cabo.</p>
+    <nav class="chapnav"><a href="cap1-introducao.html">← Cap. 1</a><a href="cap3-camada-de-enlace.html">Cap. 3 →</a><a href="revisao-prova-1.html">Revisão da prova 1</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>2.1 Base teórica da comunicação de dados</h2>
+        <h3>Análise de Fourier</h3>
+        <p>Informação é transmitida variando alguma propriedade física (tensão, corrente, luz). Fourier mostrou que qualquer função periódica razoável $g(t)$, de período $T$, é uma soma de senoides e cossenoides:</p>
+        <p>$$ g(t) = \frac{1}{2}c + \sum_{n=1}^{\infty} a_n \sin(2\pi n f t) + \sum_{n=1}^{\infty} b_n \cos(2\pi n f t), \qquad f = \frac{1}{T} $$</p>
+        <p>$f$ é a <b>frequência fundamental</b>; $a_n$ e $b_n$ são as amplitudes da $n$-ésima <b>harmônica</b>. Os coeficientes:</p>
+        <p>$$ a_n = \frac{2}{T}\int_0^T g(t)\sin(2\pi n f t)\,dt, \quad b_n = \frac{2}{T}\int_0^T g(t)\cos(2\pi n f t)\,dt, \quad c = \frac{2}{T}\int_0^T g(t)\,dt $$</p>
+        <p>A amplitude rms $\sqrt{a_n^2 + b_n^2}$ mede a energia transmitida naquela frequência.</p>
+        <h3>Sinais limitados pela largura de banda</h3>
+        <p>Nenhum meio transmite todas as frequências sem perdas. A faixa de frequências que passa sem atenuação forte é a <b>largura de banda</b> (em Hz). Ela é propriedade física do meio (construção, espessura, comprimento), e às vezes um filtro a limita de propósito (ex.: 3100 Hz na linha telefônica analógica, 6 MHz num canal de TV).</p>
+        <p>Sinais <b>banda base</b> (baseband) ocupam de 0 até uma frequência máxima (fios); sinais <b>banda passante</b> (passband) são deslocados para uma faixa acima de zero (sem fio).</p>
+        <p>Exemplo do livro: a letra "b" em ASCII (01100010) enviada a $b$ bps leva $8/b$ segundos, então a primeira harmônica tem frequência $b/8$ Hz. Numa linha de voz com corte em ~3000 Hz, o número de harmônicas que passam é $\approx 3000/(b/8) = 24000/b$. A 9600 bps passam só 2 harmônicas e a recepção fica difícil; a 38 400 bps já não passa nenhuma ($24000/38400 &lt; 1$). Limitar a banda limita a taxa, mesmo num canal perfeito.</p>
+        <p class="callout">▶ <a href="../visualizacoes/sinais.html">Visualização: o "b" reconstruído com 1, 2, 4, 8… harmônicas e o efeito do canal telefônico</a></p>
+        <h3>Taxa máxima de um canal</h3>
+        <div class="grid2">
+          <div class="callout"><p><b>Nyquist (canal sem ruído)</b><br>Um sinal de banda $B$ pode ser reconstruído com $2B$ amostras/s. Com $V$ níveis discretos:</p><p>$$ C = 2B\log_2 V \text{ bps} $$</p></div>
+          <div class="callout"><p><b>Shannon (ruído térmico)</b><br>Com relação sinal-ruído $S/N$, para <b>qualquer</b> número de níveis:</p><p>$$ C = B\log_2(1 + S/N) \text{ bps} $$</p></div>
+        </div>
+        <p>A S/N é dada em <b>decibéis</b>: $\text{dB} = 10\log_{10}(S/N)$, logo 10 dB = 10, 20 dB = 100, 30 dB = 1000. Exemplo do livro: ADSL com 1 MHz e S/N de 40 dB nunca passa de ~13 Mbps. Na prática, os limites são o <b>menor</b> entre Nyquist (com o $V$ usado) e Shannon.</p>
+
+        <h2>2.2 Meios de transmissão guiados</h2>
+        <ul>
+          <li><b>Meios magnéticos</b>: fitas e discos transportados fisicamente. A banda é enorme, mas o atraso também ("nunca subestime a banda de uma caminhonete cheia de fitas"; problema 1.1).</li>
+          <li><b>Par trançado</b>: dois fios de cobre isolados e trançados. O trançado faz as ondas dos dois fios se cancelarem, o que reduz a interferência; o sinal é a <b>diferença</b> de tensão entre eles. Serve para quilômetros sem amplificação. Categorias: Cat 3 (telefonia, antigo); <b>Cat 5</b> (4 pares numa capa, mais tranças por metro que o Cat 3, o que reduz a diafonia; o Ethernet de 100 Mbps usa 2 pares, um por sentido, e o de 1 Gbps usa os 4 nos dois sentidos); Cat 6 e 7 (especificações mais rígidas, alguns cabos até 500 MHz, para 10 Gbps). Até o Cat 6 são <b>UTP</b> (sem blindagem); o Cat 7 é blindado em cada par e no cabo todo (como o antigo <b>STP</b> da IBM). Enlaces podem ser <b>full-duplex</b> (dois sentidos ao mesmo tempo), <b>half-duplex</b> (um sentido por vez) ou <b>simplex</b> (um sentido só).</li>
+          <li><b>Cabo coaxial</b>: núcleo de cobre, isolante, malha condutora e capa. Melhor blindagem que o par trançado, com banda de alguns GHz. Usado em TV a cabo e MANs. Dois tipos: 50 Ω (digital) e 75 Ω (analógico/TV).</li>
+          <li><b>Linhas de energia</b>: a fiação elétrica da casa como rede. É ruidosa (feita para 50–60 Hz) e irradia interferência, mas já está instalada em todo lugar.</li>
+          <li><b>Fibra óptica</b>: fonte de luz (LED ou laser), meio (fibra de vidro) e detector (fotodiodo). Pulso de luz = 1, ausência = 0. A <b>reflexão interna total</b> prende a luz no núcleo quando o ângulo de incidência passa do ângulo crítico. Na <b>multimodo</b>, vários raios quicam em ângulos diferentes; na <b>monomodo</b> o núcleo é tão fino (~8–10 μm) que a luz segue em linha reta, com alcance e taxa maiores (100 Gbps por 100 km) e custo maior. Três janelas de baixa atenuação, centradas em 0,85, 1,30 e 1,55 μm, cada uma com 25 000 a 30 000 GHz de largura. A <b>dispersão cromática</b> alarga os pulsos; os <b>solitons</b> são pulsos de formato especial que não se alargam.</li>
+        </ul>
+        <table class="data">
+          <tr><th>Fibra</th><th>Cobre</th></tr>
+          <tr><td>Banda muito maior, repetidores a cada ~50 km</td><td>Repetidores a cada ~5 km</td></tr>
+          <tr><td>Imune a interferência eletromagnética, surtos e corrosão</td><td>Sujeito a interferência</td></tr>
+          <tr><td>Leve e fina; difícil de grampear (segura)</td><td>Pesado</td></tr>
+          <tr><td>Unidirecional (precisa de 2 fibras para full-duplex); interfaces caras; frágil</td><td>Barato, fácil de emendar, bidirecional</td></tr>
+        </table>
+        <p><b>Banda em comprimento de onda</b>: como $\lambda f = c$, uma faixa $\Delta\lambda$ perto de $\lambda$ corresponde a $\Delta f = \frac{c\,\Delta\lambda}{\lambda^2}$. Por isso a fibra tem banda gigantesca: cada janela tem dezenas de THz (problema 2.7).</p>
+
+        <h2>2.3 Transmissão sem fio</h2>
+        <p>Ondas eletromagnéticas se propagam no vácuo a $c \approx 3 \times 10^8$ m/s (no cobre ou na fibra, ~2/3 disso). Relação fundamental: $\lambda f = c$ (ex.: 100 MHz → 3 m). A maior parte da informação é transmitida em banda estreita ($\Delta f / f \ll 1$), mas há duas técnicas de <b>espectro espalhado</b>:</p>
+        <ul>
+          <li><b>Salto de frequência</b> (FHSS): o transmissor pula de frequência centenas de vezes por segundo; é resistente a interferência e a multipercurso (Bluetooth, 802.11 antigo).</li>
+          <li><b>Sequência direta</b> (DSSS): espalha o sinal numa banda larga usando uma sequência de código (é a base do CDMA, seção 2.5.5).</li>
+          <li><b>UWB</b> (ultra-wideband): pulsos rápidos numa banda muito larga com baixa potência.</li>
+        </ul>
+        <ul>
+          <li><b>Rádio</b>: onidirecional e atravessa prédios. Em frequências baixas contorna obstáculos mas perde potência com a distância ($1/r^2$ ou mais); em VLF/LF/MF segue a curvatura da Terra (ondas terrestres); em HF/VHF reflete na <b>ionosfera</b>.</li>
+          <li><b>Micro-ondas</b> (acima de 100 MHz): viajam em linha reta e são focáveis (antenas parabólicas); exigem <b>visada direta</b>; como a Terra é curva, precisa de repetidores, e a distância entre eles cresce aproximadamente com a raiz quadrada da altura das torres (torres de 100 m → ~80 km). Sofrem <b>desvanecimento multipercurso</b> (ondas refletidas chegam defasadas e se cancelam) e absorção pela água (chuva) a partir de ~4 GHz. As bandas <b>ISM</b> (900 MHz, 2,4 GHz, 5 GHz) não exigem licença (Wi-Fi, Bluetooth). A alocação do espectro pode ser por concurso de beleza, loteria ou <b>leilão</b>.</li>
+          <li><b>Infravermelho</b>: curto alcance e não atravessa paredes, o que é bom para segurança; ex.: controles remotos.</li>
+          <li><b>Luz</b> (laser entre prédios): banda altíssima e barato, mas unidirecional, difícil de mirar e afetado por chuva, neblina e correntes de convecção.</li>
+        </ul>
+
+        <h2>2.4 Satélites de comunicação</h2>
+        <p>Um satélite é um grande <b>repetidor</b> de micro-ondas no céu, com vários <b>transponders</b> (bent pipe: recebe, amplifica, retransmite em outra frequência). Os <b>cinturões de Van Allen</b> (partículas carregadas) determinam as três faixas de órbita:</p>
+        <table class="data">
+          <tr><th>Tipo</th><th>Altitude</th><th>Latência (ida e volta terra–satélite–terra)</th><th>Observações</th></tr>
+          <tr><td><b>GEO</b> (geoestacionário)</td><td>35 800 km</td><td>250–300 ms (típico 270 ms; 540 ms com VSAT via hub)</td><td>Parado em relação à Terra; basta ~3 satélites para cobrir o globo; espaçamento de 2° (≈180 posições); bandas L, S, C, Ku, Ka; <b>VSATs</b> se comunicam via um <b>hub</b></td></tr>
+          <tr><td><b>MEO</b></td><td>~18 000 km</td><td>~35–85 ms</td><td>Entre os dois cinturões de Van Allen; dão a volta na Terra em ~6 h; ~10 satélites cobrem o globo; ex.: GPS (~30 satélites a ~20 200 km)</td></tr>
+          <tr><td><b>LEO</b></td><td>&lt; 1000 km</td><td>1–7 ms</td><td>Passam rápido e exigem muitos satélites; ex.: <b>Iridium</b> (66 satélites a 750 km, com comutação no espaço) e <b>Globalstar</b> (48 satélites, bent pipe, comutação em terra)</td></tr>
+        </table>
+        <p><b>Satélite × fibra</b>: a fibra tem mais banda e menos latência, mas o satélite ganha em mobilidade, <b>difusão</b> (broadcast; o custo não depende do número de receptores), terreno hostil ou sem infraestrutura, implantação rápida (militar) e regiões sem direito de passagem para cabos.</p>
+
+        <h2>2.5 Modulação digital e multiplexação</h2>
+        <p><b>Modulação digital</b> é a conversão entre bits e sinais. Na banda base, o sinal ocupa de 0 a uma frequência máxima; na banda passante, ele modula uma portadora.</p>
+        <h3>Transmissão em banda base: códigos de linha</h3>
+        <ul>
+          <li><b>NRZ</b> (Non-Return-to-Zero): 1 = tensão positiva, 0 = negativa. Com $V$ níveis, cada símbolo carrega $\log_2 V$ bits. A <b>taxa de símbolos</b> (<b>baud</b>) é diferente da taxa de bits.</li>
+          <li><b>Recuperação do relógio</b>: longas sequências de 0s ou 1s em NRZ não têm transições, e o receptor perde a noção de quantos bits passaram. Soluções:
+            <ul>
+              <li><b>Manchester</b>: XOR do dado com o relógio, com transição no meio de todo bit (na convenção do livro, Fig. 2-20: <b>0 = baixo→alto, 1 = alto→baixo</b>; o padrão IEEE 802.3 usa a convenção oposta, então na prova siga a do enunciado). Custa o <b>dobro da banda</b>. Usado na Ethernet clássica.</li>
+              <li><b>NRZI</b>: 1 = transição, 0 = sem transição. Resolve os 1s, mas não os 0s (USB).</li>
+              <li><b>4B/5B</b>: cada 4 bits viram 5 por uma tabela escolhida para que nunca haja mais de 3 zeros seguidos; sobrecarga de 25% (contra 100% do Manchester). Combinado com NRZI no Fast Ethernet. <b>Embaralhamento</b> (scrambling): XOR com uma sequência pseudoaleatória, sem sobrecarga, mas sem garantia.</li>
+            </ul></li>
+          <li><b>Sinais balanceados</b> (sem componente DC): o <b>AMI/bipolar</b> representa 1 alternando entre +1 e −1 e 0 como 0 V. O 8B/10B também é balanceado.</li>
+          <li><b>MLT-3</b>: percorre os níveis 0, +1, 0, −1 a cada bit 1; banda de B/4.</li>
+        </ul>
+        <p class="callout">▶ <a href="../visualizacoes/codificacao.html">Visualização: NRZ, NRZI, Manchester, AMI, MLT-3, ASK/FSK/PSK e constelações QAM</a></p>
+        <h3>Transmissão em banda passante</h3>
+        <p>Modula-se uma portadora em <b>amplitude</b> (ASK), <b>frequência</b> (FSK) ou <b>fase</b> (PSK). BPSK: 2 fases (1 bit/símbolo); QPSK: 4 fases (2 bits/símbolo). A <b>QAM</b> combina amplitude e fase: QAM-16 (4 bits/símbolo) e QAM-64 (6 bits/símbolo). O <b>diagrama de constelação</b> mostra os pontos no plano (I, Q), e o <b>código de Gray</b> faz pontos vizinhos diferirem em só 1 bit.</p>
+        <h3>Multiplexação por divisão de frequência (FDM)</h3>
+        <p>O espectro é dividido em bandas, uma por usuário, separadas por <b>bandas de guarda</b>. Exemplo: 3 canais de voz de 4 kHz (3100 Hz úteis mais guarda). A <b>OFDM</b> divide a banda em muitas subportadoras <b>ortogonais</b> que podem se sobrepor sem guarda (802.11, ADSL, 4G). A <b>WDM</b> é a FDM da fibra (com comprimentos de onda).</p>
+        <h3>Multiplexação por divisão de tempo (TDM)</h3>
+        <p>Os usuários se revezam em rodízio, cada um com a banda inteira durante seu <b>slot</b>. Exige <b>tempo de guarda</b> para variações de relógio. Não confundir com <b>STDM</b> (estatística), que aloca slots sob demanda, como a comutação de pacotes.</p>
+        <h3>Multiplexação por divisão de código (CDMA)</h3>
+        <p>Todas as estações transmitem ao mesmo tempo, na mesma banda. Cada estação tem uma <b>sequência de chips</b> de $m$ chips (em notação bipolar: ±1), e as sequências são <b>ortogonais</b> duas a duas: $S \cdot T = \frac{1}{m}\sum S_i T_i = 0$. Para transmitir 1, envia-se $S$; para 0, envia-se $-S$ (o complemento); em silêncio, nada. Os sinais se <b>somam linearmente</b> no canal. Para recuperar a estação $S$, o receptor faz o produto interno do sinal recebido com $S$: dá $+1$ (enviou 1), $-1$ (enviou 0) ou $0$ (não transmitiu), porque $S \cdot S = 1$, $S \cdot \bar S = -1$ e $S \cdot T = 0$.</p>
+        <p class="kv">A = (−1 −1 −1 +1 +1 −1 +1 +1) &nbsp; B = (−1 −1 +1 −1 +1 +1 +1 −1)<br>C = (−1 +1 −1 +1 +1 +1 −1 −1) &nbsp; D = (−1 +1 −1 −1 −1 −1 +1 −1)</p>
+        <p>Sequências ortogonais podem ser geradas por <b>códigos de Walsh</b>. Na prática, o controle de potência é essencial: estações perto do receptor abafariam as distantes.</p>
+        <p class="callout">▶ <a href="../visualizacoes/multiplexacao.html">Visualização: FDM, TDM e CDMA com os chips do livro</a></p>
+
+        <h2>2.6 A rede pública de telefonia comutada (PSTN)</h2>
+        <h3>Estrutura</h3>
+        <p>Três componentes principais: os <b>loops locais</b> (par trançado analógico entre a casa e a <b>central local</b>, a <i>end office</i>), os <b>troncos</b> (fibras digitais entre centrais, multiplexados) e as <b>centrais de comutação</b> (que movem as chamadas entre troncos). A hierarquia: central local → central interurbana (<i>toll office</i>) → centrais intermediárias. O sistema é analógico só no loop local; do resto em diante, é digital.</p>
+        <p><i>Política</i> (EUA): em 1984 a AT&amp;T foi dividida em LECs (companhias locais) e IXCs (longa distância), com <b>LATAs</b> e <b>POPs</b>; depois veio a portabilidade numérica.</p>
+        <h3>Loop local: modems, ADSL e fibra</h3>
+        <ul>
+          <li><b>Modems</b> de discagem convertem bits em sinais analógicos para o canal de voz de ~3100 Hz. Todos trabalham a 2400 baud e aumentam os pontos da constelação, usando parte dos bits para correção de erros (TCM): o V.32 usa 32 pontos (4 bits de dados mais 1 de verificação por símbolo = 9600 bps), o V.32 bis chega a 14 400 bps (6 + 1 bits), o V.34 a 28 800 bps (12 bits) e o V.34 bis a 33 600 bps (14 bits). Param aí porque o limite de Shannon da linha telefônica, com dois loops locais, é ~35 kbps. O <b>V.90</b> (e o V.92) dá 56 kbps downstream porque o lado do ISP é digital: há só um loop analógico (menos ruído, limite de ~70 kbps). Os 56 kbps vêm de Nyquist: 8000 amostras/s × 7 bits (nos EUA um dos 8 bits pode ser de controle). O upstream fica em 33,6 kbps (V.90) ou 48 kbps (V.92).</li>
+          <li><b>DSL/ADSL</b>: remove o filtro de 3100 Hz do loop local, e a banda depende do comprimento e da qualidade do par. O ADSL usa <b>DMT</b> (OFDM): 1,1 MHz divididos em 256 canais de 4312,5 Hz. O canal 0 é a voz (POTS), os canais 1–5 ficam sem uso (separação entre voz e dados), 1 canal controla o upstream e 1 o downstream, e o resto é de dados. O provedor dá 80–90% ao downstream (<b>assimétrico</b>; uma divisão comum é 32 canais de upstream). Cada canal usa QAM a ~4000 símbolos/s, adaptando a constelação à qualidade: até 15 bits/símbolo. ADSL (G.dmt): até 8 Mbps down / 1 up; ADSL2: 12 Mbps; ADSL2+: 24 Mbps (2,2 MHz). Usa um <b>splitter</b> na casa e um <b>DSLAM</b> na central.</li>
+          <li><b>FTTH</b> (fibra até a casa): redes ópticas passivas (<b>PON</b>) com divisores ópticos; o downstream é broadcast e o upstream é TDM.</li>
+        </ul>
+        <h3>Troncos e multiplexação</h3>
+        <ul>
+          <li><b>PCM</b> (Pulse Code Modulation): o <b>codec</b> amostra a voz 8000 vezes por segundo, porque o canal tem 4 kHz e Nyquist pede $2 \times 4000$. Cada amostra tem 8 bits, então uma chamada = <b>64 kbps</b> e cada amostra dura 125 μs. A quantização é não linear (lei μ nos EUA/Japão e lei A na Europa), com companding.</li>
+          <li><b>Portadora T1</b> (EUA/Japão): 24 canais × 8 bits + 1 bit de enquadramento = <b>193 bits a cada 125 μs = 1,544 Mbps</b>. Um bit por canal pode ser usado para sinalização (7 bits de dados → 56 kbps por usuário). A <b>E1</b> (Europa/Brasil) tem 32 canais de 8 bits = 2,048 Mbps (30 de dados mais 2 de sinalização). Hierarquia: T2 = 4 T1 (6,312 Mbps), T3 = 6 T2 (44,736 Mbps), T4 = 7 T3.</li>
+          <li><b>SONET/SDH</b>: o padrão para fibra. Um quadro STS-1 tem 810 bytes (9 linhas × 90 colunas) a cada 125 μs: $810 \times 8 \times 8000 = 51{,}84$ Mbps. 3 colunas são overhead de linha/seção e 1 de caminho: o <b>SPE</b> tem 87 colunas (50,112 Mbps) e os dados de usuário 86 colunas (<b>49,536 Mbps</b>). O OC-$n$ é $n$ STS-1 multiplexados byte a byte (OC-3 = 155,52 Mbps, OC-12, OC-48 ≈ 2,5 Gbps, OC-192 ≈ 10 Gbps, OC-768 ≈ 40 Gbps). O sufixo <b>c</b> (OC-3c) indica um único fluxo concatenado.</li>
+          <li><b>WDM</b>: multiplexação por comprimento de onda numa fibra (DWDM com dezenas a centenas de lambdas).</li>
+        </ul>
+        <h3>Comutação</h3>
+        <p><b>Comutação de circuitos</b>: um caminho é reservado fim a fim <b>antes</b> de enviar (tempo de estabelecimento de até ~10 s numa chamada); a banda é garantida e desperdiçada se ociosa, os dados chegam em ordem e não há congestionamento depois de montado (a cobrança é por tempo). <b>Comutação de pacotes</b>: não há estabelecimento; cada pacote usa a banda sob demanda e com limite de tamanho, é armazenado e encaminhado (<i>store-and-forward</i>), pode seguir caminhos diferentes, chegar fora de ordem ou se perder; é mais eficiente e tolerante a falhas, mas sem garantias (a cobrança é por volume).</p>
+        <table class="data">
+          <tr><th>Item</th><th>Circuitos</th><th>Pacotes</th></tr>
+          <tr><td>Estabelecimento</td><td>Necessário</td><td>Não</td></tr>
+          <tr><td>Caminho físico dedicado</td><td>Sim</td><td>Não</td></tr>
+          <tr><td>Cada pacote segue a mesma rota</td><td>Sim</td><td>Não</td></tr>
+          <tr><td>Pacotes chegam em ordem</td><td>Sim</td><td>Não</td></tr>
+          <tr><td>Falha de um comutador é fatal</td><td>Sim</td><td>Não</td></tr>
+          <tr><td>Banda disponível</td><td>Fixa</td><td>Dinâmica</td></tr>
+          <tr><td>Quando há congestionamento</td><td>No estabelecimento</td><td>Em cada pacote</td></tr>
+          <tr><td>Banda potencialmente desperdiçada</td><td>Sim</td><td>Não</td></tr>
+          <tr><td>Transmissão store-and-forward</td><td>Não</td><td>Sim</td></tr>
+          <tr><td>Cobrança</td><td>Por minuto</td><td>Por pacote/volume</td></tr>
+        </table>
+        <p>Atrasos para uma mensagem de $x$ bits em $k$ saltos, com estabelecimento $s$, propagação $d$ por salto, pacotes de $p$ bits e taxa $b$ bps:</p>
+        <p>$$ T_{\text{circuito}} = s + \frac{x}{b} + kd \qquad T_{\text{pacotes}} = \frac{x}{b} + (k-1)\frac{p}{b} + kd $$</p>
+        <p>No caso de pacotes, a mensagem chega à primeira linha em $x/b$ e, graças ao <b>pipeline</b>, o último pacote só precisa atravessar mais $k-1$ saltos. Pacotes ganham quando $s > (k-1)p/b$ (problema 2.38).</p>
+        <p class="callout">▶ <a href="../visualizacoes/comutacao.html">Visualização: linhas do tempo de comutação de circuitos × pacotes</a></p>
+
+        <h2>2.7 Telefonia móvel</h2>
+        <ul>
+          <li><b>1G (AMPS)</b>: voz analógica, FDM. Invenção das <b>células</b>: a região é dividida em células hexagonais e cada uma usa um subconjunto das frequências; células não adjacentes <b>reutilizam</b> as mesmas frequências (padrão típico de 7 células). Com mais tráfego, criam-se <b>microcélulas</b>. Uma <b>MSC</b> (central de comutação móvel) controla as estações-base. O <b>handoff</b> transfere a chamada quando o usuário muda de célula (<i>hard handoff</i>: desliga de uma antes de ligar na outra).</li>
+          <li><b>2G (GSM, D-AMPS, CDMA IS-95)</b>: voz digital (compactada), FDM + TDM no GSM (canais de 200 kHz com 8 slots). Introduz o <b>SIM card</b>, HLR/VLR para localização e mensagens de texto (SMS).</li>
+          <li><b>3G (UMTS/WCDMA, CDMA2000)</b>: voz e dados, baseado em <b>CDMA</b>, com <b>soft handoff</b> (conectado a duas bases ao mesmo tempo, possível porque todas usam a mesma frequência). O CDMA também aproveita o silêncio das conversas para ganhar capacidade. 4G (LTE) usa OFDM e é todo IP.</li>
+        </ul>
+
+        <h2>2.8 Televisão a cabo</h2>
+        <p>Começou como CATV (antena comunitária). Hoje é <b>HFC</b> (híbrido fibra-coaxial): fibra até um <b>nó de fibra</b> e coaxial até as casas. O ponto-chave: <b>o cabo é compartilhado</b> por todas as casas do bairro (diferente do loop local telefônico, que é dedicado), então a banda efetiva depende dos vizinhos e há questões de privacidade (criptografia). Os canais de TV de 6 MHz (8 MHz na Europa) são reutilizados para dados: o downstream usa QAM-64 (≈36 Mbps brutos, ≈27 Mbps úteis por canal de 6 MHz) ou QAM-256 (≈39 Mbps úteis), com um único transmissor (a headend), sem disputa. O upstream fica em 5–42 MHz, faixa mais ruidosa (o ruído de todos os assinantes converge para a headend), e usa esquemas mais conservadores (QPSK a QAM-128). O <b>cable modem</b> e o <b>CMTS</b> (na <i>headend</i>) seguem o padrão <b>DOCSIS</b>; o upstream é dividido em <b>minislots</b>: o modem pede minislots (por disputa, podendo colidir) e a headend confirma a reserva no canal downstream.</p>
+        <p><b>ADSL × cabo</b>: o ADSL tem banda dedicada, mas depende da distância à central; o cabo tem mais banda total, mas compartilhada. Ambos são assimétricos.</p>
+
+        <h2>Fórmulas do capítulo</h2>
+        <table class="data">
+          <tr><th>Conceito</th><th>Fórmula</th></tr>
+          <tr><td>Nyquist</td><td>$2B\log_2 V$</td></tr>
+          <tr><td>Shannon</td><td>$B\log_2(1 + S/N)$, com $S/N = 10^{\text{dB}/10}$</td></tr>
+          <tr><td>bps × baud</td><td>bps = baud × $\log_2(\text{pontos da constelação})$</td></tr>
+          <tr><td>Comprimento de onda</td><td>$\lambda f = c$; $\Delta f = c\,\Delta\lambda/\lambda^2$</td></tr>
+          <tr><td>Atraso de propagação</td><td>distância / velocidade (luz no vácuo: $3 \times 10^8$ m/s; no cobre/fibra: $\approx 2 \times 10^8$)</td></tr>
+          <tr><td>PCM</td><td>8000 amostras/s × 8 bits = 64 kbps</td></tr>
+          <tr><td>T1 / E1</td><td>$(24 \cdot 8 + 1) \cdot 8000 = 1{,}544$ Mbps; $32 \cdot 8 \cdot 8000 = 2{,}048$ Mbps</td></tr>
+          <tr><td>SONET STS-1</td><td>$9 \cdot 90 \cdot 8 \cdot 8000 = 51{,}84$ Mbps</td></tr>
+          <tr><td>Circuitos × pacotes</td><td>$s + x/b + kd$ &nbsp;×&nbsp; $x/b + (k-1)p/b + kd$</td></tr>
+          <tr><td>CDMA</td><td>$S \cdot T = \frac{1}{m}\sum S_i T_i$; bit = produto interno do sinal recebido com o chip</td></tr>
+        </table>
+
+        <h2>Exercícios do livro resolvidos</h2>
+        <details class="prob exam"><summary><b>2.2</b> Canal de 4 kHz sem ruído amostrado a cada 1 ms. Taxa máxima? E se o canal tiver S/N de 30 dB?</summary>
+          <p>A palavra-chave é <b>sem ruído</b>: sem ruído, cada amostra pode carregar quantos bits se quiser (infinitos níveis), então a taxa é, em teoria, <b>ilimitada</b>, não importa a frequência de amostragem. (Amostrar a cada 1 ms dá 1000 amostras/s; com amostras de 8 bits seriam 8 kbps, com 1024 bits, 1 Mbps…) Com ruído de 30 dB (S/N = 1000), Shannon: $4000\log_2 1001 \approx$ <b>39 869 bps</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.3</b> Canais de TV têm 6 MHz. Quantos bps com sinais de 4 níveis, sem ruído?</summary>
+          <p>Nyquist: $2 \cdot 6 \times 10^6 \cdot \log_2 4 = 24$ Mbps.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.4</b> Sinal binário em canal de 3 kHz com S/N de 20 dB. Taxa máxima?</summary>
+          <p>Shannon: $3000\log_2(101) \approx 19{,}97$ kbps. Mas o sinal é binário: Nyquist limita a $2 \cdot 3000 \cdot 1 = 6$ kbps. <b>Resposta: 6 kbps</b> (o menor dos dois).</p>
+        </details>
+        <details class="prob exam"><summary><b>2.5</b> Que S/N é necessária para pôr uma portadora T1 numa linha de 50 kHz?</summary>
+          <p>$1{,}544 \times 10^6 = 50\,000\log_2(1 + S/N)$ → $\log_2(1 + S/N) = 30{,}88$ → $S/N \approx 2 \times 10^9$ → <b>≈ 93 dB</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.7</b> Quanta banda há em 0,1 μm de espectro em λ = 1 μm?</summary>
+          <p>$\Delta f = \frac{c\,\Delta\lambda}{\lambda^2} = \frac{3 \times 10^8 \cdot 10^{-7}}{10^{-12}} = 3 \times 10^{13}$ Hz = <b>30 THz</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.9</b> O teorema de Nyquist vale para fibra monomodo ou só para cobre?</summary>
+          <p>Vale para <b>qualquer</b> meio. É uma propriedade matemática da amostragem de sinais limitados em banda, não do material.</p>
+        </details>
+        <details class="prob"><summary><b>2.10</b> Antenas de 1 cm a 5 m de diâmetro (≈ λ). Que faixa de frequências?</summary>
+          <p>$f = c/\lambda$: de $3 \times 10^8 / 5 = 60$ MHz a $3 \times 10^8 / 0{,}01 = 30$ GHz.</p>
+        </details>
+        <details class="prob"><summary><b>2.12</b> Iridium: 66 satélites em 6 colares, período de 90 min. Intervalo médio entre handoffs para um transmissor parado?</summary>
+          <p>Cada colar tem 11 satélites. A cada 90 min passam 11 satélites por um ponto, então há um handoff a cada $90/11 \approx$ <b>8,2 min</b> (~491 s).</p>
+        </details>
+        <details class="prob exam"><summary><b>2.13</b> Tempo de trânsito fim a fim (subida mais descida) para GEO (35 800 km), MEO (18 000 km) e LEO (750 km).</summary>
+          <p>$2h/c$: GEO $= 71\,600\,\text{km} / 3 \times 10^5\,\text{km/s} \approx$ <b>239 ms</b>; MEO $\approx$ <b>120 ms</b>; LEO $\approx$ <b>5 ms</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.15</b> Banda mínima para B bps com NRZ, MLT-3 e Manchester?</summary>
+          <p>NRZ: no pior caso (1010…) há um ciclo a cada 2 bits → <b>B/2</b> Hz. MLT-3: um ciclo completo (0, +, 0, −) a cada 4 bits → <b>B/4</b>. Manchester: uma transição por bit, e 1111… vira um ciclo por bit → <b>B</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.16</b> Prove que no 4B/5B há transição pelo menos a cada 4 bits.</summary>
+          <p>Os códigos de 5 bits foram escolhidos com no máximo 1 zero no início e no máximo 2 no fim, então juntando dois códigos há no máximo 3 zeros seguidos. Com NRZI, cada 1 é uma transição: no máximo 3 bits sem transição, ou seja, há transição pelo menos a cada 4 bits.</p>
+        </details>
+        <details class="prob"><summary><b>2.20</b> Oleoduto, rio e walkie-talkie: simplex, half ou full-duplex?</summary>
+          <p>Oleoduto: <b>half-duplex</b> (o óleo pode fluir nos dois sentidos, mas não ao mesmo tempo). Rio: <b>simplex</b>. Walkie-talkie: <b>half-duplex</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.22</b> Constelação com pontos (1,1), (1,−1), (−1,1), (−1,−1). Quantos bps a 1200 símbolos/s?</summary>
+          <p>4 pontos → 2 bits por símbolo (é QPSK) → $1200 \times 2 =$ <b>2400 bps</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.23</b> Taxa máxima de um modem V.32 a 1200 baud sem correção de erros?</summary>
+          <p>O V.32 tem 32 pontos, ou seja, 5 bits por símbolo (normalmente 4 de dados mais 1 de paridade). Sem correção de erros, os 5 bits são de dados: $1200 \times 5 =$ <b>6000 bps</b>. (Com o bit de verificação, como no padrão, seriam $1200 \times 4 = 4800$ bps.)</p>
+        </details>
+        <details class="prob"><summary><b>2.24</b> Quantas frequências usa um modem QAM-64 full-duplex?</summary>
+          <p><b>Duas</b>: uma portadora para cada sentido. A QAM varia amplitude e fase, não a frequência.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.25</b> Dez sinais de 4000 Hz em FDM com bandas de guarda de 400 Hz. Banda mínima?</summary>
+          <p>10 canais e 9 guardas entre eles: $10 \times 4000 + 9 \times 400 =$ <b>43 600 Hz</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.26</b> Por que o tempo de amostragem do PCM é 125 μs?</summary>
+          <p>O canal de voz tem 4 kHz; Nyquist exige $2 \times 4000 = 8000$ amostras/s, isto é, uma a cada 125 μs.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.27</b> Qual o overhead percentual da T1? E do OC-1 e OC-768?</summary>
+          <p>Por quadro de 193 bits, o usuário recebe 24 × 7 = 168 bits (o 8º bit de cada canal é sinalização e há 1 de enquadramento): overhead $25/193 \approx$ <b>13%</b>. No OC-1, dos 810 bytes, 774 (86 colunas × 9) são dados do usuário: os 27 bytes de overhead de seção/linha mais os 9 de caminho dão $36/810 \approx$ <b>4,44%</b>. É igual no OC-768, que é só a multiplexação de 768 OC-1.</p>
+        </details>
+        <details class="prob"><summary><b>2.28</b> Taxa máxima num canal de 4 kHz sem ruído: (a) QPSK com 2 bits por amostra; (b) T1 PCM.</summary>
+          <p>(a) Nyquist: 8000 amostras/s × 2 = <b>16 kbps</b>. (b) Na T1 cada canal tem 7 bits de dados × 8000 = <b>56 kbps</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.31</b> Relógios SONET derivam 1 parte em $10^9$. Quanto tempo até a deriva ser de 1 bit?</summary>
+          <p>1 bit a cada $10^9$ bits. No OC-1 (51,84 Mbps): $10^9 / 51{,}84 \times 10^6 \approx$ <b>19 s</b>. Por isso o SONET precisa de relógios mestres muito precisos e sincronismo contínuo.</p>
+        </details>
+        <details class="prob"><summary><b>2.34</b> Deduza os 148,608 Mbps de dados do OC-3. E as taxas bruta, SPE e de usuário do OC-3072?</summary>
+          <p>OC-3 = 3 × 86 colunas de dados × 9 linhas × 8 bits × 8000 = 148,608 Mbps. OC-3072: bruta $3072 \times 51{,}84 \approx 159{,}25$ Gbps; SPE $3072 \times 50{,}112 \approx 153{,}94$ Gbps; usuário $3072 \times 49{,}536 \approx 152{,}17$ Gbps.</p>
+        </details>
+        <details class="prob"><summary><b>2.37</b> Redes com $n$ nós: estrela, anel bidirecional e totalmente conectada. Melhor, médio e pior caso em saltos?</summary>
+          <p>Estrela: 2, 2, 2 (sempre via o comutador central). Anel: 1, ~$n/4$, $n/2$. Totalmente conectada: 1, 1, 1.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.38</b> Atraso de $x$ bits em $k$ saltos: circuitos (estabelecimento $s$) × pacotes (tamanho $p$). Quando pacotes são melhores?</summary>
+          <p>Circuitos: $s + x/b + kd$. Pacotes: $x/b + (k-1)p/b + kd$. Pacotes têm atraso menor quando $s > (k-1)p/b$. Além disso, pacotes são preferíveis com tráfego em rajadas (não desperdiçam banda ociosa) e quando se quer tolerância a falhas.</p>
+        </details>
+        <details class="prob"><summary><b>2.39</b> Pacotes com $p$ bits de dados e $h$ de cabeçalho, $k$ saltos, $x \gg p + h$. Que $p$ minimiza o atraso?</summary>
+          <p>São $x/p$ pacotes de $(p+h)$ bits. Atraso $= \frac{(p+h)}{b}\left(\frac{x}{p} + k - 1\right)$. Derivando em relação a $p$ e igualando a zero: $-\frac{hx}{p^2} + (k-1) = 0$ → $p = \sqrt{\frac{hx}{k-1}}$.</p>
+        </details>
+        <details class="prob"><summary><b>2.40</b> Células hexagonais, sem reúso em células adjacentes, 840 frequências. Quantas por célula?</summary>
+          <p>Hexágonos podem ser coloridos com 3 grupos sem vizinhos iguais: $840/3 =$ <b>280</b> por célula.</p>
+        </details>
+        <details class="prob"><summary><b>2.42</b> Quantas microcélulas de 100 m de diâmetro cobrem São Francisco (120 km²)?</summary>
+          <p>Área de uma célula ≈ $\pi (50)^2 \approx 7854$ m² (ou ~ $10^4$ m² aproximando por um quadrado). $120 \times 10^6 / 7854 \approx$ <b>15 000</b> (≈ 12 000 com a aproximação).</p>
+        </details>
+        <details class="prob"><summary><b>2.43</b> Por que às vezes a chamada cai ao cruzar para outra célula mesmo com tudo funcionando?</summary>
+          <p>A nova célula pode não ter <b>frequência livre</b> (todos os canais ocupados), e o hard handoff falha.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.44</b> A, B e C transmitem simultaneamente bits 0 (chips da Fig. 2-28). Qual a sequência resultante?</summary>
+          <p>Transmitir 0 é enviar $-S$. Soma: $-(A + B + C) = -(-3, -1, -1, +1, +3, +1, +1, -1) =$ <b>(+3 +1 +1 −1 −3 −1 −1 +1)</b>.</p>
+        </details>
+        <details class="prob"><summary><b>2.45</b> Expresse a ortogonalidade em termos de coincidências e discordâncias.</summary>
+          <p>Duas sequências são ortogonais se exatamente metade dos chips coincide e metade discorda (4 e 4, para $m = 8$): cada coincidência soma +1 e cada discordância −1.</p>
+        </details>
+        <details class="prob exam"><summary><b>2.46</b> O receptor recebe (−1 +1 −3 +1 −1 −3 +1 +1). Quem transmitiu e o quê?</summary>
+          <p>Produtos internos normalizados: $S \cdot A = 1$, $S \cdot B = -1$, $S \cdot C = 0$, $S \cdot D = 1$. <b>A enviou 1, B enviou 0, C não transmitiu, D enviou 1.</b></p>
+        </details>
+        <details class="prob"><summary><b>2.47</b> Dê chips para mais quatro estações (total de 8).</summary>
+          <p>Com 8 chips existem exatamente 8 sequências mutuamente ortogonais (as linhas da matriz de <b>Walsh-Hadamard</b> $H_8 = \begin{bmatrix} H_4 & H_4 \\ H_4 & -H_4 \end{bmatrix}$, com $H_1 = [1]$). Os chips A–D do livro não são linhas de $H_8$, então o jeito seguro é trocar o conjunto inteiro pelas 8 linhas de $H_8$ (por exemplo, a linha $(+1\,-1\,+1\,-1\,+1\,-1\,+1\,-1)$). Confira: quaisquer duas linhas coincidem em 4 posições e discordam em 4.</p>
+        </details>
+        <details class="prob"><summary><b>2.48</b> Um cabo de fibra de 10 Gbps poderia simular linhas privadas de telefone? Quantas casas?</summary>
+          <p>Sim, com TDM. Cada chamada PCM ocupa 64 kbps: $10^{10} / 64\,000 \approx$ <b>156 250</b> casas.</p>
+        </details>
+        <details class="prob"><summary><b>2.49</b> 5000 casas, cabo com 100 Mbps downstream, garantia de 2 Mbps por casa. O que fazer?</summary>
+          <p>100 Mbps / 2 Mbps = 50 casas por cabo. É preciso dividir o bairro em ~100 segmentos, cada um com seu nó de fibra (mais fibra, menos coaxial compartilhado).</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Aumentar o número de níveis $V$ de um sinal sempre aumenta a taxa real de um canal?', options: ['Não: o ruído (Shannon) limita quantos níveis são distinguíveis', 'Sim, pela fórmula de Nyquist', 'Sim, se a banda for maior que 1 MHz', 'Não, porque o baud cai'], answer: 0, explain: 'Nyquist cresce com $\\log_2 V$, mas Shannon é um teto independente de $V$.' },
+      { q: 'O Manchester precisa de quanta banda em relação ao NRZ?', options: ['O dobro', 'A mesma', 'A metade', '25% a mais'], answer: 0, explain: 'Há uma transição por bit, então a taxa de símbolos é o dobro.' },
+      { q: 'Por que o cabo de TV compartilhado é pior que o ADSL em horário de pico?', options: ['A banda do segmento é dividida entre todas as casas do bairro', 'O coaxial tem menos banda que o par trançado', 'O cabo usa Manchester', 'O ADSL usa fibra'], answer: 0, explain: 'O loop local telefônico é dedicado; o cabo é um meio de difusão compartilhado.' },
+      { q: 'No CDMA, o produto interno do sinal recebido com o chip de uma estação que <b>não</b> transmitiu dá:', options: ['0', '+1', '−1', 'm'], answer: 0, explain: 'Chips distintos são ortogonais.' },
+      { q: 'A taxa da T1 é 1,544 Mbps porque:', options: ['(24 × 8 + 1) bits a cada 125 μs', '24 × 64 kbps', '32 × 64 kbps', '1,5 Mbps + 44 kbps de sinalização por canal'], answer: 0, explain: '193 bits × 8000 quadros/s.' },
+      { q: 'Um satélite GEO fica a quantos km e dá que latência de subida mais descida?', options: ['35 800 km, ~250 ms', '750 km, ~5 ms', '18 000 km, ~120 ms', '1000 km, ~50 ms'], answer: 0, explain: '$2 \\times 35\\,800\\,\\text{km} / c \\approx 239$ ms (mais processamento).' },
+      { q: 'A comutação de pacotes tem menor atraso que a de circuitos quando:', options: ['$s > (k-1)p/b$', '$s < (k-1)p/b$', '$k = 1$', 'sempre'], answer: 0, explain: 'Problema 2.38.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circuitos × Pacotes · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .ctls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 18px; padding: 12px 14px; }
+    .ctls label { display: grid; grid-template-columns: 1fr 5.5em; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+    .ctls input[type=range] { grid-column: 1 / 3; }
+    .ctls output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .res { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+    .res .panel { padding: 10px 14px; }
+    .res .big { font: 800 22px var(--mono); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Comutação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 2 (seção 2.6.5) · problemas 2.38 e 2.39</div>
+    <h1>Comutação de circuitos × comutação de pacotes</h1>
+    <p class="lead">Uma mensagem de $x$ bits vai de A até o destino passando por $k$ enlaces. Na <b>comutação de circuitos</b>, paga-se um estabelecimento $s$ e depois os bits fluem direto. Na de <b>pacotes</b>, não há estabelecimento, mas cada comutador precisa <b>receber o pacote inteiro</b> antes de reenviá-lo (store-and-forward). O tempo corre para baixo, como na Fig. 2-43 do livro.</p>
+
+    <div class="panel"><div class="ctls" id="ctls"></div></div>
+    <div class="res">
+      <div class="panel"><div class="c-muted">Circuitos: $s + x/b + kd$</div><div class="big c-blue" id="rc"></div></div>
+      <div class="panel"><div class="c-muted">Pacotes: $\frac{x}{p}\cdot\frac{p+h}{b} + (k-1)\frac{p+h}{b} + kd$</div><div class="big c-green" id="rp"></div></div>
+      <div class="panel"><div class="c-muted">Veredito</div><div id="rv" style="font-size:15px;margin-top:4px"></div></div>
+    </div>
+    <div class="stage"><svg id="tl" aria-label="Linhas do tempo"></svg></div>
+
+    <h2>Qual o melhor tamanho de pacote? (problema 2.39)</h2>
+    <p>Pacotes pequenos aproveitam melhor o pipeline, mas cada um paga $h$ bits de cabeçalho. Pacotes grandes gastam pouco com cabeçalho, mas perdem o paralelismo. Com propagação desprezível, o atraso total é</p>
+    <p>$$ T(p) = \frac{p + h}{b}\left(\frac{x}{p} + k - 1\right), \qquad \frac{dT}{dp} = 0 \;\Rightarrow\; p^* = \sqrt{\frac{hx}{k-1}} $$</p>
+    <div class="stage"><svg id="opt" aria-label="Atraso em função do tamanho do pacote"></svg></div>
+
+    <section class="prose">
+      <h2>Resumo</h2>
+      <ul>
+        <li>Pacotes ganham quando $s > (k-1)\,p/b$: o estabelecimento custa mais que o "atraso extra" do store-and-forward.</li>
+        <li>Com um só enlace ($k = 1$), não há pipeline: o de pacotes só se livra do $s$.</li>
+        <li>Fora o atraso, a comutação de pacotes não desperdiça banda ociosa (bom para tráfego em rajadas) e tolera falhas de comutadores; a de circuitos garante banda e ordem.</li>
+      </ul>
+      <p>Volte ao <a href="../tutoriais/cap2-camada-fisica.html">capítulo 2</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, h, fmt, pick, renderMath } from '../../../../engine/page.js';
+    import { switchingDelay } from './redes.js';
+
+    // parâmetros (bits e segundos)
+    const P = { x: 40000, p: 8000, h: 0, b: 10000, s: 2, d: 0.1, k: 3 };
+    const SPEC = [
+      ['x', 'mensagem x (bits)', 1000, 100000, 1000],
+      ['p', 'dados por pacote p (bits)', 500, 40000, 500],
+      ['h', 'cabeçalho h (bits)', 0, 2000, 50],
+      ['b', 'taxa b (bps)', 1000, 100000, 1000],
+      ['s', 'estabelecimento s (s)', 0, 10, 0.1],
+      ['d', 'propagação d por enlace (s)', 0, 1, 0.01],
+      ['k', 'enlaces k', 1, 6, 1],
+    ];
+    const box = $('#ctls');
+    for (const [key, label, min, max, step] of SPEC) {
+      const out = h('output', {}, fmt(P[key], 2));
+      const inp = h('input', { type: 'range', min, max, step, value: P[key] });
+      inp.addEventListener('input', () => { P[key] = +inp.value; out.textContent = fmt(P[key], 2); draw(); });
+      box.append(h('label', {}, label, out, inp));
+    }
+
+    /** Agenda store-and-forward: início de cada pacote em cada enlace. */
+    function packetSchedule({ x, p, h, b, d, k }) {
+      const n = Math.ceil(x / p);
+      const sizes = Array.from({ length: n }, (_, j) => Math.min(p, x - j * p) + h);
+      const sched = [];
+      const linkFree = Array(k).fill(0);
+      sizes.forEach((sz, j) => {
+        let ready = 0;
+        const row = [];
+        for (let e = 0; e < k; e++) {
+          const t0 = Math.max(ready, linkFree[e]);
+          const t1 = t0 + sz / b;
+          linkFree[e] = t1;
+          row.push({ t0, t1 });
+          ready = t1 + d;                  // chegou inteiro ao próximo nó
+        }
+        sched.push(row);
+      });
+      return { sched, total: sched[n - 1][k - 1].t1 + d, n };
+    }
+
+    const W = 900, H = 520;
+    const scene = new Scene($('#tl'), { width: W, height: H });
+    scene.setAnimated(false);
+    const pal = [COLORS.green, COLORS.teal, COLORS.yellow, COLORS.pink, COLORS.purple, COLORS.orange];
+
+    function draw() {
+      const { x, p, b, s, d, k } = P;
+      const circuit = s + x / b + k * d;
+      const ps = packetSchedule(P);
+      const ref = switchingDelay(P);
+      $('#rc').textContent = `${fmt(circuit, 3)} s`;
+      $('#rp').textContent = `${fmt(ps.total, 3)} s`;
+      const better = ps.total < circuit - 1e-9 ? 'Pacotes são mais rápidos' : ps.total > circuit + 1e-9 ? 'Circuitos são mais rápidos' : 'Empate';
+      $('#rv').innerHTML = `<b>${better}</b><br><span class="c-muted">${ps.n} pacote(s). Condição (h = 0): $s = ${fmt(s, 2)}$ vs $(k-1)p/b = ${fmt((k - 1) * p / b, 3)}$</span>`;
+      renderMath($('#rv'));
+      console.assert(Math.abs(ref.packet - ps.total) < 1e-9 || P.x % P.p !== 0, 'fórmula difere da simulação');
+
+      const tmax = Math.max(circuit, ps.total) * 1.05;
+      const Y0 = 60, Y1 = H - 20, Y = t => Y0 + (t / tmax) * (Y1 - Y0);
+      const panels = [['Comutação de circuitos', 40], ['Comutação de pacotes', 480]];
+      scene.frame(sc => {
+        panels.forEach(([title, px], pi) => {
+          const colW = 380 / k, X = i => px + 20 + i * colW;
+          sc.text(`pt${pi}`, title, { x: px + 200, y: 18, size: 15, weight: 700, fill: pi ? COLORS.green : COLORS.blue });
+          for (let i = 0; i <= k; i++) {
+            sc.line(`col${pi}-${i}`, X(i), Y0, X(i), Y1, { stroke: COLORS.border, sw: 1.5, layer: 'bg' });
+            sc.text(`cl${pi}-${i}`, i === 0 ? 'A' : i === k ? 'Dest.' : `C${i}`, { x: X(i), y: 44, size: 12, weight: 600, fill: COLORS.muted });
+          }
+          if (pi === 0) {
+            if (s > 0) {
+              // sinal de estabelecimento vai e volta
+              sc.path('setup', `M ${X(0)} ${Y(0)} L ${X(k)} ${Y(s / 2)} L ${X(0)} ${Y(s)}`, { stroke: COLORS.orange, sw: 2, dash: '5 4' });
+              sc.text('setupl', `estabelecimento s = ${fmt(s, 2)} s`, { x: X(0) + 6, y: Y(s / 2), size: 11, anchor: 'start', fill: COLORS.orange });
+            }
+            const t0 = s, t1 = s + x / b;
+            sc.path('cdata', `M ${X(0)} ${Y(t0)} L ${X(k)} ${Y(t0 + k * d)} L ${X(k)} ${Y(t1 + k * d)} L ${X(0)} ${Y(t1)} Z`, { stroke: COLORS.blue, sw: 1.5, fill: COLORS.blue, opacity: 0.45 });
+            sc.text('cend', `${fmt(circuit, 3)} s`, { x: X(k) - 4, y: Y(circuit) + 14, size: 12, anchor: 'end', mono: true, fill: COLORS.blue });
+          } else {
+            ps.sched.forEach((row, j) => row.forEach(({ t0, t1 }, e) => {
+              if (ps.n > 60 && j % Math.ceil(ps.n / 60)) return;
+              sc.path(`pk${j}-${e}`, `M ${X(e)} ${Y(t0)} L ${X(e + 1)} ${Y(t0 + d)} L ${X(e + 1)} ${Y(t1 + d)} L ${X(e)} ${Y(t1)} Z`, { stroke: 'none', fill: pal[j % pal.length], opacity: 0.75 });
+            }));
+            sc.text('pend', `${fmt(ps.total, 3)} s`, { x: X(k) - 4, y: Y(ps.total) + 14, size: 12, anchor: 'end', mono: true, fill: COLORS.green });
+          }
+          sc.line(`fin${pi}`, px, Y(pi ? ps.total : circuit), px + 420, Y(pi ? ps.total : circuit), { stroke: pi ? COLORS.green : COLORS.blue, sw: 1, dash: '3 4', layer: 'bg' });
+        });
+        sc.text('tax', 'tempo ↓', { x: 452, y: Y1, size: 11, fill: COLORS.faint });
+      });
+      drawOpt();
+    }
+
+    // ---------- tamanho ótimo de pacote ----------
+    const os = new Scene($('#opt'), { width: W, height: 280 });
+    os.setAnimated(false);
+    function drawOpt() {
+      const { x, b, k } = P;
+      const hh = Math.max(P.h, 1);
+      const T = p => ((p + hh) / b) * (x / p + k - 1);
+      const pmin = 50, pmax = x;
+      const X0 = 70, X1 = W - 30, Y0 = 20, Y1 = 240;
+      const lx = p => X0 + ((Math.log(p) - Math.log(pmin)) / (Math.log(pmax) - Math.log(pmin))) * (X1 - X0);
+      const samples = [];
+      for (let i = 0; i <= 200; i++) { const p = pmin * (pmax / pmin) ** (i / 200); samples.push([p, T(p)]); }
+      const tmin = Math.min(...samples.map(s => s[1])), tmx = Math.min(Math.max(...samples.map(s => s[1])), tmin * 4);
+      const Y = t => Y1 - ((Math.min(t, tmx) - tmin * 0.9) / (tmx - tmin * 0.9)) * (Y1 - Y0);
+      const pstar = k > 1 ? Math.sqrt((hh * x) / (k - 1)) : pmax;
+      os.frame(s => {
+        s.line('ax', X0, Y1, X1, Y1, { stroke: COLORS.muted, sw: 1.5 });
+        s.line('ay', X0, Y0, X0, Y1, { stroke: COLORS.muted, sw: 1.5 });
+        s.text('xl', 'p (bits de dados por pacote, escala log)', { x: (X0 + X1) / 2, y: Y1 + 28, size: 12, fill: COLORS.muted });
+        s.text('yl', 'atraso', { x: X0 - 36, y: Y0 + 10, size: 12, fill: COLORS.muted });
+        s.path('curve', 'M ' + samples.map(([p, t]) => `${lx(p).toFixed(1)} ${Y(t).toFixed(1)}`).join(' L '), { stroke: COLORS.yellow, sw: 3 });
+        if (pstar <= pmax) {
+          s.line('pl', lx(pstar), Y0, lx(pstar), Y1, { stroke: COLORS.green, sw: 1.5, dash: '4 4' });
+          s.circle('pd', { x: lx(pstar), y: Y(T(pstar)), r: 6, fill: COLORS.green, stroke: 'none' });
+          s.text('pt', `p* = √(hx/(k−1)) ≈ ${fmt(pstar, 0)} bits → ${fmt(T(pstar), 3)} s`, { x: Math.min(lx(pstar) + 10, X1 - 260), y: Y0 + 14, size: 13, anchor: 'start', fill: COLORS.green });
+        }
+        s.circle('cur', { x: lx(Math.min(Math.max(P.p, pmin), pmax)), y: Y(T(P.p)), r: 5, fill: COLORS.blue, stroke: 'none' });
+        if (P.h === 0) s.text('warn', 'com h = 0 não há mínimo (quanto menor o pacote, melhor); a curva usa h = 1 bit', { x: X1, y: Y1 - 10, size: 11, anchor: 'end', fill: COLORS.orange });
+      });
+    }
+    draw();
+
+    const near = (v, t) => Math.abs(+String(v).replace(',', '.') - t) <= Math.max(0.01, Math.abs(t) * 0.01);
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['c', 'p', 'opt']);
+        const x = pick([8000, 16000, 40000, 64000]), b = pick([8000, 16000, 64000]), k = pick([2, 3, 4, 5]);
+        const p = pick([1000, 2000, 4000]), s = pick([0.2, 0.5, 1]), d = pick([0, 0.001, 0.01]);
+        if (kind === 'c') {
+          const t = s + x / b + k * d;
+          return { q: `Circuito: estabelecimento ${s} s, mensagem de ${x} bits a ${b} bps, ${k} enlaces com ${d} s de propagação cada. Tempo total (s)?`, input: true, answer: fmt(t, 4), check: v => near(v, t), explain: `$s + x/b + kd = ${s} + ${x / b} + ${k * d} = ${fmt(t, 4)}$ s.` };
+        }
+        if (kind === 'p') {
+          const t = x / b + (k - 1) * p / b + k * d;
+          return { q: `Pacotes de ${p} bits (sem cabeçalho), mensagem de ${x} bits a ${b} bps, ${k} enlaces com ${d} s de propagação cada. Tempo total (s)?`, input: true, answer: fmt(t, 4), check: v => near(v, t), explain: `$x/b + (k-1)p/b + kd = ${fmt(x / b, 4)} + ${fmt((k - 1) * p / b, 4)} + ${fmt(k * d, 4)} = ${fmt(t, 4)}$ s.` };
+        }
+        const hh = pick([40, 160, 320]);
+        const ps = Math.sqrt((hh * x) / (k - 1));
+        return { q: `Mensagem de ${x} bits, cabeçalho de ${hh} bits por pacote, ${k} saltos. Tamanho de dados por pacote que minimiza o atraso (bits)?`, input: true, answer: fmt(ps, 1), check: v => near(v, ps), explain: `$p^* = \\sqrt{hx/(k-1)} = \\sqrt{${hh} \\cdot ${x} / ${k - 1}} \\approx ${fmt(ps, 1)}$.` };
+      },
+    });
+  </script>
+</body>
+</html>

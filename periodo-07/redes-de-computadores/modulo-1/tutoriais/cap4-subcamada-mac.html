@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 4 Subcamada MAC · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Cap. 4 · Subcamada MAC</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 1 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 4</div>
+    <h1>Capítulo 4 — A subcamada de controle de acesso ao meio (MAC)</h1>
+    <p class="lead">Em redes de <b>difusão</b> (broadcast), um único canal é compartilhado, e a questão central é <b>quem transmite a seguir</b>. Os protocolos que decidem isso formam a subcamada MAC, a parte de baixo da camada de enlace. Aqui estão ALOHA, CSMA, protocolos livres de colisão, Ethernet, Wi-Fi e a comutação na camada de enlace (pontes e switches).</p>
+    <nav class="chapnav"><a href="cap3-camada-de-enlace.html">← Cap. 3</a><a href="revisao-prova-1.html">Revisão da prova 1 →</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>4.1 O problema da alocação de canal</h2>
+        <h3>Alocação estática</h3>
+        <p>Dividir o canal com FDM ou TDM entre $N$ usuários funciona bem com poucos usuários e tráfego constante, mas é ruim com tráfego em <b>rajadas</b>: se um usuário está parado, sua fatia é desperdiçada, e se há mais usuários que fatias, alguns ficam de fora. Pela teoria de filas (M/M/1), o atraso médio para enviar um quadro num canal de capacidade $C$ bps, com chegadas a $\lambda$ quadros/s e quadros de $1/\mu$ bits em média, é</p>
+        <p>$$ T = \frac{1}{\mu C - \lambda} \qquad\qquad T_N = \frac{1}{\mu(C/N) - (\lambda/N)} = \frac{N}{\mu C - \lambda} = N\,T $$</p>
+        <p>Dividir o canal em $N$ subcanais estáticos deixa o atraso <b>$N$ vezes pior</b>. (Uma fila única para vários caixas eletrônicos é melhor que uma fila por caixa.) Exemplo do livro: $C$ = 100 Mbps, $1/\mu$ = 10 000 bits, $\lambda$ = 5000 quadros/s → $T = 200\ \mu$s (e não os 100 μs de só transmitir).</p>
+        <h3>Premissas da alocação dinâmica</h3>
+        <ol>
+          <li><b>Tráfego independente</b>: $N$ estações independentes; quadros gerados a uma taxa $\lambda$ (Poisson). A estação fica bloqueada até transmitir o quadro.</li>
+          <li><b>Canal único</b>: um só canal para tudo, sem outro meio de comunicação.</li>
+          <li><b>Colisões observáveis</b>: dois quadros simultâneos se sobrepõem e são perdidos (colisão), e todas as estações percebem isso.</li>
+          <li><b>Tempo contínuo ou segmentado</b> (slots).</li>
+          <li><b>Com ou sem detecção de portadora</b> (carrier sense): a estação consegue ou não saber se o canal está ocupado antes de transmitir.</li>
+        </ol>
+
+        <h2>4.2 Protocolos de acesso múltiplo</h2>
+        <h3>ALOHA</h3>
+        <p>Notação: $G$ = tentativas de transmissão por tempo de quadro (novas mais retransmissões), $S$ = vazão (quadros bem-sucedidos por tempo de quadro). A probabilidade de $k$ tentativas num tempo de quadro é Poisson: $\Pr[k] = \frac{G^k e^{-G}}{k!}$, e $S = G P_0$.</p>
+        <ul>
+          <li><b>ALOHA puro</b>: transmite quando quiser; se colidir (descobre pela difusão ou pela falta de ACK), espera um tempo aleatório e tenta de novo. O <b>período vulnerável</b> é de <b>2 tempos de quadro</b> (qualquer quadro que comece até um tempo antes ou depois colide). $P_0 = e^{-2G}$, então</li>
+        </ul>
+        <div class="grid2">
+          <div class="callout"><p><b>ALOHA puro</b>: $S = G e^{-2G}$<br>máximo em $G = 0{,}5$: $S = \frac{1}{2e} \approx$ <b>0,184</b></p></div>
+          <div class="callout"><p><b>ALOHA com slots</b>: $S = G e^{-G}$<br>máximo em $G = 1$: $S = \frac{1}{e} \approx$ <b>0,368</b></p></div>
+        </div>
+        <ul>
+          <li><b>ALOHA com slots</b> (slotted): o tempo é dividido em slots do tamanho de um quadro, e só se transmite no início de um slot. O período vulnerável cai para 1 tempo de quadro. Com $G = 1$: 37% dos slots vazios, 37% sucessos e 26% colisões.</li>
+          <li>Probabilidade de sucesso na 1ª tentativa: $e^{-G}$. Probabilidade de exatamente $k$ tentativas: $P_k = e^{-G}(1 - e^{-G})^{k-1}$. Número esperado de tentativas: $E = e^{G}$ (cresce exponencialmente com a carga).</li>
+        </ul>
+        <h3>CSMA (Carrier Sense Multiple Access)</h3>
+        <p>As estações <b>escutam o canal</b> antes de transmitir.</p>
+        <ul>
+          <li><b>1-persistente</b>: se o canal está ocupado, espera até ficar livre e transmite imediatamente (probabilidade 1). Se colidir, espera um tempo aleatório. Problema: duas estações esperando o fim da mesma transmissão colidem com certeza. Mesmo sem isso, o <b>atraso de propagação</b> causa colisões: uma estação pode começar a transmitir sem que o sinal de outra já tenha chegado até ela.</li>
+          <li><b>Não persistente</b>: se ocupado, não fica escutando continuamente: espera um tempo aleatório e verifica de novo. Melhor uso do canal e mais atraso.</li>
+          <li><b>p-persistente</b> (canais com slots): se livre, transmite com probabilidade $p$ e adia para o próximo slot com probabilidade $q = 1 - p$.</li>
+        </ul>
+        <p>Com $a$ = atraso de propagação / tempo de quadro pequeno, o CSMA não persistente chega perto de 100% com carga alta (0,815 em $G = 10$ com $a = 0{,}01$), enquanto o 1-persistente atinge ~0,53 (Fig. 4-4).</p>
+        <h3>CSMA/CD (com detecção de colisão)</h3>
+        <p>Base da Ethernet clássica: a estação <b>aborta a transmissão assim que detecta uma colisão</b> (compara o que envia com o que lê no fio), economizando tempo e banda. O modelo alterna <b>períodos de transmissão</b>, <b>períodos de disputa</b> (contention) e períodos ociosos.</p>
+        <p>Quanto tempo até ter certeza de que não houve colisão? Se $\tau$ é o tempo de propagação entre as duas estações mais distantes, no pior caso a colisão só é percebida pelo transmissor depois de $2\tau$ (o sinal vai até a outra ponta, que começa a transmitir no último instante, e a colisão volta). Por isso, o <b>slot de disputa</b> tem duração $2\tau$, e o quadro precisa durar pelo menos $2\tau$ para o transmissor ainda estar transmitindo quando a colisão voltar: <b>tamanho mínimo = $2\tau \times$ taxa</b>.</p>
+        <p class="callout">▶ <a href="../visualizacoes/acesso-multiplo.html">Visualização: curvas de vazão (ALOHA × CSMA), simulador de ALOHA com slots, recuo exponencial binário e contagem regressiva binária</a></p>
+        <h3>Protocolos livres de colisão</h3>
+        <ul>
+          <li><b>Mapa de bits</b> (reserva): o período de disputa tem $N$ slots de 1 bit. A estação $j$ põe 1 no slot $j$ se quer transmitir; depois, as que reservaram transmitem em ordem numérica. Eficiência: $\frac{d}{d + N}$ com carga baixa e $\frac{d}{d + 1}$ com carga alta. Espera média: $1{,}5N$ slots para estações de número baixo, $0{,}5N$ para as de número alto.</li>
+          <li><b>Passagem de token</b> (token ring e outros): uma mensagem pequena, o <b>token</b>, circula numa ordem predefinida, e só quem está com ele transmite.</li>
+          <li><b>Contagem regressiva binária</b> (binary countdown): quem quer transmitir envia seu endereço bit a bit, do mais significativo, e o canal faz o <b>OU</b> dos bits. Quem enviou 0 e viu 1 no canal desiste. Vence o <b>maior endereço</b> (há prioridade, e as estações de número baixo podem passar fome). Eficiência $\frac{d}{d + \log_2 N}$, ou 100% se o endereço da origem for o primeiro campo do quadro.</li>
+        </ul>
+        <h3>Protocolos de disputa limitada</h3>
+        <p>Com carga baixa, disputa (ALOHA/CSMA) tem pouco atraso; com carga alta, protocolos livres de colisão são mais eficientes. Os protocolos de disputa limitada ficam no meio: dividem as estações em grupos que disputam slots separados, com grupos grandes em carga baixa e pequenos em carga alta. A probabilidade de uma entre $k$ estações conseguir o canal, cada uma transmitindo com probabilidade $p$, é $k p (1-p)^{k-1}$, máxima com $p = 1/k$ (tende a $1/e$).</p>
+        <p><b>Percurso adaptativo em árvore</b> (adaptive tree walk): as estações são folhas de uma árvore binária. No slot 0, todas podem tentar; se colidir, no slot seguinte só tenta a subárvore da esquerda (nó 2), depois a da direita (nó 3), numa busca em profundidade que desce até resolver as colisões.</p>
+        <h3>Redes locais sem fio</h3>
+        <p>No sem fio, nem todas as estações se ouvem, e o que importa é a interferência <b>no receptor</b>, não no transmissor. Uma estação não consegue detectar colisões enquanto transmite (o próprio sinal é muito mais forte).</p>
+        <ul>
+          <li><b>Terminal oculto</b>: A transmite para B; C está fora do alcance de A, escuta o canal livre e também transmite para B. Resultado: colisão em B.</li>
+          <li><b>Terminal exposto</b>: B transmite para A; C quer transmitir para D (longe de B), mas escuta a transmissão de B e desiste à toa. Desperdício de banda.</li>
+          <li><b>MACA</b> (Multiple Access with Collision Avoidance): antes de transmitir, A envia um <b>RTS</b> (Request To Send, com o tamanho do quadro) para B, e B responde com um <b>CTS</b> (Clear To Send). Quem ouve o <b>CTS</b> (vizinhos do receptor) fica quieto durante a transmissão, o que resolve o terminal oculto. Quem ouve só o <b>RTS</b> (vizinhos do transmissor, mas não do receptor) pode transmitir, o que resolve o terminal exposto. RTSs ainda podem colidir, com recuo exponencial.</li>
+        </ul>
+
+        <h2>4.3 Ethernet</h2>
+        <h3>Camada física da Ethernet clássica</h3>
+        <p>A Ethernet clássica (10 Mbps) usava um cabo coaxial longo e compartilhado (<b>10Base5</b>, "thick", segmentos de até 500 m), com <b>transceptores</b> ligados ao cabo. Segmentos podiam ser unidos por <b>repetidores</b> (camada física: só amplificam e retransmitem), com no máximo 2,5 km entre dois transceptores e no máximo 4 repetidores em qualquer caminho. Codificação <b>Manchester</b> (10 Mbps = 20 Mbaud).</p>
+        <h3>Protocolo MAC e quadro</h3>
+        <p class="kv">Preâmbulo (8) | Endereço de destino (6) | Endereço de origem (6) | Tipo/Tamanho (2) | Dados (0–1500) | Enchimento (0–46) | Checksum (4)</p>
+        <ul>
+          <li><b>Preâmbulo</b>: 7 bytes 10101010 (Manchester gera uma onda quadrada de 10 MHz por 5,6 μs para o receptor sincronizar o relógio) e 1 byte <b>SOF</b> 10101011.</li>
+          <li><b>Endereços MAC</b> de 48 bits: o primeiro bit transmitido é 0 para endereço individual e 1 para grupo (multicast); só 1s = <b>broadcast</b>. Os primeiros 3 bytes são o <b>OUI</b> (fabricante), atribuído pelo IEEE.</li>
+          <li><b>Tipo</b> (DIX) × <b>tamanho</b> (IEEE 802.3): valores ≤ 0x600 (1536) são tamanho; maiores são tipo (ex.: 0x0800 = IPv4). Quando é tamanho, o protocolo vai num cabeçalho LLC (802.2) dentro dos dados.</li>
+          <li><b>Dados</b>: até <b>1500 bytes</b> (MTU). Quadro válido: <b>mínimo 64 bytes</b> (do destino ao checksum), por isso o <b>enchimento</b> completa os dados até 46 bytes. Máximo: 1518 bytes (1522 com a tag VLAN do 802.1Q).</li>
+          <li><b>Checksum</b>: CRC-32 (só detecção; quadro com erro é descartado).</li>
+        </ul>
+        <p><b>Por que 64 bytes?</b> Com 2500 m e 4 repetidores, o tempo de ida e volta no pior caso é cerca de 50 μs; a 10 Mbps, isso dá 500 bits, arredondado para <b>512 bits = 64 bytes</b>. Se o quadro fosse menor, o transmissor terminaria antes de a colisão voltar e acharia que teve sucesso. Essa é a relação entre taxa, distância e quadro mínimo: se a taxa aumenta, o quadro mínimo precisa crescer ou a distância máxima precisa diminuir.</p>
+        <p><b>Recuo exponencial binário</b> (binary exponential backoff): depois de uma colisão, o tempo é dividido em slots de $2\tau$ = <b>512 bits = 51,2 μs</b>. Após a $i$-ésima colisão, cada estação escolhe um número aleatório de slots entre $0$ e $2^i - 1$. Depois de 10 colisões, o intervalo fica congelado em 0–1023; depois de 16 colisões, o controlador desiste e reporta falha. Ele se adapta ao número de estações: poucas estações têm atraso baixo, e muitas resolvem a disputa em tempo razoável.</p>
+        <p>A Ethernet clássica não tem confirmação na camada de enlace: CSMA/CD sem ACK (o canal é confiável; a camada de transporte recupera as perdas).</p>
+        <h3>Desempenho</h3>
+        <p>Com $k$ estações sempre prontas, cada uma transmitindo num slot de disputa com probabilidade $p = 1/k$, a probabilidade $A$ de alguém conseguir o slot é $A = kp(1-p)^{k-1} \to 1/e$. O número médio de slots de disputa é $1/A \le e$. Com $P$ = tempo do quadro:</p>
+        <p>$$ \text{eficiência} = \frac{P}{P + 2\tau/A} = \frac{1}{1 + 2BLe/cF} $$</p>
+        <p>com $F$ = tamanho do quadro, $B$ = taxa, $L$ = comprimento do cabo, $c$ = velocidade de propagação. Aumentar o produto $B \cdot L$ piora a eficiência. Exemplo do livro: 10 Mbps, $2\tau = 51{,}2$ μs e quadros de 1024 bytes: disputa média de $e \times 64 \approx 174$ bytes, eficiência de <b>85%</b> (contra 37% do ALOHA com slots).</p>
+        <h3>Ethernet comutada, Fast, Gigabit e 10 Gigabit</h3>
+        <ul>
+          <li><b>Hub</b>: todos os fios ligados eletricamente num só <b>domínio de colisão</b> (como um cabo compartilhado). <b>Switch</b>: cada porta é um domínio de colisão separado; o switch lê o endereço de destino e envia o quadro só pela porta certa, com buffers para quadros simultâneos. Em <b>full-duplex</b> não há colisões e o CSMA/CD não é usado. Melhora o desempenho e a segurança (modo promíscuo só vê o próprio tráfego).</li>
+          <li><b>Fast Ethernet</b> (802.3u, 100 Mbps): mesmo quadro e mesmas regras, bits 10× mais rápidos, com cabos mais curtos (100 m até o hub/switch; quadro mínimo continua 64 bytes porque a distância máxima diminuiu). <b>100Base-T4</b>: 4 pares Cat 3, sinal ternário 8B/6T. <b>100Base-TX</b>: 2 pares Cat 5, <b>4B/5B</b> a 125 MHz (com MLT-3). <b>100Base-FX</b>: fibra multimodo, 2 km. Autonegociação da velocidade.</li>
+          <li><b>Gigabit Ethernet</b> (802.3ab/z, 1 Gbps): quase sempre full-duplex com switches. Para manter o half-duplex com hubs e distâncias razoáveis, criou <b>extensão de portadora</b> (o hardware completa o quadro até 512 bytes) e <b>rajada de quadros</b> (vários quadros concatenados numa só transmissão). 1000Base-T usa 4 pares Cat 5 com 5 níveis (PAM-5); fibra usa 8B/10B. <b>Quadros de pausa</b> para controle de fluxo e <b>jumbo frames</b> (até 9 KB) opcionais.</li>
+          <li><b>10 Gigabit Ethernet</b>: só full-duplex (sem CSMA/CD); fibra (10GBase-SR/LR/ER) e cobre (10GBase-CX4, 10GBase-T sobre Cat 6a); codificação 64B/66B.</li>
+        </ul>
+
+        <h2>4.4 Redes locais sem fio (802.11 / Wi-Fi)</h2>
+        <h3>Arquitetura e camada física</h3>
+        <p>Dois modos: <b>infraestrutura</b> (clientes ligados a um <b>AP</b>, Access Point, que se liga à rede cabeada, o <b>sistema de distribuição</b>) e <b>ad hoc</b> (computadores falando diretamente). Camadas físicas: 802.11b (2,4 GHz, espectro espalhado com sequência de Barker, até 11 Mbps), 802.11a (5 GHz, OFDM, até 54 Mbps), 802.11g (2,4 GHz, OFDM, 54 Mbps), 802.11n (MIMO, canais de 40 MHz, até 600 Mbps). Todas usam as bandas ISM e adaptam a taxa à qualidade do canal.</p>
+        <h3>Protocolo MAC: CSMA/CA</h3>
+        <p>Sem fio não dá para detectar colisões transmitindo, e os alcances são diferentes. O 802.11 usa <b>CSMA/CA</b> (collision <b>avoidance</b>) no modo <b>DCF</b> (Distributed Coordination Function):</p>
+        <ol>
+          <li>A estação sorteia um recuo aleatório (0 a 15 slots, no OFDM) <b>antes</b> de transmitir, mesmo sem ter havido colisão.</li>
+          <li>Espera o canal ficar livre por um <b>DIFS</b> e conta os slots livres para trás, <b>pausando</b> a contagem quando o canal fica ocupado.</li>
+          <li>Transmite quando o contador chega a 0. O receptor responde com <b>ACK</b> depois de um <b>SIFS</b>.</li>
+          <li>Sem ACK, supõe-se erro ou colisão: <b>dobra</b> o intervalo de recuo e tenta de novo (recuo exponencial, como na Ethernet).</li>
+        </ol>
+        <p><b>Detecção de portadora virtual</b>: cada quadro tem um campo <b>Duração</b> com o tempo que a troca vai ocupar o canal (incluindo o ACK). As estações que o ouvem marcam o canal como ocupado no <b>NAV</b> (Network Allocation Vector), mesmo sem sentir sinal físico. O <b>RTS/CTS</b> opcional usa o NAV para lidar com o terminal oculto; diferente do MACA, uma estação que só ouve o RTS também fica quieta (NAV), então o 802.11 <b>não</b> resolve o terminal exposto. RTS/CTS é pouco usado: não ajuda em quadros curtos nem com o AP, e adiciona sobrecarga.</p>
+        <p><b>Espaçamentos entre quadros</b> (prioridades, do menor ao maior): <b>SIFS</b> (ACK, CTS, próximo fragmento de uma rajada) &lt; <b>AIFS₁</b> (tráfego de alta prioridade, QoS) &lt; <b>DIFS</b> (quadros de dados normais) &lt; <b>AIFS₄</b> (tráfego de fundo) &lt; <b>EIFS</b> (depois de receber um quadro defeituoso).</p>
+        <p><b>Economia de energia</b>: o AP envia <b>beacons</b> periódicos com um mapa de tráfego pendente; o cliente dorme e acorda para os beacons (e o APSD para voz). <b>Anomalia de taxa</b>: com oportunidades iguais de envio, uma estação lenta derruba a vazão de todas; o <b>TXOP</b> (oportunidade de transmissão) dá a cada estação uma fatia igual de <b>tempo</b>, e não de quadros.</p>
+        <h3>Quadro 802.11</h3>
+        <p class="kv">Controle (2) | Duração (2) | Endereço 1 (6) | Endereço 2 (6) | Endereço 3 (6) | Sequência (2) | Dados (0–2312) | Checksum (4)</p>
+        <p>O <b>controle</b> tem: versão, tipo (dados, controle ou gerenciamento), subtipo (ex.: RTS, CTS, ACK), <b>To DS / From DS</b> (se vai para ou vem do sistema de distribuição), mais fragmentos, repetição (retransmissão), gerenciamento de energia, mais dados, <b>protegido</b> (criptografado) e ordem. Endereço 1 = receptor, endereço 2 = transmissor, endereço 3 = ponta remota (ex.: o roteador na rede cabeada), porque o quadro passa pelo AP.</p>
+        <p><b>Serviços</b>: associação, desassociação, reassociação (troca de AP), autenticação (WPA2), distribuição, integração (tradução para outra rede), entrega de dados, privacidade (criptografia AES), QoS, controle de potência e seleção dinâmica de frequência.</p>
+
+        <h2>4.5–4.7 Banda larga sem fio, Bluetooth e RFID (leitura)</h2>
+        <ul>
+          <li><b>802.16 (WiMAX)</b>: banda larga sem fio metropolitana, orientada a conexão, com OFDMA e QoS forte (estações-base alocam slots, como na telefonia), diferente do 802.11, que é por disputa.</li>
+          <li><b>Bluetooth</b>: <b>piconet</b> com um <b>mestre</b> e até 7 <b>escravos</b> ativos (e até 255 estacionados); várias piconets formam uma <b>scatternet</b>. Salto de frequência na banda ISM de 2,4 GHz (1600 saltos/s), TDM com slots de 625 μs controlados pelo mestre.</li>
+          <li><b>RFID</b> (EPC Gen 2): etiquetas passivas alimentadas pelo sinal do leitor, respondendo por <b>retroespalhamento</b> (backscatter). A identificação usa ALOHA com slots: o leitor anuncia $2^Q$ slots e cada etiqueta escolhe um ao acaso. O melhor $Q$ é tal que $2^Q \approx$ número de etiquetas.</li>
+        </ul>
+
+        <h2>4.8 Comutação na camada de enlace</h2>
+        <h3>Usos das pontes</h3>
+        <p>Pontes (bridges) ligam LANs na camada de enlace (hoje, "switch" é uma ponte com muitas portas). Motivos: unir LANs de departamentos diferentes, cobrir distâncias maiores, aumentar a capacidade total (cada porta é um domínio de colisão separado) e isolar tráfego. Idealmente elas são <b>transparentes</b>: basta ligar, sem configuração, e as estações não percebem.</p>
+        <h3>Pontes com aprendizado</h3>
+        <p>A ponte opera em modo <b>promíscuo</b> (recebe todos os quadros) e mantém uma <b>tabela hash</b> destino → porta. O aprendizado é <b>reverso</b> (backward learning): ao receber um quadro da origem X pela porta $p$, a ponte aprende "X está atrás de $p$". As entradas têm hora e expiram em alguns minutos (as máquinas podem mudar de lugar). Para cada quadro que chega:</p>
+        <ol>
+          <li>Porta do destino = porta de chegada → <b>descarta</b>.</li>
+          <li>Porta do destino diferente → <b>encaminha</b> só por ela.</li>
+          <li>Destino desconhecido → <b>inunda</b> (flooding): envia por todas as portas menos a de chegada.</li>
+        </ol>
+        <p>Pontes <b>store-and-forward</b> recebem o quadro inteiro e verificam o CRC antes de encaminhar (descartam quadros corrompidos). Pontes <b>cut-through</b> (wormhole) começam a encaminhar assim que leem o endereço de destino (menos atraso, mas propagam quadros corrompidos).</p>
+        <p class="callout">▶ <a href="../visualizacoes/pontes.html">Visualização: pontes com aprendizado (Fig. 4-41 e problema 4.38) e a árvore geradora</a></p>
+        <h3>Pontes com árvore geradora (spanning tree)</h3>
+        <p>Enlaces redundantes aumentam a confiabilidade, mas criam <b>laços</b>: um quadro inundado circularia para sempre e se multiplicaria. A solução é que as pontes calculem uma <b>árvore geradora</b> da topologia e ignorem os enlaces fora dela (o protocolo <b>IEEE 802.1D</b>, de Radia Perlman):</p>
+        <ol>
+          <li>Eleição da <b>raiz</b>: a ponte com o <b>menor identificador</b> (baseado no endereço MAC). As pontes trocam mensagens de configuração (BPDUs) com o ID da raiz que conhecem e a distância até ela.</li>
+          <li>Cada ponte escolhe sua <b>porta raiz</b>: a do menor caminho até a raiz (desempate pelo menor ID).</li>
+          <li>Em cada LAN, a ponte mais perto da raiz é a <b>designada</b>; as demais portas são <b>bloqueadas</b> (não encaminham dados).</li>
+        </ol>
+        <p>O algoritmo continua rodando para detectar mudanças de topologia. Algumas pontes podem ficar fora da árvore (problema 4.40).</p>
+        <h3>Repetidores, hubs, pontes, switches, roteadores e gateways</h3>
+        <table class="data">
+          <tr><th>Camada</th><th>Dispositivo</th><th>O que olha</th></tr>
+          <tr><td>Física</td><td>Repetidor, hub</td><td>nada: regenera e repete os bits; tudo num domínio de colisão</td></tr>
+          <tr><td>Enlace</td><td>Ponte, switch</td><td>endereço MAC do quadro; cada porta é um domínio de colisão</td></tr>
+          <tr><td>Rede</td><td>Roteador</td><td>endereço IP do pacote (tira o cabeçalho de enlace)</td></tr>
+          <tr><td>Transporte</td><td>Gateway de transporte</td><td>conexões (ex.: TCP ↔ outro transporte)</td></tr>
+          <tr><td>Aplicação</td><td>Gateway de aplicação</td><td>semântica das mensagens (ex.: e-mail ↔ SMS)</td></tr>
+        </table>
+        <h3>LANs virtuais (VLANs)</h3>
+        <p>Separam a LAN <b>logicamente</b>, independente da fiação física: segurança, carga e controle do tráfego de difusão (cada VLAN é um domínio de broadcast). Os switches são configurados com a VLAN de cada porta (ou de cada endereço MAC). Para levar a VLAN de um switch a outro, o <b>IEEE 802.1Q</b> acrescenta ao quadro Ethernet uma tag de 4 bytes depois do endereço de origem: 0x8100 (identifica o formato), 3 bits de <b>prioridade</b>, 1 bit CFI e 12 bits de <b>VLAN ID</b>. Por isso o quadro máximo vai a 1522 bytes. Só switches e computadores que entendem VLAN precisam lidar com a tag; o primeiro switch VLAN-aware a insere e o último a remove.</p>
+
+        <h2>Fórmulas do capítulo</h2>
+        <table class="data">
+          <tr><th>Conceito</th><th>Fórmula</th></tr>
+          <tr><td>Atraso M/M/1; com $N$ subcanais estáticos</td><td>$T = \frac{1}{\mu C - \lambda}$; $T_N = NT$</td></tr>
+          <tr><td>Poisson</td><td>$\Pr[k] = G^k e^{-G} / k!$</td></tr>
+          <tr><td>ALOHA puro / com slots</td><td>$S = Ge^{-2G}$ (máx. 0,184) / $S = Ge^{-G}$ (máx. 0,368)</td></tr>
+          <tr><td>Tentativas (ALOHA com slots)</td><td>$P_k = e^{-G}(1 - e^{-G})^{k-1}$, $E = e^G$</td></tr>
+          <tr><td>Slot de disputa CSMA/CD</td><td>$2\tau$ (ida e volta)</td></tr>
+          <tr><td>Quadro mínimo</td><td>$F_{\min} = 2\tau \cdot B = \frac{2L}{v} B$</td></tr>
+          <tr><td>Eficiência da Ethernet</td><td>$\frac{1}{1 + 2BLe/cF}$</td></tr>
+          <tr><td>Recuo após $i$ colisões</td><td>aleatório em $[0, 2^{\min(i,10)} - 1]$ slots de 51,2 μs; desiste após 16</td></tr>
+          <tr><td>Mapa de bits</td><td>eficiência $\frac{d}{d+N}$ (baixa carga), $\frac{d}{d+1}$ (alta carga)</td></tr>
+          <tr><td>Contagem regressiva binária</td><td>eficiência $\frac{d}{d + \log_2 N}$</td></tr>
+          <tr><td>Disputa limitada</td><td>$A = kp(1-p)^{k-1}$, máximo em $p = 1/k$</td></tr>
+        </table>
+
+        <h2>Exercícios do livro resolvidos</h2>
+        <details class="prob exam"><summary><b>4.1</b> Canal de 100 Mbps, quadros exponenciais de 10 000 bits em média. Atraso médio para 90, 900 e 9000 quadros/s?</summary>
+          <p>$T = \frac{1}{\mu C - \lambda}$, com $\mu C = 10^8 / 10^4 = 10\,000$ quadros/s. (a) $1/9910$ s ≈ <b>100,9 μs</b>; (b) $1/9100$ ≈ <b>109,9 μs</b>; (c) $1/1000$ = <b>1 ms</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.2</b> $N$ estações num ALOHA puro de 56 kbps; cada uma gera um quadro de 1000 bits a cada 100 s. Qual o $N$ máximo?</summary>
+          <p>Vazão máxima do ALOHA puro: $0{,}184 \times 56\,000 \approx 10\,304$ bps. Cada estação precisa de $1000/100 = 10$ bps → $N \approx$ <b>1030</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.3</b> Em carga baixa, qual tem menos atraso: ALOHA puro ou com slots?</summary>
+          <p>O <b>puro</b>: com carga baixa quase não há colisões, e ele transmite imediatamente, enquanto o com slots espera em média meio slot pelo início do próximo.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.4</b> Usuários de ALOHA geram 50 requisições/s (com retransmissões); slots de 40 ms. (a) Chance de sucesso na 1ª tentativa? (b) De exatamente $k$ colisões e depois sucesso? (c) Número esperado de tentativas?</summary>
+          <p>$G = 50 \times 0{,}04 = 2$ por slot. (a) $P_0 = e^{-2} \approx$ <b>0,135</b>. (b) $(1 - e^{-2})^k e^{-2} = 0{,}865^k \times 0{,}135$. (c) $E = e^{G} = e^2 \approx$ <b>7,4</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.6</b> Duração do slot de disputa do CSMA/CD em (a) 2 km de cabo com $v = 0{,}82c$ e (b) 40 km de fibra com $v = 0{,}65c$?</summary>
+          <p>Slot $= 2\tau$. (a) $\tau = 2000 / (0{,}82 \times 3 \times 10^8) \approx 8{,}13$ μs → <b>16,3 μs</b>. (b) $\tau = 40\,000 / (0{,}65 \times 3 \times 10^8) \approx 205$ μs → <b>410 μs</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.7</b> Pior caso de espera no protocolo de mapa de bits?</summary>
+          <p>Todas as estações querem transmitir e a estação acabou de perder seu bit de reserva: ela espera o período de reserva e mais os quadros das outras $N - 1$. Aproximadamente $N$ slots de bit + $(N-1)\,d$ bits de quadros, ou seja, $(N - 1)d + N$ tempos de bit.</p>
+        </details>
+        <details class="prob"><summary><b>4.8</b> Como uma estação de número baixo pode passar fome na contagem regressiva binária?</summary>
+          <p>O maior endereço sempre vence. Se estações de número alto têm tráfego contínuo, a de número baixo perde toda disputa.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.9</b> 16 estações (1 a 16) com percurso adaptativo em árvore; as de número primo ficam prontas ao mesmo tempo. Quantos slots?</summary>
+          <p>Prontas: 2, 3, 5, 7, 11, 13. Slots: 1 {todas} colisão; 2 {1–8}: 2, 3, 5, 7 colisão; 3 {1–4}: 2, 3 colisão; 4 {1–2}: 2 ✓; 5 {3–4}: 3 ✓; 6 {5–8}: 5, 7 colisão; 7: 5 ✓; 8: 7 ✓; 9 {9–16}: 11, 13 colisão; 10 {9–12}: 11 ✓; 11 {13–16}: 13 ✓. <b>11 slots</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.10</b> Estações sem fio A–E (A alcança todas; B: A, C, E; C: A, B, D; D: A, C, E; E: A, D, B). Que outras comunicações são possíveis quando (a) A → B, (b) B → A, (c) B → C?</summary>
+          <p>Uma transmissão X → Y é possível se nenhum outro transmissor atinge Y e X não atinge o receptor em andamento. (a) Todos ouvem A, então qualquer outro receptor sofreria interferência: <b>nenhuma</b>. (b) A ouve todos, então qualquer outro transmissor atrapalharia em A: <b>nenhuma</b>. (c) C ouve A, B e D, então A e D não podem transmitir. E pode transmitir para D (D não ouve B): <b>E → D</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.11</b> Seis estações com MACA: duas transmissões podem ocorrer simultaneamente?</summary>
+          <p>Sim, se estiverem longe o bastante. Ex.: estações em linha, cada uma alcançando só as vizinhas: A → B e E → F ao mesmo tempo.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.13</b> Taxa em baud da Ethernet clássica de 10 Mbps?</summary>
+          <p>Manchester tem 2 intervalos de sinal por bit: <b>20 Mbaud</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.14</b> Codificação Manchester de 0001110101.</summary>
+          <p>Cada bit tem transição no meio (convenção do livro: 0 = baixo→alto, 1 = alto→baixo). Veja a forma de onda com o preset 0001110101 na <a href="../visualizacoes/codificacao.html">visualização de codificação</a>.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.15</b> LAN CSMA/CD de 1 km, 10 Mbps, 200 m/μs. Quadros de 256 bits (32 de sobrecarga); o primeiro slot após um sucesso é do receptor, que envia um ACK de 32 bits. Taxa efetiva?</summary>
+          <p>$\tau = 5$ μs, slot $= 2\tau = 10$ μs. Um ciclo: disputa do transmissor (10 μs) + dados (25,6 μs) + propagação do último bit (5 μs) + slot do receptor (10 μs) + ACK (3,2 μs) + propagação (5 μs) = 58,8 μs para 224 bits úteis → <b>≈ 3,8 Mbps</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.16</b> Duas estações CSMA/CD disputam com recuo exponencial binário. Probabilidade de a disputa acabar na rodada $k$ e número médio de rodadas?</summary>
+          <p>Na rodada $i$ cada estação escolhe entre $2^i$ slots; colidem de novo com probabilidade $2^{-i}$. $P_k = (1 - 2^{-k}) \prod_{i=1}^{k-1} 2^{-i}$: $P_1 = 0{,}5$, $P_2 = 0{,}375$, $P_3 \approx 0{,}109$, … Média $\sum k P_k \approx$ <b>1,64 rodadas</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.17</b> Pacote IP de 60 bytes via Ethernet (sem LLC). Precisa de enchimento?</summary>
+          <p><b>Não</b>: o campo de dados só precisa de enchimento abaixo de 46 bytes. O quadro terá $14 + 60 + 4 = 78 \ge 64$ bytes.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.18</b> Como a Fast Ethernet mantém o quadro mínimo de 64 bytes sendo 10× mais rápida?</summary>
+          <p>Reduzindo a <b>distância máxima</b> 10× (de ~2500 m para ~250 m, na prática 100 m até o hub/switch). Assim $2\tau$ também cai 10×, e 512 bits continuam cobrindo a ida e volta.</p>
+        </details>
+        <details class="prob"><summary><b>4.19</b> Alguns livros dizem que o quadro máximo tem 1522 bytes. Estão errados?</summary>
+          <p>Não: $1500 + 18$ (cabeçalho e CRC) $= 1518$, mais os 4 bytes da <b>tag VLAN 802.1Q</b> = 1522.</p>
+        </details>
+        <details class="prob"><summary><b>4.20</b> Quantos quadros por segundo o Gigabit Ethernet processa?</summary>
+          <p>Pior caso, com quadros mínimos de 64 bytes = 512 bits em full-duplex: $10^9/512 \approx$ <b>1,95 milhão</b> (ignorando preâmbulo e intervalo entre quadros). Em half-duplex com extensão de portadora, cada quadro ocupa 512 bytes: $\approx 244\,000$ quadros/s (com rajada de quadros, mais).</p>
+        </details>
+        <details class="prob exam"><summary><b>4.24</b> WLAN com um AP e 10 estações: 4 a 6 Mbps, 4 a 18 Mbps, 2 a 54 Mbps. Taxa de cada estação com todas transmitindo, (a) sem TXOP e (b) com TXOP?</summary>
+          <p>(a) Sem TXOP, cada estação manda o mesmo número de quadros (anomalia de taxa): todas ficam com $\frac{1}{4/6 + 4/18 + 2/54}$ ≈ <b>1,08 Mbps</b>. (b) Com TXOP, cada uma ganha 1/10 do <b>tempo</b>: <b>0,6</b>, <b>1,8</b> e <b>5,4 Mbps</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.25</b> 802.11b a 11 Mbps, quadros de 64 bytes em sequência, taxa de erro de bit $10^{-7}$. Quadros danificados por segundo?</summary>
+          <p>$11 \times 10^6 / 512 \approx 21\,484$ quadros/s, cada um com probabilidade $\approx 512 \times 10^{-7}$ de erro: <b>≈ 1,1 quadro/s</b>.</p>
+        </details>
+        <details class="prob"><summary><b>4.36</b> Backplane de 10 Gbps num switch Fast Ethernet. Quadros/s no pior caso?</summary>
+          <p>Pior caso = quadros mínimos (512 bits): $10^{10}/512 \approx$ <b>19,5 milhões</b> de quadros/s.</p>
+        </details>
+        <details class="prob"><summary><b>4.37 e 4.39</b> Store-and-forward × cut-through. Qual a vantagem do primeiro com quadros danificados?</summary>
+          <p>Store-and-forward recebe o quadro inteiro antes de encaminhar; cut-through começa assim que lê o destino (menor atraso). O store-and-forward verifica o CRC e <b>descarta quadros danificados</b>; o cut-through os propaga, desperdiçando banda nas outras LANs.</p>
+        </details>
+        <details class="prob exam"><summary><b>4.38</b> Fig. 4-41(b), tabelas vazias. Portas de encaminhamento para: (a) A→C, (b) E→F, (c) F→E, (d) G→E, (e) D→A, (f) B→F.</summary>
+          <p>Topologia: B1 tem portas 1 = A, 2 = B, 3 = C, 4 = B2; B2 tem 4 = B1, 1 = D, 2 = hub H1 (E e F), 3 = G.</p>
+          <p>(a) B1 aprende A@1, não conhece C: inunda <b>2, 3, 4</b>; B2 aprende A@4 e inunda <b>1, 2, 3</b>.<br>
+          (b) O hub entrega a F e a B2; B2 aprende E@2, não conhece F: inunda <b>1, 3, 4</b>; B1 aprende E@4 e inunda <b>1, 2, 3</b>.<br>
+          (c) B2 aprende F@2; E está na porta 2, a mesma de chegada: <b>descarta</b>.<br>
+          (d) B2 aprende G@3; E@2: encaminha pela <b>2</b>.<br>
+          (e) B2 aprende D@1; A@4: encaminha pela <b>4</b>; B1 aprende D@4; A@1: encaminha pela <b>1</b>.<br>
+          (f) B1 aprende B@2, mas não conhece F (o quadro de F nunca chegou a B1): inunda <b>1, 3, 4</b>; B2 conhece F@2: encaminha pela <b>2</b>.</p>
+          <p class="c-muted">Obs.: no texto da seção 4.8.2 o livro diz que o quadro de E para F chega a B2 "pela porta 4", mas pela figura é a porta 2 (a porta 4 liga a B1).</p>
+        </details>
+        <details class="prob"><summary><b>4.40</b> Como uma ponte pode ficar fora da árvore geradora?</summary>
+          <p>Ex.: duas pontes ligando as mesmas duas LANs em paralelo. A de ID menor é a designada nas duas LANs. A outra fica só com a porta raiz, sem nenhuma porta designada, e sua outra porta é bloqueada: ela não encaminha nenhum quadro, ou seja, fica fora da árvore (é redundância em espera, que entra se a primeira falhar).</p>
+        </details>
+        <details class="prob"><summary><b>4.41</b> Se as VLANs usassem hubs em vez de switches, os hubs precisariam de tabelas de configuração?</summary>
+          <p>Não: hubs não examinam quadros, só repetem os bits em todas as portas. Por isso mesmo, não conseguem separar VLANs: todas as estações ligadas a um hub ficam na mesma VLAN.</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o período vulnerável do ALOHA puro?', options: ['2 tempos de quadro', '1 tempo de quadro', '$2\\tau$', '1 slot'], answer: 0, explain: 'Colide com qualquer quadro que comece até um tempo de quadro antes ou depois.' },
+      { q: 'Por que a Ethernet exige quadros de pelo menos 64 bytes?', options: ['Para o transmissor ainda estar transmitindo quando a colisão mais distante voltar ($2\\tau$)', 'Por causa do CRC-32', 'Para caber o cabeçalho IP', 'Por causa do preâmbulo'], answer: 0, explain: '512 bits a 10 Mbps = 51,2 μs ≥ ida e volta em 2500 m com 4 repetidores.' },
+      { q: 'No 802.11, qual espaçamento é usado antes de um ACK?', options: ['SIFS', 'DIFS', 'EIFS', 'AIFS₄'], answer: 0, explain: 'O SIFS é o menor, e dá prioridade à continuação da troca em andamento.' },
+      { q: 'O RTS/CTS do MACA resolve o terminal oculto porque:', options: ['os vizinhos do receptor ouvem o CTS e ficam quietos', 'os vizinhos do transmissor ouvem o RTS e ficam quietos', 'o receptor detecta colisões', 'usa CDMA'], answer: 0, explain: 'O terminal oculto está perto do receptor, não do transmissor.' },
+      { q: 'Uma ponte recebe pela porta 2 um quadro cujo destino ela já sabe que está na porta 2. Ela:', options: ['descarta', 'encaminha pela porta 2', 'inunda', 'devolve à origem'], answer: 0, explain: 'O destino está do mesmo lado de onde o quadro veio.' },
+      { q: 'Na árvore geradora do 802.1D, a raiz é:', options: ['a ponte de menor ID', 'a ponte com mais portas', 'a ponte de maior ID', 'escolhida pelo administrador obrigatoriamente'], answer: 0, explain: 'IDs derivados do endereço MAC; a menor vence.' },
+      { q: 'Após a 3ª colisão, a Ethernet escolhe um atraso aleatório em:', options: ['0 a 7 slots', '0 a 3 slots', '0 a 15 slots', '0 a 1023 slots'], answer: 0, explain: '$[0, 2^3 - 1]$ slots de 51,2 μs.' },
+      { q: 'Qual a vazão máxima do ALOHA com slots?', options: ['$1/e \\approx 0{,}368$', '$1/2e \\approx 0{,}184$', '0,5', '1'], answer: 0, explain: 'Em $G = 1$.' },
+    ]);
+  </script>
+</body>
+</html>

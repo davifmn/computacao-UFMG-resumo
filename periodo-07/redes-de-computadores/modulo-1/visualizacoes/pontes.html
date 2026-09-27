@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pontes e Spanning Tree · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 5px; }
+    .row-in { display: flex; gap: 10px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+    table.tbl { border-collapse: collapse; margin: 4px 14px 12px; font-family: var(--mono); font-size: 14px; }
+    table.tbl td, table.tbl th { border: 1px solid var(--border); padding: 4px 12px; text-align: center; }
+    table.tbl th { color: var(--muted); }
+    table.tbl tr.new td { background: rgba(131,193,103,.18); }
+    .log { padding: 4px 14px 14px; font-size: 14px; display: grid; gap: 4px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Pontes</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 4 (seção 4.8)</div>
+    <h1>Pontes com aprendizado e árvore geradora</h1>
+    <p class="lead">A topologia da Fig. 4-41(b) do livro: duas pontes (switches) B1 e B2 e um hub H1. As tabelas começam vazias. Envie quadros e veja o <b>aprendizado reverso</b>: a ponte aprende a porta da <b>origem</b> e usa a tabela para decidir sobre o <b>destino</b> (encaminhar, inundar ou descartar).</p>
+
+    <div class="toolbar">
+      <label>De <select id="src"></select></label>
+      <label>para <select id="dst"></select></label>
+      <button class="btn primary" id="send">Enviar quadro</button>
+      <button class="btn" id="p438">Rodar o problema 4.38</button>
+      <button class="btn" id="reset">Zerar tabelas</button>
+    </div>
+    <div class="lab">
+      <div class="stage"><svg id="topo" aria-label="Topologia da Fig. 4-41(b)"></svg></div>
+      <div class="panel">
+        <div class="panel-title">Tabelas (destino → porta)</div>
+        <div id="tables"></div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-title">Histórico</div><div class="log" id="log"></div></div>
+
+    <h2>Árvore geradora (IEEE 802.1D)</h2>
+    <p>Cinco pontes ligando cinco LANs com laços. A raiz é a ponte de <b>menor ID</b>; cada ponte escolhe a <b>porta raiz</b> (caminho mais curto até a raiz); cada LAN tem uma <b>ponte designada</b> (a mais perto da raiz); as outras portas ficam <b>bloqueadas</b> (✕). Clique numa ponte para desligá-la e ver a árvore se refazer.</p>
+    <div class="lab">
+      <div class="stage"><svg id="st" aria-label="Árvore geradora"></svg></div>
+      <div class="panel"><div class="readout" id="st-r"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Regras da ponte com aprendizado</h2>
+      <ol>
+        <li>Aprende: "a origem está atrás da porta de chegada" (com hora; a entrada expira em alguns minutos).</li>
+        <li>Destino na mesma porta de chegada → <b>descarta</b> (ex.: E → F atrás do hub).</li>
+        <li>Destino conhecido em outra porta → <b>encaminha</b> só por ela.</li>
+        <li>Destino desconhecido → <b>inunda</b> todas as portas menos a de chegada.</li>
+      </ol>
+      <p class="c-muted">No livro, B1 tem portas 1 = A, 2 = B, 3 = C e 4 = B2; B2 tem 4 = B1, 1 = D, 2 = H1 (E e F) e 3 = G. Um hub repete tudo em todas as portas: E, F e a porta 2 de B2 formam um único domínio de colisão.</p>
+      <p>Volte ao <a href="../tutoriais/cap4-subcamada-mac.html">capítulo 4</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, h, pick } from '../../../../engine/page.js';
+    import { bridgeSend, spanningTree } from './redes.js';
+
+    // ---------- Fig. 4-41(b) ----------
+    const TOPO = { bridges: { B1: { 1: 'LA', 2: 'LB', 3: 'LC', 4: 'L12' }, B2: { 4: 'L12', 1: 'LD', 2: 'H1', 3: 'LG' } }, hosts: { A: 'LA', B: 'LB', C: 'LC', D: 'LD', E: 'H1', F: 'H1', G: 'LG' } };
+    const P = { B1: [300, 190], B2: [560, 190], H1: [720, 150], A: [140, 70], B: [110, 190], C: [140, 310], D: [640, 60], E: [840, 90], F: [840, 210], G: [640, 320] };
+    // cada LAN como segmento entre dois pontos (para destacar)
+    const LANSEG = { LA: ['A', 'B1', 1], LB: ['B', 'B1', 2], LC: ['C', 'B1', 3], L12: ['B1', 'B2', 4], LD: ['D', 'B2', 1], H1: ['H1', 'B2', 2], LG: ['G', 'B2', 3] };
+    const HOSTS = Object.keys(TOPO.hosts);
+    let tables = {}, last = null, newEntries = new Set();
+    const logs = [];
+
+    for (const id of ['#src', '#dst']) $(id).replaceChildren(...HOSTS.map(x => h('option', {}, x)));
+    $('#dst').value = 'C';
+
+    const scene = new Scene($('#topo'), { width: 900, height: 380 });
+    scene.setAnimated(false);
+    function drawTopo() {
+      const used = new Set();
+      if (last) {
+        used.add(TOPO.hosts[last.src]);
+        for (const hp of last.hops) for (const p of hp.out) used.add(TOPO.bridges[hp.bridge][p]);
+      }
+      scene.frame(s => {
+        for (const [lan, [a, b, port]] of Object.entries(LANSEG)) {
+          const [x1, y1] = P[a], [x2, y2] = P[b];
+          s.line(`l${lan}`, x1, y1, x2, y2, { stroke: used.has(lan) ? COLORS.yellow : COLORS.border, sw: used.has(lan) ? 4 : 2, layer: 'bg' });
+          // número da porta perto da ponte
+          const t = 0.8, px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t;
+          s.text(`pt${lan}`, port, { x: px, y: py - 10, size: 12, weight: 700, mono: true, fill: COLORS.orange });
+          if (lan === 'L12') { const q = 0.2; s.text('pt12b', 4, { x: x1 + (x2 - x1) * q, y: y1 - 10, size: 12, weight: 700, mono: true, fill: COLORS.orange }); }
+        }
+        s.line('hE', ...P.H1, ...P.E, { stroke: used.has('H1') ? COLORS.yellow : COLORS.border, sw: used.has('H1') ? 4 : 2, layer: 'bg' });
+        s.line('hF', ...P.H1, ...P.F, { stroke: used.has('H1') ? COLORS.yellow : COLORS.border, sw: used.has('H1') ? 4 : 2, layer: 'bg' });
+        for (const b of ['B1', 'B2']) {
+          const hop = last?.hops.find(x => x.bridge === b);
+          const c = !hop ? COLORS.blue : hop.action === 'descarta' ? COLORS.red : hop.action === 'inunda' ? COLORS.orange : COLORS.green;
+          s.rect(`r${b}`, { x: P[b][0] - 34, y: P[b][1] - 22, w: 68, h: 44, rx: 10, fill: COLORS.surface2, stroke: c, sw: 2.5 });
+          s.text(`t${b}`, b, { x: P[b][0], y: P[b][1] - 2, size: 15, weight: 700, fill: c });
+          if (hop) s.text(`a${b}`, hop.action, { x: P[b][0], y: P[b][1] + 36, size: 12, weight: 600, fill: c });
+        }
+        s.rect('rH1', { x: P.H1[0] - 24, y: P.H1[1] - 16, w: 48, h: 32, rx: 6, fill: COLORS.surface2, stroke: COLORS.muted, sw: 1.5 });
+        s.text('tH1', 'hub', { x: P.H1[0], y: P.H1[1], size: 12, fill: COLORS.muted });
+        for (const x of HOSTS) {
+          const isS = last?.src === x, isD = last?.dst === x;
+          s.circle(`c${x}`, { x: P[x][0], y: P[x][1], r: 18, fill: isS ? COLORS.blue : isD ? COLORS.green : COLORS.surface2, stroke: COLORS.muted, sw: 1.5 });
+          s.text(`n${x}`, x, { x: P[x][0], y: P[x][1], size: 15, weight: 700, fill: isS || isD ? '#0b0e12' : COLORS.text });
+        }
+      });
+      $('#tables').replaceChildren(...['B1', 'B2'].map(b => {
+        const rows = Object.entries(tables[b] ?? {});
+        return h('div', {}, h('div', { class: 'c-muted', style: 'padding:6px 14px 0' }, b),
+          h('table', { class: 'tbl' }, h('tr', {}, h('th', {}, 'destino'), h('th', {}, 'porta')),
+            ...(rows.length ? rows.map(([k, v]) => h('tr', { class: newEntries.has(`${b}:${k}`) ? 'new' : '' }, h('td', {}, k), h('td', {}, v))) : [h('tr', {}, h('td', { colspan: 2, class: 'c-faint' }, 'vazia'))])));
+      }));
+      $('#log').innerHTML = logs.length ? logs.map(l => `<div>${l}</div>`).join('') : '<span class="c-muted">Nenhum quadro enviado.</span>';
+    }
+    function send(src, dst) {
+      const before = JSON.parse(JSON.stringify(tables));
+      const r = bridgeSend(TOPO, tables, src, dst);
+      newEntries = new Set();
+      for (const b of Object.keys(tables)) for (const k of Object.keys(tables[b])) if (before[b]?.[k] !== tables[b][k]) newEntries.add(`${b}:${k}`);
+      last = { src, dst, hops: r.hops };
+      const desc = r.hops.map(hp => `${hp.bridge} (chegou pela ${hp.inPort}): <b class="${hp.action === 'descarta' ? 'c-red' : hp.action === 'inunda' ? 'c-orange' : 'c-green'}">${hp.action}</b>${hp.out.length ? ` → porta(s) ${hp.out.join(', ')}` : ''}`).join('; ');
+      logs.push(`<b>${src} → ${dst}</b>: ${desc || 'nenhuma ponte envolvida'}`);
+      drawTopo();
+    }
+    $('#send').addEventListener('click', () => { if ($('#src').value !== $('#dst').value) send($('#src').value, $('#dst').value); });
+    $('#reset').addEventListener('click', () => { tables = {}; last = null; logs.length = 0; newEntries = new Set(); drawTopo(); });
+    $('#p438').addEventListener('click', () => {
+      tables = {}; logs.length = 0;
+      [['A', 'C'], ['E', 'F'], ['F', 'E'], ['G', 'E'], ['D', 'A'], ['B', 'F']].forEach(([a, b]) => send(a, b));
+    });
+    drawTopo();
+
+    // ---------- Spanning tree ----------
+    const ALL = { 1: ['L1', 'L2'], 2: ['L1', 'L3'], 3: ['L2', 'L3', 'L4'], 4: ['L3', 'L5'], 5: ['L4', 'L5'] };
+    const BP = { 1: [450, 50], 2: [250, 150], 3: [560, 190], 4: [330, 300], 5: [640, 330] };
+    const LP = { L1: [330, 80], L2: [620, 90], L3: [380, 200], L4: [720, 250], L5: [480, 360] };
+    const off = new Set();
+    const ss = new Scene($('#st'), { width: 860, height: 400 });
+    ss.setAnimated(false);
+    function drawST() {
+      const bridges = Object.fromEntries(Object.entries(ALL).filter(([id]) => !off.has(+id)));
+      const t = Object.keys(bridges).length ? spanningTree(bridges) : null;
+      const blocked = new Set((t?.blocked ?? []).map(([b, l]) => `${b}-${l}`));
+      ss.frame(s => {
+        for (const [id, lans] of Object.entries(ALL)) for (const lan of lans) {
+          const isOff = off.has(+id), isB = blocked.has(`${id}-${lan}`), isRoot = t?.rootPort[id] === lan;
+          const [x1, y1] = BP[id], [x2, y2] = LP[lan];
+          s.line(`e${id}${lan}`, x1, y1, x2, y2, { stroke: isOff ? COLORS.surface3 : isB ? COLORS.red : COLORS.green, sw: isOff ? 1 : isB ? 2 : 4, dash: isB || isOff ? '5 5' : null, layer: 'bg' });
+          if (isB) s.text(`x${id}${lan}`, '✕', { x: x1 + (x2 - x1) * 0.35, y: y1 + (y2 - y1) * 0.35, size: 18, weight: 800, fill: COLORS.red });
+          if (isRoot) s.text(`rp${id}${lan}`, 'raiz', { x: x1 + (x2 - x1) * 0.35, y: y1 + (y2 - y1) * 0.35 - 12, size: 11, fill: COLORS.yellow });
+        }
+        for (const [lan, [x, y]] of Object.entries(LP)) {
+          s.rect(`lan${lan}`, { x: x - 30, y: y - 14, w: 60, h: 28, rx: 14, fill: COLORS.surface2, stroke: COLORS.teal, sw: 1.5 });
+          s.text(`lt${lan}`, lan, { x, y, size: 13, weight: 700, fill: COLORS.teal });
+          if (t?.designated[lan] != null) s.text(`ld${lan}`, `desig.: B${t.designated[lan]}`, { x, y: y + 26, size: 11, fill: COLORS.muted });
+        }
+        for (const [id, [x, y]] of Object.entries(BP)) {
+          const isOff = off.has(+id), isRoot = t?.root === +id;
+          const g = s.rect(`b${id}`, { x: x - 30, y: y - 18, w: 60, h: 36, rx: 8, fill: isRoot ? COLORS.yellow : COLORS.surface2, stroke: isOff ? COLORS.faint : COLORS.blue, sw: 2 });
+          g.style.cursor = 'pointer';
+          g.onclick = () => { off.has(+id) ? off.delete(+id) : off.add(+id); drawST(); };
+          const tx = s.text(`bt${id}`, `B${id}`, { x, y, size: 14, weight: 700, fill: isOff ? COLORS.faint : isRoot ? '#0b0e12' : COLORS.text });
+          tx.style.pointerEvents = 'none';
+          if (!isOff && t) s.text(`bd${id}`, isRoot ? 'RAIZ' : `dist ${t.dist[id] ?? '∞'}`, { x, y: y - 28, size: 11, fill: isRoot ? COLORS.yellow : COLORS.muted });
+        }
+      });
+      $('#st-r').innerHTML = t
+        ? `<div>Raiz: <b class="c-yellow">B${t.root}</b> (menor ID)</div>
+           <div>Portas raiz: ${Object.entries(t.rootPort).map(([b, l]) => `B${b}→${l}`).join(', ') || '—'}</div>
+           <div>Pontes designadas: ${Object.entries(t.designated).map(([l, b]) => `${l}: B${b}`).join(', ')}</div>
+           <div>Bloqueadas: <b class="c-red">${t.blocked.map(([b, l]) => `B${b}–${l}`).join(', ') || 'nenhuma'}</b></div>
+           <div class="c-muted">Toda LAN continua alcançável, e existe exatamente um caminho entre quaisquer duas: nada de laços.</div>`
+        : 'Todas as pontes desligadas.';
+    }
+    drawST();
+
+    // ---------- exercícios ----------
+    mountGenerator($('#gen'), {
+      generate() {
+        const seq = Array.from({ length: 3 }, () => { const a = pick(HOSTS); let b = pick(HOSTS); while (b === a) b = pick(HOSTS); return [a, b]; });
+        const t = {};
+        seq.slice(0, -1).forEach(([a, b]) => bridgeSend(TOPO, t, a, b));
+        const [a, b] = seq[seq.length - 1];
+        const r = bridgeSend(TOPO, t, a, b);
+        const first = r.hops[0];
+        const ans = first ? first.action : 'nenhuma';
+        return {
+          q: `Na Fig. 4-41(b), com tabelas inicialmente vazias, são enviados em sequência: ${seq.map(([x, y]) => `${x}→${y}`).join(', ')}. No último quadro, o que faz a <b>primeira</b> ponte que o recebe (${first?.bridge})? Responda: encaminha, inunda ou descarta.`,
+          input: true, answer: ans, check: v => v.trim().toLowerCase().startsWith(ans.slice(0, 5)),
+          explain: `${first.bridge} ${first.action}${first.out.length ? ` pela(s) porta(s) ${first.out.join(', ')}` : ''}. Rode a sequência acima na visualização para conferir.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

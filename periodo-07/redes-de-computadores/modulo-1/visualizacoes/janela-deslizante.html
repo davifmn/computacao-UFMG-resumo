@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Janela Deslizante · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 8.5em 1fr 3em; gap: 8px; align-items: center; padding: 6px 14px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input { min-width: 0; width: 100%; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 14px 10px; }
+    .chips .btn.small { min-width: 30px; padding: 3px 6px; }
+    .winstrip { display: flex; gap: 3px; padding: 8px 14px 14px; flex-wrap: wrap; }
+    .winstrip span { width: 30px; text-align: center; padding: 4px 0; border-radius: 5px; font: 700 13px var(--mono); border: 1px solid var(--border); }
+    .w-acked { background: #1c2f1f; color: var(--green); }
+    .w-out { background: #33290f; color: var(--yellow); border-color: var(--yellow) !important; }
+    .w-ok { background: #16303a; color: var(--blue); border-color: var(--blue) !important; }
+    .w-no { color: var(--faint); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes1">Redes · Módulo 1</a>
+      <span class="sep">/</span><span>Janela deslizante</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Cap. 3 (seções 3.3 e 3.4)</div>
+    <h1>Parar-e-esperar, Go-Back-N e Repetição Seletiva</h1>
+    <p class="lead">Diagrama de tempo: o <b>transmissor</b> à esquerda, o <b>receptor</b> à direita, e o tempo correndo para baixo. O tempo é medido em <b>tempos de quadro</b> ($t_f = 1$); a propagação de ida é $D$ tempos de quadro, então o produto banda-atraso é $BD = D$. <b>Clique num quadro ou num ACK do diagrama</b> para perdê-lo na primeira transmissão.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Protocolo" id="protos" style="padding:0">
+        <button class="btn" data-p="sw">Parar-e-esperar (prot. 3)</button>
+        <button class="btn" data-p="gbn">Go-Back-N (prot. 5)</button>
+        <button class="btn" data-p="sr">Repetição seletiva (prot. 6)</button>
+      </div>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="tsd" aria-label="Diagrama de tempo"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Parâmetros</div>
+          <div class="ctl"><span>quadros N</span><input id="N" type="range" min="3" max="16" value="10"><output id="N-o"></output></div>
+          <div class="ctl"><span>bits de sequência</span><input id="bits" type="range" min="1" max="4" value="3"><output id="bits-o"></output></div>
+          <div class="ctl"><span>janela W</span><input id="W" type="range" min="1" max="15" value="7"><output id="W-o"></output></div>
+          <div class="ctl"><span>propagação D</span><input id="D" type="range" min="0" max="6" step="0.5" value="2"><output id="D-o"></output></div>
+          <div class="ctl"><span>timeout</span><input id="to" type="range" min="2" max="20" value="8"><output id="to-o"></output></div>
+          <div class="readout" id="warn"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Perdas (1ª transmissão)</div>
+          <div class="c-muted" style="padding:4px 14px;font-size:13px">quadros de dados</div>
+          <div class="chips" id="lossD"></div>
+          <div class="c-muted" style="padding:4px 14px;font-size:13px">ACKs (o ACK gerado pela chegada do quadro)</div>
+          <div class="chips" id="lossA"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Resultado</div>
+          <div class="readout" id="stats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="panel-title">Janela do transmissor no instante t (mova o cursor)</div>
+      <div class="ctl" style="grid-template-columns: 5em 1fr 4em"><span>t</span><input id="t" type="range" min="0" max="60" step="0.5" value="4"><output id="t-o"></output></div>
+      <div class="winstrip" id="win"></div>
+      <div class="readout" style="padding-top:0"><span><span class="w-acked" style="padding:1px 6px;border-radius:4px">confirmado</span> <span class="w-out" style="padding:1px 6px;border-radius:4px">enviado, sem ACK</span> <span class="w-ok" style="padding:1px 6px;border-radius:4px">pode enviar</span> <span class="w-no">fora da janela</span></span></div>
+    </div>
+
+    <section class="prose">
+      <h2>O que observar</h2>
+      <ul>
+        <li><b>Parar-e-esperar</b>: um quadro por ciclo de $1 + 2D$; utilização $\frac{1}{1 + 2BD}$. Perca um ACK e veja o receptor descartar a duplicata graças ao número de sequência de 1 bit.</li>
+        <li><b>Go-Back-N</b>: com $W \ge 1 + 2D$ o cano fica cheio. Perca um quadro: o receptor descarta todos os seguintes (em vermelho) e o transmissor reenvia tudo a partir dele. Perca um ACK: o ACK cumulativo seguinte cobre o perdido e nada é reenviado.</li>
+        <li><b>Repetição seletiva</b>: o receptor guarda os quadros fora de ordem e só o perdido é reenviado. Mas a janela precisa ser no máximo $2^{n-1}$.</li>
+        <li>O número em cada seta é o <b>número de sequência</b> (módulo $2^n$), não o índice do quadro. É isso que limita o tamanho da janela.</li>
+      </ul>
+      <div class="callout"><p><b>Utilização teórica (canal cheio, sem erros):</b> $U = \min\left(1, \frac{W}{1 + 2BD}\right)$. O resultado da simulação é menor para poucos quadros porque inclui o "rabo": o tempo do último ACK voltar.</p></div>
+      <p>Volte ao <a href="../tutoriais/cap3-camada-de-enlace.html">capítulo 3</a>.</p>
+      <h2>Exercícios gerados automaticamente</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, $$, h, fmt, pick, renderMath } from '../../../../engine/page.js';
+    import { simulateArq, utilization, windowFor100 } from './redes.js';
+
+    let proto = 'gbn';
+    const lostD = new Set([3]), lostA = new Set();
+    const W_ = 900;
+    const scene = new Scene($('#tsd'), { width: W_, height: 700 });
+    scene.setAnimated(false);
+    let sim = null;
+
+    const maxWindow = (p, n) => (p === 'sw' ? 1 : p === 'gbn' ? 2 ** n - 1 : 2 ** (n - 1));
+
+    function lossChips() {
+      const N = +$('#N').value;
+      for (const [id, set] of [['#lossD', lostD], ['#lossA', lostA]]) {
+        $(id).replaceChildren(...Array.from({ length: N }, (_, i) => {
+          const b = h('button', { class: 'btn small', 'aria-pressed': String(set.has(i)) }, String(i));
+          b.addEventListener('click', () => { set.has(i) ? set.delete(i) : set.add(i); run(); });
+          return b;
+        }));
+      }
+    }
+
+    function run() {
+      const N = +$('#N').value, bits = +$('#bits').value, D = +$('#D').value, timeout = +$('#to').value;
+      let W = +$('#W').value;
+      const wmax = maxWindow(proto, bits);
+      $('#W').max = proto === 'sw' ? 1 : 2 ** bits;          // deixa escolher uma janela inválida (+1) para ver o erro
+      if (W > +$('#W').max) { W = +$('#W').max; $('#W').value = W; }
+      for (const id of ['N', 'bits', 'W', 'D', 'to']) $(`#${id}-o`).value = $(`#${id}`).value;
+      [...lostD].forEach(i => i >= N && lostD.delete(i)); [...lostA].forEach(i => i >= N && lostA.delete(i));
+      lossChips();
+      $$('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === proto));
+      $('#warn').innerHTML = W > wmax
+        ? `<span class="c-red">Janela ${W} &gt; máximo ${wmax} para ${bits} bits (${proto === 'gbn' ? '2ⁿ − 1' : '2ⁿ⁻¹'}): o protocolo pode aceitar duplicatas ou se confundir!</span>`
+        : `<span class="c-muted">Janela máxima com ${bits} bits: ${wmax} (${proto === 'sw' ? 'parar-e-esperar' : proto === 'gbn' ? '2ⁿ − 1' : '2ⁿ⁻¹'}).</span>`;
+      sim = simulateArq({ proto, N, W, seqBits: bits, D, timeout, lostData: [...lostD], lostAck: [...lostA] });
+      $('#t').max = Math.ceil(sim.finish);
+      draw();
+      const theo = utilization({ W: sim.W, frameBits: 1, rate: 1, prop: D });
+      $('#stats').innerHTML = `
+        <div>Tempo total: <b>${fmt(sim.finish, 1)}</b> tempos de quadro</div>
+        <div>Transmissões: <b>${sim.tx.length}</b> (${sim.retransmissions} retransmissões)</div>
+        <div>Timeouts: ${sim.timeouts.length} · descartes no receptor: ${sim.discards.length}</div>
+        <div>Utilização simulada: <b>${fmt(100 * sim.utilization, 1)}%</b></div>
+        <div>Teórica sem erros: $\\min(1, \\frac{${sim.W}}{1 + 2 \\cdot ${D}})$ = <b>${fmt(100 * theo, 1)}%</b></div>
+        <div class="c-muted">Janela para 100%: $2BD + 1 = ${windowFor100({ frameBits: 1, rate: 1, prop: D })}$</div>`;
+      renderMath($('#stats'));
+      drawWindow();
+    }
+
+    function draw() {
+      const XS = 190, XR = 660, Y0 = 40;
+      const tmax = Math.max(sim.finish, 1);
+      const H = 680 - Y0;
+      const Y = t => Y0 + (t / tmax) * H;
+      scene.svg.setAttribute('viewBox', `0 0 ${W_} 700`);
+      scene.frame(s => {
+        s.text('hs', 'Transmissor', { x: XS, y: 20, size: 15, weight: 700, fill: COLORS.blue });
+        s.text('hr', 'Receptor', { x: XR, y: 20, size: 15, weight: 700, fill: COLORS.green });
+        s.line('ls', XS, Y0, XS, Y(tmax), { stroke: COLORS.border, sw: 3, layer: 'bg' });
+        s.line('lr', XR, Y0, XR, Y(tmax), { stroke: COLORS.border, sw: 3, layer: 'bg' });
+        for (let t = 0; t <= tmax; t += tmax > 40 ? 10 : 5) s.text(`tk${t}`, String(t), { x: XS - 60, y: Y(t), size: 11, mono: true, fill: COLORS.faint });
+        // quadros de dados
+        sim.tx.forEach((f, k) => {
+          const x1 = f.lost ? (XS + XR) / 2 : XR;
+          const t1 = f.lost ? f.t0 + 1 + (f.t1 - f.t0 - 1) / 2 : f.t1;
+          const color = f.attempt > 0 ? COLORS.orange : COLORS.blue;
+          s.path(`d${k}`, `M ${XS} ${Y(f.t0)} L ${x1} ${Y(t1 - 1)} L ${x1} ${Y(t1)} L ${XS} ${Y(f.t0 + 1)} Z`, { stroke: 'none', fill: color, opacity: 0.13 });
+          s.path(`dl${k}`, `M ${XS} ${Y(f.t0 + 1)} L ${x1} ${Y(t1)}`, { stroke: color, sw: 2 });
+          const ln = s.path(`dh${k}`, `M ${XS} ${Y(f.t0 + 1)} L ${x1} ${Y(t1)}`, { stroke: 'transparent', sw: 12, layer: 'fx' });
+          ln.style.cursor = 'pointer';
+          ln.onclick = () => { if (f.attempt === 0) { lostD.has(f.i) ? lostD.delete(f.i) : lostD.add(f.i); run(); } };
+          s.text(`dt${k}`, `${f.seq}`, { x: XS - 16, y: Y(f.t0 + 0.5), size: 13, weight: 700, mono: true, fill: color });
+          if (f.lost) s.text(`dx${k}`, '✕', { x: x1, y: Y(t1), size: 18, weight: 800, fill: COLORS.red });
+        });
+        // ACKs
+        sim.acks.forEach((a, k) => {
+          const x1 = a.lost ? (XS + XR) / 2 : XS;
+          const t1 = a.lost ? (a.t0 + a.t1) / 2 : a.t1;
+          s.path(`a${k}`, `M ${XR} ${Y(a.t0)} L ${x1} ${Y(t1)}`, { stroke: COLORS.green, sw: 2, dash: '6 4' });
+          const ln = s.path(`ah${k}`, `M ${XR} ${Y(a.t0)} L ${x1} ${Y(t1)}`, { stroke: 'transparent', sw: 12, layer: 'fx' });
+          ln.style.cursor = 'pointer';
+          ln.onclick = () => {
+            // o ACK k foi gerado pela chegada de algum quadro: acha qual
+            const arr = sim.tx.filter(f => !f.lost).find(f => Math.abs(f.t1 - a.t0) < 1e-9);
+            if (arr) { lostA.has(arr.i) ? lostA.delete(arr.i) : lostA.add(arr.i); run(); }
+          };
+          s.text(`at${k}`, `ack ${a.seq}`, { x: XR + 34, y: Y(a.t0), size: 11, mono: true, fill: COLORS.green });
+          if (a.lost) s.text(`ax${k}`, '✕', { x: x1, y: Y(t1), size: 16, weight: 800, fill: COLORS.red });
+        });
+        sim.deliveries.forEach((d, k) => s.text(`dv${k}`, `entrega ${d.i}`, { x: XR + 110, y: Y(d.t) + 4, size: 11, anchor: 'start', fill: COLORS.muted }));
+        sim.discards.forEach((d, k) => s.text(`ds${k}`, d.dup ? `quadro ${d.i}: duplicata, descarta` : `quadro ${d.i}: fora de ordem, descarta`, { x: XR + 110, y: Y(d.t) + 4, size: 11, anchor: 'start', fill: COLORS.red }));
+        sim.timeouts.forEach((e, k) => s.text(`to${k}`, `⏰ timeout ${e.i % sim.M}`, { x: XS - 24, y: Y(e.t) + 4, size: 11, anchor: 'end', fill: COLORS.orange }));
+        const tc = +$('#t').value;
+        s.line('cursor', XS - 40, Y(tc), XR + 40, Y(tc), { stroke: COLORS.yellow, sw: 1, dash: '2 4', opacity: 0.7 });
+      });
+    }
+
+    function drawWindow() {
+      const t = +$('#t').value;
+      $('#t-o').value = t;
+      const N = +$('#N').value;
+      const acked = new Set();
+      sim.acks.filter(a => !a.lost && a.t1 <= t + 1e-9).forEach(a => {
+        if (proto === 'sr') acked.add(a.ack); else for (let j = 0; j <= a.ack; j++) acked.add(j);
+      });
+      let base = 0; while (acked.has(base)) base++;
+      const sent = new Set(sim.tx.filter(f => f.t0 <= t + 1e-9).map(f => f.i));
+      $('#win').replaceChildren(...Array.from({ length: N }, (_, i) => {
+        const cls = acked.has(i) ? 'w-acked' : i >= base && i < base + sim.W ? (sent.has(i) ? 'w-out' : 'w-ok') : i < base ? 'w-acked' : 'w-no';
+        return h('span', { class: cls, title: `quadro ${i}` }, String(i % sim.M));
+      }));
+      draw();
+    }
+
+    $$('[data-p]').forEach(b => b.addEventListener('click', () => {
+      proto = b.dataset.p;
+      $('#W').max = proto === 'sw' ? 1 : 2 ** +$('#bits').value;
+      $('#W').value = maxWindow(proto, +$('#bits').value);    // cada protocolo começa com sua janela máxima
+      run();
+    }));
+    for (const id of ['N', 'bits', 'W', 'D', 'to']) $(`#${id}`).addEventListener('input', run);
+    $('#t').addEventListener('input', drawWindow);
+    run();
+
+    mountGenerator($('#gen'), {
+      generate() {
+        const kind = pick(['u', 'w', 'bits', 'max']);
+        const rate = pick([1e6, 1.544e6, 50e3, 64e3]), frame = pick([1000, 4000, 8000]), prop = pick([0.01, 0.02, 0.25, 0.27]);
+        const BD = rate * prop / frame;
+        if (kind === 'u') {
+          const W = pick([1, 7, 15]);
+          const u = utilization({ W, frameBits: frame, rate, prop });
+          return { q: `Taxa ${fmt(rate, 0)} bps, quadros de ${frame} bits, propagação de ${prop * 1000} ms, janela ${W}. Utilização máxima (em %)?`, input: true, answer: fmt(100 * u, 2), check: v => Math.abs(+String(v).replace(',', '.').replace('%', '') - 100 * u) <= Math.max(0.05, u), explain: `$BD = ${fmt(BD, 3)}$ quadros; $U = \\min(1, ${W}/(1 + 2 \\cdot ${fmt(BD, 3)})) = ${fmt(100 * u, 2)}\\%$.` };
+        }
+        if (kind === 'w') {
+          const w = windowFor100({ frameBits: frame, rate, prop });
+          return { q: `Taxa ${fmt(rate, 0)} bps, quadros de ${frame} bits, propagação de ${prop * 1000} ms. Menor janela (em quadros) para 100% de utilização?`, input: true, answer: String(w), explain: `$2BD + 1 = 2 \\cdot ${fmt(BD, 3)} + 1$, arredondado para cima: ${w}.` };
+        }
+        if (kind === 'bits') {
+          const w = windowFor100({ frameBits: frame, rate, prop });
+          const sr = Math.random() < 0.5;
+          const n = sr ? Math.ceil(Math.log2(w)) + 1 : Math.ceil(Math.log2(w + 1));
+          return { q: `Para uma janela de ${w} quadros, quantos bits de sequência são necessários com <b>${sr ? 'repetição seletiva' : 'Go-Back-N'}</b>?`, input: true, answer: String(n), explain: sr ? `Precisa de $2^{n-1} \\ge ${w}$: $n = ${n}$.` : `Precisa de $2^n - 1 \\ge ${w}$: $n = ${n}$.` };
+        }
+        const n = pick([2, 3, 4, 5, 7, 8]);
+        const sr = Math.random() < 0.5;
+        const a = sr ? 2 ** (n - 1) : 2 ** n - 1;
+        return { q: `Com números de sequência de ${n} bits, qual a janela de transmissão máxima no <b>${sr ? 'protocolo de repetição seletiva' : 'Go-Back-N'}</b>?`, input: true, answer: String(a), explain: sr ? `$(\\text{MAX\\_SEQ}+1)/2 = 2^{${n}}/2 = ${a}$.` : `$\\text{MAX\\_SEQ} = 2^{${n}} - 1 = ${a}$.` };
+      },
+    });
+  </script>
+</body>
+</html>
