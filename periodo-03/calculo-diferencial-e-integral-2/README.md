@@ -9,9 +9,9 @@ da otimização (e, portanto, do treino de redes neurais), da computação gráf
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 〰️ | [Séries de Taylor](visualizacoes/taylor.html) | Polinômios de grau crescente "grudando" em sin, cos, eˣ, ln(1+x), 1/(1−x) e √(1+x), com o raio de convergência |
-| 🏔️ | [Superfícies e derivadas parciais](visualizacoes/superficies.html) | Superfícies 3D que giram com o mouse, cortes nas direções x e y, retas tangentes, plano tangente, curvas de nível e gradiente |
-| ⛷️ | [Descida do gradiente](visualizacoes/gradiente.html) | Trajetórias sobre curvas de nível, efeito do passo η (converge × diverge), zigue-zague em vales, momento, Rosenbrock e mínimos locais |
+| 〰️ | [Séries de Taylor](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/taylor.html) | Polinômios de grau crescente "grudando" em sin, cos, eˣ, ln(1+x), 1/(1−x) e √(1+x), com o raio de convergência |
+| 🏔️ | [Superfícies e derivadas parciais](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/superficies.html) | Superfícies 3D que giram com o mouse, cortes nas direções x e y, retas tangentes, plano tangente, curvas de nível e gradiente |
+| ⛷️ | [Descida do gradiente](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/gradiente.html) | Trajetórias sobre curvas de nível, efeito do passo η (converge × diverge), zigue-zague em vales, momento, Rosenbrock e mínimos locais |
 
 ## 📚 Resumo teórico
 

@@ -11,9 +11,9 @@ flip-flops, registradores, contadores e máquinas de estados.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🔌 | [Simulador de circuitos](visualizacoes/circuitos.html) | Clique nas entradas e veja o sinal se propagar nível a nível: portas, meio-somador, somador completo, somador de 4 bits, mux, decodificador e "tudo com NAND" |
-| 🗺️ | [Mapa de Karnaugh](visualizacoes/karnaugh.html) | Clique nas células (0, 1, X) e veja os grupos e a soma de produtos **mínima** (Quine–McCluskey exato), com gerador de exercícios |
-| ⏱️ | [Circuitos sequenciais](visualizacoes/sequenciais.html) | Latch SR com realimentação, latch D × flip-flop D num diagrama de tempo que você desenha, contador síncrono com diagrama de estados |
+| 🔌 | [Simulador de circuitos](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/circuitos.html) | Clique nas entradas e veja o sinal se propagar nível a nível: portas, meio-somador, somador completo, somador de 4 bits, mux, decodificador e "tudo com NAND" |
+| 🗺️ | [Mapa de Karnaugh](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/karnaugh.html) | Clique nas células (0, 1, X) e veja os grupos e a soma de produtos **mínima** (Quine–McCluskey exato), com gerador de exercícios |
+| ⏱️ | [Circuitos sequenciais](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/sequenciais.html) | Latch SR com realimentação, latch D × flip-flop D num diagrama de tempo que você desenha, contador síncrono com diagrama de estados |
 
 ## 📚 Resumo teórico
 
@@ -89,7 +89,7 @@ que verificam todas as combinações. Execute com `python3 codigo/circuitos.py`.
 <summary>Gabarito</summary>
 
 1. $\bar A B + AB = B$, e então $B + A\bar B = A + B$.
-2. $\bar C + A \bar B$. Confira no [mapa de Karnaugh](visualizacoes/karnaugh.html): os mintermos 0, 2, 4 e 6 formam $\bar C$ (grupo que dá a volta), e 4, 5 formam $A\bar B$.
+2. $\bar C + A \bar B$. Confira no [mapa de Karnaugh](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/karnaugh.html): os mintermos 0, 2, 4 e 6 formam $\bar C$ (grupo que dá a volta), e 4, 5 formam $A\bar B$.
 3. Quatro: $N_1 = \text{NAND}(A,B)$, $N_2 = \text{NAND}(A, N_1)$, $N_3 = \text{NAND}(B, N_1)$, $\text{XOR} = \text{NAND}(N_2, N_3)$.
 4. $\lceil \log_2 100 \rceil = 7$ (ou 8, se usar dois dígitos BCD de 4 bits).
 5. Caminho crítico de 1 ns ⇒ 1 GHz.

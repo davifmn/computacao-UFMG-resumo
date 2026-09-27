@@ -11,7 +11,7 @@ se um projeto vale o custo.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 📈 | [Oferta, demanda e intervenções](visualizacoes/oferta-e-demanda.html) | Curvas ajustáveis, choques de mercado animados, imposto (cunha fiscal, incidência e peso morto), preço máximo (escassez) e mínimo (excedente), com todos os excedentes calculados |
+| 📈 | [Oferta, demanda e intervenções](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-economia/visualizacoes/oferta-e-demanda.html) | Curvas ajustáveis, choques de mercado animados, imposto (cunha fiscal, incidência e peso morto), preço máximo (escassez) e mínimo (excedente), com todos os excedentes calculados |
 
 ## 📚 Resumo teórico
 

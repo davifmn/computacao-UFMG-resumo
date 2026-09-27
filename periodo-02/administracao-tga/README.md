@@ -11,7 +11,7 @@ em Engenharia de Software, no estágio e ao fundar (ou entrar numa) startup.
 
 | | Página | O que você vai ver |
 |---|---|---|
-| 🏛️ | [Escolas da administração](tutoriais/escolas-da-administracao.html) | Linha do tempo interativa de 1900 a 1990 (clique numa escola para ver ideias, autores, críticas e a conexão com a computação), PODC, PDCA, SWOT, teorias de motivação e um gerador de perguntas |
+| 🏛️ | [Escolas da administração](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/administracao-tga/tutoriais/escolas-da-administracao.html) | Linha do tempo interativa de 1900 a 1990 (clique numa escola para ver ideias, autores, críticas e a conexão com a computação), PODC, PDCA, SWOT, teorias de motivação e um gerador de perguntas |
 
 > Esta disciplina é teórica, então em vez de animações há um tutorial com linha do tempo e exercícios.
 
