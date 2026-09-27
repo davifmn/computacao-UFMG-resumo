@@ -6,11 +6,11 @@ de software (PDS II), **lógica** vira hardware (Sistemas Lógicos) e raciocíni
 
 | Disciplina | Código | CH | Páginas interativas |
 |---|---|---|---|
-| [Programação e Desenvolvimento de Software II](programacao-e-desenvolvimento-de-software-2/) | DCC219 | 60h | [Polimorfismo](programacao-e-desenvolvimento-de-software-2/visualizacoes/polimorfismo.html) · [std::vector](programacao-e-desenvolvimento-de-software-2/visualizacoes/vetor.html) · [Tutorial: projeto C++](programacao-e-desenvolvimento-de-software-2/tutoriais/projeto-cpp.html) |
-| [Introdução a Sistemas Lógicos](introducao-a-sistemas-logicos/) | DCC114 | 60h | [Circuitos](introducao-a-sistemas-logicos/visualizacoes/circuitos.html) · [Karnaugh](introducao-a-sistemas-logicos/visualizacoes/karnaugh.html) · [Sequenciais](introducao-a-sistemas-logicos/visualizacoes/sequenciais.html) |
-| [Matemática Discreta](matematica-discreta/) | DCC216 | 60h | [Euclides → RSA](matematica-discreta/visualizacoes/teoria-dos-numeros.html) · [Relações](matematica-discreta/visualizacoes/relacoes.html) · [Contagem](matematica-discreta/visualizacoes/contagem.html) · [Indução](matematica-discreta/visualizacoes/inducao-e-recorrencia.html) |
-| [Cálculo Diferencial e Integral I](calculo-diferencial-e-integral-1/) | MAT001 | 90h | [Limites](calculo-diferencial-e-integral-1/visualizacoes/limites.html) · [Derivada](calculo-diferencial-e-integral-1/visualizacoes/derivada.html) · [Integral](calculo-diferencial-e-integral-1/visualizacoes/integral.html) |
-| [Administração TGA](administracao-tga/) (EAD) | CAD103 | 60h | [Tutorial: escolas da administração](administracao-tga/tutoriais/escolas-da-administracao.html) |
+| [Programação e Desenvolvimento de Software II](programacao-e-desenvolvimento-de-software-2/) | DCC219 | 60h | [Polimorfismo](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/visualizacoes/polimorfismo.html) · [std::vector](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/visualizacoes/vetor.html) · [Tutorial: projeto C++](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/tutoriais/projeto-cpp.html) |
+| [Introdução a Sistemas Lógicos](introducao-a-sistemas-logicos/) | DCC114 | 60h | [Circuitos](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/circuitos.html) · [Karnaugh](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/karnaugh.html) · [Sequenciais](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/sequenciais.html) |
+| [Matemática Discreta](matematica-discreta/) | DCC216 | 60h | [Euclides → RSA](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/teoria-dos-numeros.html) · [Relações](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/relacoes.html) · [Contagem](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/contagem.html) · [Indução](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/inducao-e-recorrencia.html) |
+| [Cálculo Diferencial e Integral I](calculo-diferencial-e-integral-1/) | MAT001 | 90h | [Limites](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/limites.html) · [Derivada](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/derivada.html) · [Integral](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/integral.html) |
+| [Administração TGA](administracao-tga/) (EAD) | CAD103 | 60h | [Tutorial: escolas da administração](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/administracao-tga/tutoriais/escolas-da-administracao.html) |
 
 ## Como as disciplinas se conectam
 
@@ -25,7 +25,7 @@ GAAL + Cálculo I ──▶ Cálculo II ──▶ Probabilidade, Equações Dife
 
 ## Dicas de quem já passou por aqui
 
-- **PDS II:** os trabalhos práticos são em grupo. Combine desde o primeiro dia um repositório git, um Makefile e testes (o [tutorial](programacao-e-desenvolvimento-de-software-2/tutoriais/projeto-cpp.html) mostra como).
+- **PDS II:** os trabalhos práticos são em grupo. Combine desde o primeiro dia um repositório git, um Makefile e testes (o [tutorial](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/tutoriais/projeto-cpp.html) mostra como).
 - **Matemática Discreta:** faça as provas por indução **por escrito**, com base, hipótese e passo explícitos. É a disciplina em que se aprende a escrever matemática.
-- **Sistemas Lógicos:** simule tudo antes de montar (Logisim ou o [simulador daqui](introducao-a-sistemas-logicos/visualizacoes/circuitos.html)).
+- **Sistemas Lógicos:** simule tudo antes de montar (Logisim ou o [simulador daqui](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/introducao-a-sistemas-logicos/visualizacoes/circuitos.html)).
 - **Cálculo I:** são 90h. Faça muitas listas de exercícios: derivar e integrar é treino. Mas entenda as ideias com o *Essence of Calculus* do 3Blue1Brown.

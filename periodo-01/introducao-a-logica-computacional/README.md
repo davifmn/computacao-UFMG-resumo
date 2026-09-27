@@ -11,7 +11,7 @@ afirmações de forma rigorosa.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🌲 | [Tabela-verdade e árvore sintática](visualizacoes/tabela-verdade.html) | Digite qualquer fórmula: o parser monta a árvore, a avaliação recursiva percorre os nós linha a linha da tabela, e a página classifica a fórmula, mostra as formas normais e gera exercícios infinitos |
+| 🌲 | [Tabela-verdade e árvore sintática](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-logica-computacional/visualizacoes/tabela-verdade.html) | Digite qualquer fórmula: o parser monta a árvore, a avaliação recursiva percorre os nós linha a linha da tabela, e a página classifica a fórmula, mostra as formas normais e gera exercícios infinitos |
 
 ## 📚 Resumo teórico
 

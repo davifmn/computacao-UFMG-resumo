@@ -11,9 +11,9 @@ orientação a objetos e a biblioteca padrão.
 
 | | Página | O que você vai ver |
 |---|---|---|
-| 🧬 | [Polimorfismo e vtable](visualizacoes/polimorfismo.html) | Como `f->area()` descobre em tempo de execução qual função chamar: objeto → vptr → vtable → função; e por que o destrutor precisa ser `virtual` |
-| 📦 | [`std::vector` por dentro](visualizacoes/vetor.html) | Cada `push_back`, as realocações e cópias, e o gráfico de custo: dobrar a capacidade (O(1) amortizado) × somar 1 (O(n)) |
-| 🛠️ | [Tutorial: projeto C++ do zero](tutoriais/projeto-cpp.html) | Estrutura de pastas, `.hpp` × `.cpp`, compilação separada, Makefile linha a linha, testes de unidade, RAII, depuração e git |
+| 🧬 | [Polimorfismo e vtable](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/visualizacoes/polimorfismo.html) | Como `f->area()` descobre em tempo de execução qual função chamar: objeto → vptr → vtable → função; e por que o destrutor precisa ser `virtual` |
+| 📦 | [`std::vector` por dentro](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/visualizacoes/vetor.html) | Cada `push_back`, as realocações e cópias, e o gráfico de custo: dobrar a capacidade (O(1) amortizado) × somar 1 (O(n)) |
+| 🛠️ | [Tutorial: projeto C++ do zero](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/programacao-e-desenvolvimento-de-software-2/tutoriais/projeto-cpp.html) | Estrutura de pastas, `.hpp` × `.cpp`, compilação separada, Makefile linha a linha, testes de unidade, RAII, depuração e git |
 
 ## 📚 Resumo teórico
 

@@ -11,9 +11,9 @@ de algoritmos (limites e crescimento de funções), otimização, aprendizado de
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🎯 | [Limites (ε-δ)](visualizacoes/limites.html) | O jogo do épsilon e do delta: você escolhe δ e o gráfico mostra se funcionou; casos com buraco, salto e oscilação |
-| 📈 | [Derivada](visualizacoes/derivada.html) | A secante girando até virar tangente quando h → 0, o gráfico de f′ sendo traçado e a **derivada simbólica** de qualquer função que você digitar |
-| 📊 | [Integral](visualizacoes/integral.html) | Somas de Riemann (esquerda, direita, ponto médio, trapézio) com n crescente e uma tabela mostrando a ordem de convergência de cada método |
+| 🎯 | [Limites (ε-δ)](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/limites.html) | O jogo do épsilon e do delta: você escolhe δ e o gráfico mostra se funcionou; casos com buraco, salto e oscilação |
+| 📈 | [Derivada](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/derivada.html) | A secante girando até virar tangente quando h → 0, o gráfico de f′ sendo traçado e a **derivada simbólica** de qualquer função que você digitar |
+| 📊 | [Integral](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/integral.html) | Somas de Riemann (esquerda, direita, ponto médio, trapézio) com n crescente e uma tabela mostrando a ordem de convergência de cada método |
 
 > O motor por trás das páginas ([`visualizacoes/expr.js`](visualizacoes/expr.js)) faz análise sintática de expressões e as **deriva simbolicamente**, aplicando as regras abaixo recursivamente sobre a árvore da expressão.
 
@@ -78,7 +78,7 @@ Riemann, trapézio, Simpson, bisseção e método de Newton, com testes. Execute
 <summary>Gabarito</summary>
 
 1. $\frac12$ (L'Hôpital duas vezes, ou use $1 - \cos x = 2\sin^2(x/2)$).
-2. $f'(x) = 2x e^{\sin x} + x^2 \cos x\, e^{\sin x}$. Digite `x^2 e^(sin(x))` na [página da derivada](visualizacoes/derivada.html) para conferir.
+2. $f'(x) = 2x e^{\sin x} + x^2 \cos x\, e^{\sin x}$. Digite `x^2 e^(sin(x))` na [página da derivada](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/calculo-diferencial-e-integral-1/visualizacoes/derivada.html) para conferir.
 3. $V = x(12 - 2x)^2$, $V' = (12 - 2x)(12 - 6x) = 0 \Rightarrow x = 2$ (volume 128).
 4. Por partes: $[x e^x - e^x]_0^1 = 1$.
 5. O erro cai pela metade a cada passo: $2^{-k} < 10^{-6} \Rightarrow k \ge 20$.

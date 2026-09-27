@@ -10,11 +10,11 @@ um milissegundo ou uma hora dependendo da estrutura escolhida.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🔗 | [Listas encadeadas](visualizacoes/listas.html) | Inserir no início, no fim e de forma ordenada, buscar e remover, com os ponteiros `cabeca`, `atual`, `anterior` e `novo` se movendo linha a linha |
-| 📚 | [Pilhas e filas](visualizacoes/pilha-fila.html) | Pilha em vetor, fila circular desenhada como um anel (com o "mesmo vetor na memória") e a verificação de parênteses balanceados |
-| 🌳 | [Árvores de busca e AVL](visualizacoes/arvores.html) | Inserção, busca, remoção (3 casos), os 4 percursos e as **rotações da AVL**: os nós trocam de lugar na tela. Compare ABB × AVL inserindo 1…7 em ordem |
-| 📊 | [Ordenação O(n log n)](visualizacoes/ordenacao-avancada.html) | Merge sort (com o vetor auxiliar), quicksort (pivô e partição) e heapsort (o heap desenhado como árvore sobre o vetor) |
-| #️⃣ | [Tabelas hash](visualizacoes/hash.html) | Função de hash, colisões, encadeamento separado × sondagem linear, agrupamento e a marca de "removido" |
+| 🔗 | [Listas encadeadas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/listas.html) | Inserir no início, no fim e de forma ordenada, buscar e remover, com os ponteiros `cabeca`, `atual`, `anterior` e `novo` se movendo linha a linha |
+| 📚 | [Pilhas e filas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/pilha-fila.html) | Pilha em vetor, fila circular desenhada como um anel (com o "mesmo vetor na memória") e a verificação de parênteses balanceados |
+| 🌳 | [Árvores de busca e AVL](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/arvores.html) | Inserção, busca, remoção (3 casos), os 4 percursos e as **rotações da AVL**: os nós trocam de lugar na tela. Compare ABB × AVL inserindo 1…7 em ordem |
+| 📊 | [Ordenação O(n log n)](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/ordenacao-avancada.html) | Merge sort (com o vetor auxiliar), quicksort (pivô e partição) e heapsort (o heap desenhado como árvore sobre o vetor) |
+| #️⃣ | [Tabelas hash](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/hash.html) | Função de hash, colisões, encadeamento separado × sondagem linear, agrupamento e a marca de "removido" |
 
 ## 📚 Resumo teórico
 
@@ -92,7 +92,7 @@ cd codigo && make test
 <summary>Gabarito</summary>
 
 1. Inverter: $O(n)$ de tempo e $O(1)$ de memória (veja `inverte()` em `lista.cpp`). k-ésimo a partir do fim: $O(n)$, com dois ponteiros separados por k nós.
-2. Inserir 20 desbalanceia o 50 (caso LL): rotação à direita em 50, e a raiz vira 30. Inserir 45 desbalanceia o 50 com 45 à esquerda de 50 e à direita de 40 (caso LR): rotação à esquerda em 40 e depois à direita em 50. Confira no [simulador](visualizacoes/arvores.html).
+2. Inserir 20 desbalanceia o 50 (caso LL): rotação à direita em 50, e a raiz vira 30. Inserir 45 desbalanceia o 50 com 45 à esquerda de 50 e à direita de 40 (caso LR): rotação à esquerda em 40 e depois à direita em 50. Confira no [simulador](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/estruturas-de-dados/visualizacoes/arvores.html).
 3. Mínima: $\lceil \log_2 1001 \rceil = 10$. Máxima: 1000 (uma lista).
 4. Cada partição separa só o pivô (o maior) do resto: $n + (n-1) + \dots = O(n^2)$.
 5. 10 → posição 3; 17 → 3 ocupada → 4; 24 → 3, 4 ocupadas → 5; 3 → 3, 4, 5 ocupadas → 6. Um exemplo típico de agrupamento primário.

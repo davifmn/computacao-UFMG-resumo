@@ -10,9 +10,9 @@ simulações de Monte Carlo.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 📈 | [Distribuições](visualizacoes/distribuicoes.html) | Binomial, geométrica, Poisson, uniforme, exponencial e normal: parâmetros, área de P(a ≤ X ≤ b), média, variância e amostragem sobre a curva teórica |
-| 🎯 | [Teorema Central do Limite](visualizacoes/limite-central.html) | Tábua de Galton animada, médias de amostras de distribuições bem diferentes da normal virando um sino, e a Lei dos Grandes Números |
-| 🩺 | [Bayes e Monty Hall](visualizacoes/bayes.html) | Teste diagnóstico com 1000 pessoas (falácia da taxa-base) e o problema de Monty Hall jogável e simulado |
+| 📈 | [Distribuições](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/distribuicoes.html) | Binomial, geométrica, Poisson, uniforme, exponencial e normal: parâmetros, área de P(a ≤ X ≤ b), média, variância e amostragem sobre a curva teórica |
+| 🎯 | [Teorema Central do Limite](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/limite-central.html) | Tábua de Galton animada, médias de amostras de distribuições bem diferentes da normal virando um sino, e a Lei dos Grandes Números |
+| 🩺 | [Bayes e Monty Hall](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/bayes.html) | Teste diagnóstico com 1000 pessoas (falácia da taxa-base) e o problema de Monty Hall jogável e simulado |
 
 ## 📚 Resumo teórico
 

@@ -10,10 +10,10 @@ espaço na pilha. A linguagem é **C++**, usada num estilo próximo de C.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 📊 | [Ordenação](visualizacoes/ordenacao.html) | Bubble, Selection e Insertion Sort com cada comparação e troca, lado a lado com o código |
-| 🔍 | [Busca binária](visualizacoes/busca.html) | O intervalo `[ini, fim]` encolhendo pela metade, comparado com a busca sequencial |
-| 🌳 | [Recursão](visualizacoes/recursao.html) | Pilha de chamadas e árvore de recursão para fatorial e Fibonacci (com e sem memoização) |
-| 🧠 | [Ponteiros e memória](visualizacoes/ponteiros.html) | Endereços, `*` e `&`, aritmética de ponteiros, `new`/`delete` e ponteiro pendente |
+| 📊 | [Ordenação](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/programacao-e-desenvolvimento-de-software-1/visualizacoes/ordenacao.html) | Bubble, Selection e Insertion Sort com cada comparação e troca, lado a lado com o código |
+| 🔍 | [Busca binária](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/programacao-e-desenvolvimento-de-software-1/visualizacoes/busca.html) | O intervalo `[ini, fim]` encolhendo pela metade, comparado com a busca sequencial |
+| 🌳 | [Recursão](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/programacao-e-desenvolvimento-de-software-1/visualizacoes/recursao.html) | Pilha de chamadas e árvore de recursão para fatorial e Fibonacci (com e sem memoização) |
+| 🧠 | [Ponteiros e memória](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/programacao-e-desenvolvimento-de-software-1/visualizacoes/ponteiros.html) | Endereços, `*` e `&`, aritmética de ponteiros, `new`/`delete` e ponteiro pendente |
 
 > Para abrir localmente, rode `python3 -m http.server` na raiz do repositório (veja o [README principal](../../README.md)).
 
@@ -47,7 +47,7 @@ Ligue sempre `-Wall -Wextra`: os avisos do compilador pegam metade dos bugs de i
 Armadilhas clássicas:
 - **Divisão inteira:** `7 / 2 == 3`. Para obter 3,5 escreva `7.0 / 2`.
 - **Overflow:** `int x = 2147483647; x + 1` é comportamento indefinido.
-- **Comparação de `double` com `==`**: use uma tolerância (veja [Ponto flutuante](../introducao-a-computacao/visualizacoes/ponto-flutuante.html)).
+- **Comparação de `double` com `==`**: use uma tolerância (veja [Ponto flutuante](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-computacao/visualizacoes/ponto-flutuante.html)).
 - **`=` × `==`**: `if (x = 0)` atribui e é sempre falso.
 
 ### 3. Controle de fluxo

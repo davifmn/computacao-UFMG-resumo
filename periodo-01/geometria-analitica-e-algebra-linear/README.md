@@ -10,9 +10,9 @@ são setas, e matrizes são **transformações do espaço**.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🌀 | [Transformações lineares](visualizacoes/transformacoes.html) | O plano inteiro se deformando: $\hat\imath$ e $\hat\jmath$ indo para as colunas da matriz, o determinante como área e os autovetores parados na própria reta |
-| ➡️ | [Vetores](visualizacoes/vetores.html) | Arraste vetores e veja soma, subtração, produto escalar, ângulo, projeção, combinação linear e span |
-| 🧮 | [Eliminação gaussiana](visualizacoes/gauss.html) | Gauss-Jordan passo a passo com frações exatas, trocas de linha animadas e a classificação SPD/SPI/SI |
+| 🌀 | [Transformações lineares](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/geometria-analitica-e-algebra-linear/visualizacoes/transformacoes.html) | O plano inteiro se deformando: $\hat\imath$ e $\hat\jmath$ indo para as colunas da matriz, o determinante como área e os autovetores parados na própria reta |
+| ➡️ | [Vetores](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/geometria-analitica-e-algebra-linear/visualizacoes/vetores.html) | Arraste vetores e veja soma, subtração, produto escalar, ângulo, projeção, combinação linear e span |
+| 🧮 | [Eliminação gaussiana](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/geometria-analitica-e-algebra-linear/visualizacoes/gauss.html) | Gauss-Jordan passo a passo com frações exatas, trocas de linha animadas e a classificação SPD/SPI/SI |
 
 ## 📚 Resumo teórico
 

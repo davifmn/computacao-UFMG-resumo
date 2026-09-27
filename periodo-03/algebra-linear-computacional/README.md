@@ -10,9 +10,9 @@ preocupação constante com precisão e custo.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 📉 | [Mínimos quadrados](visualizacoes/minimos-quadrados.html) | Arraste pontos e veja o ajuste polinomial pelas equações normais, os resíduos e o sobreajuste com grau alto |
-| 🌐 | [PageRank](visualizacoes/pagerank.html) | Crie links entre páginas e acompanhe o método das potências convergindo para o autovetor dominante da matriz do Google |
-| 🖼️ | [Compressão com SVD](visualizacoes/svd.html) | Uma imagem (inclusive a sua) reconstruída com as k primeiras camadas da SVD, o espectro de valores singulares e as primeiras camadas de posto 1 |
+| 📉 | [Mínimos quadrados](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/minimos-quadrados.html) | Arraste pontos e veja o ajuste polinomial pelas equações normais, os resíduos e o sobreajuste com grau alto |
+| 🌐 | [PageRank](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/pagerank.html) | Crie links entre páginas e acompanhe o método das potências convergindo para o autovetor dominante da matriz do Google |
+| 🖼️ | [Compressão com SVD](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/svd.html) | Uma imagem (inclusive a sua) reconstruída com as k primeiras camadas da SVD, o espectro de valores singulares e as primeiras camadas de posto 1 |
 
 ## 📚 Resumo teórico
 

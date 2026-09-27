@@ -11,9 +11,9 @@ depende de convenções.
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🔢 | [Mudança de base](visualizacoes/bases.html) | Divisões sucessivas (decimal → base b) e método de Horner (base b → decimal), passo a passo, com gerador de exercícios |
-| ⚙️ | [Complemento de dois](visualizacoes/inteiros.html) | Registrador de bits clicável, as quatro interpretações, a roda dos números e a detecção de overflow na soma |
-| 🌊 | [Ponto flutuante (IEEE 754)](visualizacoes/ponto-flutuante.html) | Os 32 bits de um `float`, o valor **exato** armazenado e por que `0.1 + 0.2 != 0.3` |
+| 🔢 | [Mudança de base](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-computacao/visualizacoes/bases.html) | Divisões sucessivas (decimal → base b) e método de Horner (base b → decimal), passo a passo, com gerador de exercícios |
+| ⚙️ | [Complemento de dois](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-computacao/visualizacoes/inteiros.html) | Registrador de bits clicável, as quatro interpretações, a roda dos números e a detecção de overflow na soma |
+| 🌊 | [Ponto flutuante (IEEE 754)](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-computacao/visualizacoes/ponto-flutuante.html) | Os 32 bits de um `float`, o valor **exato** armazenado e por que `0.1 + 0.2 != 0.3` |
 
 ## 📚 Resumo teórico
 
@@ -83,7 +83,7 @@ detecção de overflow e inspeção de `float32` com `struct`. Tem testes: `pyth
 
 ## ✍️ Exercícios
 
-> A página de [mudança de base](visualizacoes/bases.html) tem um **gerador infinito** de exercícios de conversão.
+> A página de [mudança de base](https://davifmn.github.io/computacao-UFMG-resumo/periodo-01/introducao-a-computacao/visualizacoes/bases.html) tem um **gerador infinito** de exercícios de conversão.
 
 1. Converta $0{,}625$ para binário.
 2. Qual o maior e o menor inteiro representável com 12 bits em complemento de 2?

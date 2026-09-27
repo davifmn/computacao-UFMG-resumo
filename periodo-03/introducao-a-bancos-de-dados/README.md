@@ -9,8 +9,8 @@ garantir a integridade é uma habilidade que você vai usar em todo estágio e e
 
 | | Página | O que você vai ver |
 |---|---|---|
-| 🛢️ | [Tutorial: SQL na prática](tutoriais/sql.html) | Um **SQLite de verdade rodando no navegador**: SELECT, filtros, agregação, JOINs, subconsultas, transações, criação de tabelas e índices, com 12 exercícios corrigidos automaticamente |
-| 🔀 | [Como um JOIN funciona](visualizacoes/joins.html) | O algoritmo de laços aninhados passo a passo para INNER, LEFT, RIGHT e FULL JOIN, com o tratamento de NULL |
+| 🛢️ | [Tutorial: SQL na prática](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/introducao-a-bancos-de-dados/tutoriais/sql.html) | Um **SQLite de verdade rodando no navegador**: SELECT, filtros, agregação, JOINs, subconsultas, transações, criação de tabelas e índices, com 12 exercícios corrigidos automaticamente |
+| 🔀 | [Como um JOIN funciona](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/introducao-a-bancos-de-dados/visualizacoes/joins.html) | O algoritmo de laços aninhados passo a passo para INNER, LEFT, RIGHT e FULL JOIN, com o tratamento de NULL |
 
 O banco de exemplo ([`tutoriais/universidade.sql`](tutoriais/universidade.sql)) também pode ser aberto no `sqlite3`, no DB Browser for SQLite ou no Python.
 

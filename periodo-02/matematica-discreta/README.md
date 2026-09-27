@@ -10,10 +10,10 @@ ferramentas para contar, analisar recorrências e raciocinar sobre relações e 
 
 | | Visualização | O que você vai ver |
 |---|---|---|
-| 🔐 | [De Euclides ao RSA](visualizacoes/teoria-dos-numeros.html) | Euclides estendido como ladrilhamento de um retângulo por quadrados, tabela de multiplicação mod n (quem tem inverso) e um RSA de brinquedo que cifra a sua mensagem |
-| 🕸️ | [Relações](visualizacoes/relacoes.html) | Matriz ↔ grafo dirigido, propriedades com contraexemplos, classes de equivalência e o fecho transitivo (Warshall) passo a passo |
-| 🔢 | [Contagem](visualizacoes/contagem.html) | Os quatro modos de escolher (ordem × repetição) com todas as possibilidades listadas, triângulo de Pascal interativo (e Sierpinski!) e exercícios gerados |
-| 🗼 | [Indução e recorrência](visualizacoes/inducao-e-recorrencia.html) | Torre de Hanói com a pilha de chamadas, a recorrência $T(n) = 2T(n-1) + 1$ e a prova por indução de que $T(n) = 2^n - 1$ |
+| 🔐 | [De Euclides ao RSA](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/teoria-dos-numeros.html) | Euclides estendido como ladrilhamento de um retângulo por quadrados, tabela de multiplicação mod n (quem tem inverso) e um RSA de brinquedo que cifra a sua mensagem |
+| 🕸️ | [Relações](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/relacoes.html) | Matriz ↔ grafo dirigido, propriedades com contraexemplos, classes de equivalência e o fecho transitivo (Warshall) passo a passo |
+| 🔢 | [Contagem](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/contagem.html) | Os quatro modos de escolher (ordem × repetição) com todas as possibilidades listadas, triângulo de Pascal interativo (e Sierpinski!) e exercícios gerados |
+| 🗼 | [Indução e recorrência](https://davifmn.github.io/computacao-UFMG-resumo/periodo-02/matematica-discreta/visualizacoes/inducao-e-recorrencia.html) | Torre de Hanói com a pilha de chamadas, a recorrência $T(n) = 2T(n-1) + 1$ e a prova por indução de que $T(n) = 2^n - 1$ |
 
 ## 📚 Resumo teórico
 
