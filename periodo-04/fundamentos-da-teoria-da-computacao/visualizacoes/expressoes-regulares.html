@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expressões regulares e Thompson · Fundamentos da Teoria da Computação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 400px; font-size: 12.5px; } .toolbar input[type=text] { font-family: var(--mono); } .err { color: var(--red); font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ftc">Fundamentos da Teoria da Computação</a>
+      <span class="sep">/</span><span>Expressões regulares</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos da Teoria da Computação</div>
+    <h1>De expressão regular a autômato: a construção de Thompson</h1>
+    <p class="lead">Toda expressão regular vira um AFN montando peças: uma peça por símbolo e uma regra de colagem para cada operador (união, concatenação e fecho de Kleene). É assim que <code>grep</code>, analisadores léxicos e motores de regex sem retrocesso funcionam. Escreva uma expressão, veja o AFN nascer e teste palavras nele.</p>
+
+    <div class="toolbar">
+      <label>Expressão <input id="re" type="text" value="(a|b)*abb" style="width:180px"></label>
+      <div class="chips" role="group" aria-label="Modo">
+        <button class="btn" data-mode="build">Construir</button>
+        <button class="btn" data-mode="test">Testar palavra</button>
+      </div>
+      <label id="word-wrap">Palavra <input id="word" type="text" value="babb" style="width:120px"></label>
+      <button class="btn primary small" id="go">Rodar</button>
+      <span class="err" id="err"></span>
+    </div>
+    <div class="toolbar">
+      <span class="c-muted">Exemplos:</span>
+      <button class="btn small" data-ex="(a|b)*abb">(a|b)*abb</button>
+      <button class="btn small" data-ex="a*b*">a*b*</button>
+      <button class="btn small" data-ex="(ab|c)+">(ab|c)+</button>
+      <button class="btn small" data-ex="0?1(01)*">0?1(01)*</button>
+      <button class="btn small" data-ex="((a|b)(a|b))*">palavras de tamanho par</button>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>As peças</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Expressão</th><th>Peça</th></tr>
+          <tr><td>$a$</td><td>dois estados ligados por $a$</td></tr>
+          <tr><td>$RS$</td><td>o fim de $R$ vira o início de $S$</td></tr>
+          <tr><td>$R \mid S$</td><td>novo início com ε para $R$ e para $S$; os dois fins vão por ε a um novo fim</td></tr>
+          <tr><td>$R^*$</td><td>novo início e novo fim; ε para pular $R$ (zero vezes) e ε do fim de $R$ de volta ao seu início (repetir)</td></tr>
+          <tr><td>$R^+ = RR^*$, $R? = R \mid \varepsilon$</td><td>variações do fecho, sem o "pular" ou sem o "repetir"</td></tr>
+        </table>
+      </div>
+      <p>O AFN resultante tem no máximo $2m$ estados para uma expressão com $m$ símbolos e operadores, e simulá-lo (como na página de autômatos finitos) custa $O(m \cdot n)$ para uma palavra de tamanho $n$. Motores com retrocesso (como os de muitas linguagens) podem levar tempo <b>exponencial</b> em expressões como <code>(a*)*b</code>; os baseados em autômatos, nunca.</p>
+      <h2>O teorema de Kleene</h2>
+      <p>Expressões regulares, AFNs e AFDs descrevem <b>exatamente as mesmas linguagens</b>. Thompson vai da expressão para o AFN; a construção de subconjuntos, do AFN para o AFD; e a eliminação de estados (ou o método de Arden) volta do autômato para a expressão.</p>
+      <h2>Propriedades de fechamento</h2>
+      <p>As linguagens regulares são fechadas por união, concatenação, fecho, <b>complemento</b> (troque finais e não finais de um AFD completo), <b>interseção</b> (autômato produto) e reverso. Para provar que uma linguagem <b>não</b> é regular, use o <b>lema do bombeamento</b>: se $L$ é regular, existe $p$ tal que toda $w \in L$ com $|w| \ge p$ se escreve $w = xyz$ com $|xy| \le p$, $|y| \ge 1$ e $xy^iz \in L$ para todo $i \ge 0$. Para $a^nb^n$, escolha $w = a^pb^p$: $y$ só tem $a$'s, e bombear desbalanceia.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { parseRegex, thompson, simulate, EPS } from './automatos.js';
+    import { drawAutomaton, drawTape } from './desenho-automato.js';
+
+    const W = 900, H = 470;
+    let mode = 'build', T = null, M = null;
+    const CODES = {
+      build: `def thompson(no):
+    if no.tipo == 'simbolo':
+        return peca(a, b, rotulo=no.c)
+    if no.tipo == 'concat':
+        A, B = thompson(no.a), thompson(no.b)
+        funde(A.fim, B.inicio)
+    if no.tipo == 'uniao':
+        i, f = novo(), novo()
+        eps(i, A.inicio); eps(i, B.inicio)
+        eps(A.fim, f); eps(B.fim, f)
+    if no.tipo == 'fecho':
+        i, f = novo(), novo()
+        eps(i, A.inicio); eps(A.fim, f)
+        eps(A.fim, A.inicio)   # repetir
+        eps(i, f)              # zero vezes`,
+      test: `def aceita(N, w):
+    atuais = fecho_eps({N.inicial})
+    for a in w:
+        atuais = fecho_eps(mover(atuais, a))
+    return N.final in atuais`,
+    };
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'regex.py', lang: 'python', showVars: false,
+      render(step, s) {
+        const top = mode === 'test' ? 110 : 60;
+        const ux = Math.min(90, (W - 90) / Math.max(1, T.w - 1)), uy = Math.min(95, (H - top - 60) / Math.max(1, T.h));
+        const y0 = top + (H - top - (T.h - 1) * uy) / 2;   // centraliza na vertical
+        const pos = Object.fromEntries(Object.entries(T.layout).map(([q, [x, y]]) => [q, [60 + x * ux, y0 + y * uy]]));
+        const r = Math.max(12, Math.min(20, ux * 0.28));
+        const label = q => q.slice(1);
+        // arestas de volta (fecho) curvam por baixo da peça; as de pulo, por cima
+        const curveOf = (a, b, edges) => {
+          const e = edges.find(x => x[0] === a && x[1] === b && x[3]);
+          return e ? { curve: (e[3].kind === 'volta' ? 1 : -1) * (e[3].rows / 2 + 0.25) * uy } : {};
+        };
+        if (mode === 'build') {
+          const states = step.states, edges = step.edges;
+          const Mx = { states, start: step.done ? M.start : null, accept: step.done ? M.accept : [], pos };
+          drawAutomaton(s, Mx, edges, { r, fontSize: 11, label,
+            nodeStyle: q => q === step.start || q === step.end ? { stroke: COLORS.yellow, sw: 3, fill: '#3d3a22' } : {},
+            edgeStyle: (a, b, labels) => ({ ...(labels.every(l => l === EPS) ? { stroke: COLORS.faint, sw: 1.4 } : { stroke: COLORS.blue, sw: 2.2 }), ...curveOf(a, b, edges) }) });
+          s.text('frag', step.done ? `AFN de ${$('#re').value}: ${states.length} estados` : `peça para: ${step.node}`, { x: 20, y: 24, size: 17, anchor: 'start', weight: 800, mono: true, fill: COLORS.yellow });
+        } else {
+          drawTape(s, 'tape', [...step.word], { x: 30, y: 36, cell: 40, head: step.pos, done: step.pos });
+          drawAutomaton(s, { ...M, pos }, M.edges, { r, fontSize: 11, label,
+            nodeStyle: q => step.active.includes(q) ? { fill: step.result === false ? '#3a1b18' : step.result ? '#1f3319' : '#3d3a22', stroke: step.result === false ? COLORS.red : step.result ? COLORS.green : COLORS.yellow, sw: 3 } : {},
+            edgeStyle: (a, b, labels) => ({ ...(step.edges?.some(([x, y, c]) => x === a && y === b && labels.includes(c)) ? { stroke: COLORS.yellow, sw: 3 } : labels.every(l => l === EPS) ? { stroke: COLORS.faint, sw: 1.4 } : { stroke: COLORS.blue, sw: 2 }), ...curveOf(a, b, M.edges) }) });
+          if (step.result != null) s.text('res', step.result ? 'ACEITA' : 'REJEITA', { x: W - 30, y: 50, size: 24, weight: 800, anchor: 'end', fill: step.result ? COLORS.green : COLORS.red });
+        }
+      },
+    });
+
+    function run() {
+      $('#err').textContent = '';
+      try { T = thompson(parseRegex($('#re').value)); } catch (e) { $('#err').textContent = e.message; return; }
+      M = { ...T.nfa, pos: {} };
+      $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+      $('#word-wrap').style.display = mode === 'test' ? '' : 'none';
+      player.setCode(CODES[mode], 'python');
+      const L = CODES[mode].split('\n');
+      const ln = t => L.findIndex(l => l.includes(t)) + 1;
+      let steps;
+      if (mode === 'build') {
+        const lineOf = { sym: ln("'simbolo'"), eps: ln("'simbolo'"), concat: ln('funde('), union: [ln('eps(i, A.inicio); eps(i, B'), ln('eps(B.fim, f)')], star: [ln('eps(A.fim, A.inicio)'), ln('eps(i, f)')], plus: ln('eps(A.fim, A.inicio)'), opt: ln('eps(i, f)') };
+        const why = { sym: 'um símbolo: dois estados e uma transição', eps: 'ε: uma transição vazia', concat: 'concatenação: o fim da primeira peça vira o início da segunda', union: 'união: novo início que escolhe (por ε) um dos lados, novo fim que junta os dois', star: 'fecho de Kleene: ε para pular (zero vezes) e ε do fim para o início (repetir)', plus: 'R+: como o fecho, mas sem o ε que pula', opt: 'R?: pode pular, mas não repetir' };
+        steps = T.steps.map(st => ({ ...st, line: lineOf[st.kind], msg: `Peça para <code>${st.node}</code>: ${why[st.kind]}.` }));
+        steps.push({ ...T.steps.at(-1), done: true, line: null, msg: `AFN completo com <b>${T.nfa.states.length}</b> estados (início ${T.nfa.start.slice(1)}, final ${T.nfa.accept[0].slice(1)}). Transições cinza são ε; azuis leem símbolos. Agora teste palavras nele.` });
+      } else {
+        const w = $('#word').value.trim();
+        steps = simulate({ ...M, alphabet: [...new Set([...M.alphabet, ...w])] }, w).map((st, i, arr) => ({ ...st, word: w, line: i === 0 ? 2 : i === arr.length - 1 && st.result != null ? 5 : 4 }));
+      }
+      player.load(steps);
+    }
+    $$('[data-mode]').forEach(b => b.addEventListener('click', () => { mode = b.dataset.mode; run(); }));
+    $$('[data-ex]').forEach(b => b.addEventListener('click', () => { $('#re').value = b.dataset.ex; run(); }));
+    $('#go').addEventListener('click', run);
+    for (const id of ['#re', '#word']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual expressão descreve as palavras sobre {a, b} que <b>contêm</b> aa?', options: ['(a|b)*aa(a|b)*', 'a*aab*', '(aa)*', 'aa(a|b)'], answer: 0, explain: 'Qualquer coisa, depois aa, depois qualquer coisa.' },
+      { q: 'Quantos estados o AFN de Thompson para <code>a|b</code> tem (com a concatenação fundindo estados, como aqui)?', options: ['6', '4', '2', '3'], answer: 0, explain: 'Duas peças de 2 estados (a e b) mais um novo início e um novo fim.' },
+      { q: 'Qual linguagem NÃO é regular?', options: ['Palíndromos sobre {a, b}', 'Palavras com número par de a\'s', 'Palavras que terminam em ab', 'Binários múltiplos de 5'], answer: 0, explain: 'Reconhecer palíndromos exige lembrar uma metade inteira. Bombeie $a^p b a^p$.' },
+      { q: 'O complemento de uma linguagem regular é…', options: ['regular', 'livre de contexto, mas não regular', 'recursivamente enumerável', 'depende'], answer: 0, explain: 'Pegue um AFD completo e troque os estados finais pelos não finais.' },
+    ]);
+  </script>
+</body>
+</html>

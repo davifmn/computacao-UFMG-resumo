@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Programação dinâmica · Algoritmos I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; } .toolbar input[type=text] { width: 130px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg1">Algoritmos I</a>
+      <span class="sep">/</span><span>Programação dinâmica</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos I</div>
+    <h1>Programação dinâmica: a tabela que lembra</h1>
+    <p class="lead">Quando a recursão resolve o mesmo subproblema muitas vezes, guarde a resposta numa <b>tabela</b> e preencha-a numa ordem em que cada célula só depende de células já calculadas. Veja a tabela sendo preenchida, com as células de que cada valor depende, e depois a reconstrução da solução.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Problema">
+        <button class="btn" data-p="mochila">Mochila 0/1</button>
+        <button class="btn" data-p="lcs">Subsequência comum (LCS)</button>
+        <button class="btn" data-p="edicao">Distância de edição</button>
+      </div>
+      <span id="in-mochila">
+        <label>Capacidade <select id="cap"><option>5</option><option>6</option><option selected>7</option><option>8</option><option>10</option></select></label>
+        <button class="btn small" id="sort-items">Outros itens</button>
+      </span>
+      <span id="in-str">
+        <label>a <input id="a" type="text" value="ABCBDAB" maxlength="9"></label>
+        <label>b <input id="b" type="text" value="BDCABA" maxlength="9"></label>
+        <button class="btn primary small" id="go">Rodar</button>
+      </span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>célula sendo calculada</span><span><i style="background:#58c4dd"></i>células de que ela depende</span><span><i style="background:#83c167"></i>caminho da reconstrução</span></div>
+
+    <section class="prose">
+      <h2>A receita</h2>
+      <ol class="step-list">
+        <li><b>Defina o subproblema</b> numa frase. "T[i][c] = o melhor valor usando os itens 1..i com capacidade c." Se você não consegue escrever essa frase, não há tabela.</li>
+        <li><b>Escreva a recorrência</b>: como a resposta do subproblema vem de subproblemas menores. Em geral é uma escolha sobre o último elemento (levo ou não o item i? a última letra casa ou não?).</li>
+        <li><b>Casos base</b>: os subproblemas triviais (capacidade 0, string vazia).</li>
+        <li><b>Ordem de preenchimento</b>: qualquer ordem em que as dependências venham antes. Aqui, linha por linha.</li>
+        <li><b>Reconstrução</b>: guarde (ou refaça) as escolhas para devolver a solução, não só o valor.</li>
+      </ol>
+      <h2>Os três problemas</h2>
+      <p><b>Mochila 0/1.</b> $T[i][c] = \max(T[i-1][c],\ T[i-1][c - p_i] + v_i)$ se $p_i \le c$. O custo $O(nW)$ é <b>pseudo-polinomial</b>: polinomial no <i>valor</i> de $W$, mas exponencial no número de bits de $W$. Tanto que a mochila é NP-difícil. Na mochila <i>fracionária</i> (pode levar pedaços), o guloso por valor/peso é ótimo.</p>
+      <p><b>LCS.</b> $T[i][j] = T[i-1][j-1] + 1$ se $a_i = b_j$; senão $\max(T[i-1][j], T[i][j-1])$. É o coração do <code>diff</code> e do alinhamento de sequências de DNA.</p>
+      <p><b>Distância de edição.</b> $T[i][j] = \min(T[i-1][j] + 1,\ T[i][j-1] + 1,\ T[i-1][j-1] + [a_i \ne b_j])$: remover, inserir ou trocar o último caractere.</p>
+      <div class="callout tip"><p><b>Memoização × tabela.</b> A versão de cima para baixo (recursão + cache) só calcula os subproblemas realmente usados; a de baixo para cima (tabela) evita a pilha de recursão e permite economizar memória: para a LCS, basta guardar duas linhas, $O(\min(n, m))$.</p></div>
+      <h2>Guloso × programação dinâmica</h2>
+      <p>O guloso faz uma escolha e nunca volta atrás; a programação dinâmica considera todas as escolhas para cada subproblema. Use guloso quando provar que a escolha local está em alguma solução ótima (propriedade da escolha gulosa: Kruskal, Dijkstra, Huffman, seleção de atividades pelo menor término). Teste: na mochila 0/1 com capacidade 50 e itens (peso, valor) = (10, 60), (20, 100), (30, 120), o guloso por valor/peso leva os dois primeiros (160), mas o ótimo é o 2º + o 3º (220).</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, knapsackSteps, lcsSteps, editSteps } from './pd.js';
+
+    const W = 900, H = 470;
+    let prob = 'mochila';
+    const ITEM_SETS = [
+      [{ nome: 'A', p: 1, v: 1 }, { nome: 'B', p: 3, v: 4 }, { nome: 'C', p: 4, v: 5 }, { nome: 'D', p: 5, v: 7 }],
+      [{ nome: 'A', p: 2, v: 3 }, { nome: 'B', p: 3, v: 4 }, { nome: 'C', p: 4, v: 5 }, { nome: 'D', p: 5, v: 6 }],
+      [{ nome: 'A', p: 1, v: 2 }, { nome: 'B', p: 2, v: 2 }, { nome: 'C', p: 3, v: 6 }, { nome: 'D', p: 4, v: 7 }, { nome: 'E', p: 6, v: 10 }],
+    ];
+    let itemSet = 0;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'pd.cpp',
+      render(step, s) {
+        const R = step.T.length, C = step.T[0].length;
+        const top = prob === 'mochila' ? 96 : 40;
+        const cell = Math.min(54, (W - 120) / (C + 1), (H - top - 40) / (R + 1));
+        const x0 = (W - cell * (C + 1)) / 2 + cell, y0 = top + cell;
+        const isDep = (i, j) => step.deps?.some(([a, b]) => a === i && b === j);
+        const onPath = (i, j) => step.path?.some(([a, b]) => a === i && b === j);
+        // cabeçalhos
+        step.cols.forEach((c, j) => s.text(`ch${j}`, c, { x: x0 + j * cell + cell / 2, y: y0 - cell / 2, size: Math.min(16, cell * 0.4), weight: 700, mono: true, fill: step.cell?.[1] === j ? COLORS.yellow : COLORS.muted }));
+        step.rows.forEach((r, i) => s.text(`rh${i}`, r, { x: x0 - cell / 2, y: y0 + i * cell + cell / 2, size: Math.min(16, cell * 0.4), weight: 700, mono: true, fill: step.cell?.[0] === i ? COLORS.yellow : COLORS.muted }));
+        if (prob === 'mochila') {
+          s.text('cap', 'capacidade c →', { x: x0, y: y0 - cell - 4, size: 12, anchor: 'start', fill: COLORS.faint });
+          ITEM_SETS[itemSet].forEach((it, k) => {
+            const chosen = step.chosen?.includes(k);
+            s.text(`it${k}`, `${it.nome}: peso ${it.p}, valor ${it.v}`, { x: 20 + k * 175, y: 22, size: 14, anchor: 'start', weight: chosen ? 800 : 500, fill: chosen ? COLORS.green : step.cell?.[0] === k + 1 ? COLORS.yellow : COLORS.text });
+          });
+        }
+        for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) {
+          const v = step.T[i][j];
+          const cur = step.cell && step.cell[0] === i && step.cell[1] === j;
+          const dep = isDep(i, j), path = onPath(i, j);
+          s.rect(`c${i}-${j}`, { x: x0 + j * cell, y: y0 + i * cell, w: cell - 3, h: cell - 3, rx: 5,
+            fill: cur ? '#3d3a22' : path ? '#1f3319' : dep ? '#1c3640' : v == null ? COLORS.bg : COLORS.surface2,
+            stroke: cur ? COLORS.yellow : path ? COLORS.green : dep ? COLORS.blue : COLORS.border, sw: cur || dep || path ? 2.5 : 1 });
+          if (v != null) s.text(`v${i}-${j}`, v, { x: x0 + j * cell + (cell - 3) / 2, y: y0 + i * cell + (cell - 3) / 2, size: Math.min(17, cell * 0.42), weight: cur ? 800 : 600, mono: true, fill: cur ? COLORS.yellow : COLORS.text });
+        }
+        if (step.done) {
+          const txt = prob === 'mochila' ? `levar: ${step.chosen.map(k => ITEM_SETS[itemSet][k].nome).join(' + ')}` : prob === 'lcs' ? `LCS = "${step.result}"` : step.ops.join(' · ') || 'iguais';
+          s.text('res', txt, { x: W / 2, y: H - 16, size: 16, weight: 800, mono: true, fill: COLORS.green });
+        }
+      },
+    });
+
+    function run() {
+      $$('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === prob));
+      $('#in-mochila').style.display = prob === 'mochila' ? 'contents' : 'none';
+      $('#in-str').style.display = prob === 'mochila' ? 'none' : 'contents';
+      player.setCode(CODES[prob], 'cpp');
+      const a = $('#a').value.trim().toUpperCase().slice(0, 9), b = $('#b').value.trim().toUpperCase().slice(0, 9);
+      player.load(prob === 'mochila' ? knapsackSteps(ITEM_SETS[itemSet], +$('#cap').value) : prob === 'lcs' ? lcsSteps(a, b) : editSteps(a, b));
+    }
+    $$('[data-p]').forEach(btn => btn.addEventListener('click', () => {
+      prob = btn.dataset.p;
+      if (prob === 'edicao' && $('#a').value === 'ABCBDAB') { $('#a').value = 'GATO'; $('#b').value = 'PATOS'; }
+      if (prob === 'lcs' && $('#a').value === 'GATO') { $('#a').value = 'ABCBDAB'; $('#b').value = 'BDCABA'; }
+      run();
+    }));
+    $('#cap').addEventListener('change', run);
+    $('#sort-items').addEventListener('click', () => { itemSet = (itemSet + 1) % ITEM_SETS.length; run(); });
+    $('#go').addEventListener('click', run);
+    for (const id of ['#a', '#b']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Fibonacci recursivo ingênuo é $O(\\varphi^n)$. Por que a versão com tabela é $O(n)$?', options: ['Cada F(k) é calculado uma vez só', 'Porque usa multiplicação de matrizes', 'Porque a recursão é de cauda', 'Não é'], answer: 0, explain: 'A recursão ingênua recalcula F(n−2) dentro de F(n−1) e de novo em F(n). Com memória, são n subproblemas de custo O(1).' },
+      { q: 'A mochila 0/1 roda em $O(nW)$. Isso prova que P = NP?', options: ['Não: O(nW) é exponencial no tamanho (em bits) de W', 'Sim', 'Só se W for primo', 'Só se os pesos forem inteiros'], answer: 0, explain: 'W ocupa log W bits na entrada; nW = n·2^(bits). É um algoritmo pseudo-polinomial.' },
+      { q: 'Qual a distância de edição entre "casa" e "cama"?', options: ['1', '2', '3', '4'], answer: 0, explain: 'Basta trocar s → m.' },
+      { q: 'Para que a programação dinâmica funcione, o problema precisa ter…', options: ['subestrutura ótima e subproblemas sobrepostos', 'só subproblemas independentes', 'escolha gulosa', 'entrada ordenada'], answer: 0, explain: 'Subestrutura ótima: a solução ótima contém soluções ótimas de subproblemas. Sobreposição: os mesmos subproblemas aparecem muitas vezes (senão, divisão e conquista basta).' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova mochila',
+      generate() {
+        const items = ['A', 'B', 'C', 'D'].map(nome => ({ nome, p: randInt(1, 6), v: randInt(1, 9) }));
+        const cap = randInt(5, 10);
+        const last = knapsackSteps(items, cap).at(-1);
+        const best = last.T.at(-1).at(-1);
+        return {
+          q: `Capacidade <b>${cap}</b>. Itens (peso, valor): ${items.map(it => `${it.nome} = (${it.p}, ${it.v})`).join(', ')}. Qual o maior valor que cabe na mochila (sem fracionar)?`,
+          input: true, answer: String(best),
+          explain: `Leve ${last.chosen.map(k => items[k].nome).join(' + ') || 'nada'}: peso ${last.chosen.reduce((s, k) => s + items[k].p, 0)}, valor ${best}.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

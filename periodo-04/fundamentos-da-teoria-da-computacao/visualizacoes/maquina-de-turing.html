@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Máquina de Turing · Fundamentos da Teoria da Computação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 380px; font-size: 12.5px; } .toolbar input[type=text] { width: 140px; font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ftc">Fundamentos da Teoria da Computação</a>
+      <span class="sep">/</span><span>Máquina de Turing</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos da Teoria da Computação</div>
+    <h1>Máquina de Turing: o modelo de tudo o que é computável</h1>
+    <p class="lead">Uma fita infinita, um cabeçote que lê, escreve e anda uma casa por vez, e uma tabela finita de regras. Só isso. A tese de Church–Turing diz que qualquer coisa que um algoritmo faça, uma máquina dessas também faz, inclusive o seu computador.</p>
+
+    <div class="toolbar">
+      <label>Máquina <select id="preset"></select></label>
+      <label>Entrada <input id="word" type="text"></label>
+      <button class="btn primary small" id="go">Rodar</button>
+      <span class="spacer"></span>
+      <span class="c-muted" id="descr" style="max-width:520px;font-size:14px"></span>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Definição</h2>
+      <p>$M = (Q, \Sigma, \Gamma, \delta, q_0, q_\text{aceita}, q_\text{rejeita})$, com $\delta: Q \times \Gamma \to Q \times \Gamma \times \{E, D\}$. A fita começa com a entrada seguida de brancos (_). A cada passo a máquina lê o símbolo sob o cabeçote, escreve outro, move-se e muda de estado. Ela pode <b>aceitar</b>, <b>rejeitar</b> (aqui: quando não há regra) ou <b>rodar para sempre</b>.</p>
+      <h2>A hierarquia de Chomsky</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Linguagens</th><th>Máquina</th><th>Gramática</th><th>Exemplo</th></tr>
+          <tr><td>regulares</td><td>autômato finito</td><td>regular ($A \to aB$)</td><td>$a^*b^*$</td></tr>
+          <tr><td>livres de contexto</td><td>autômato de pilha</td><td>$A \to \gamma$</td><td>$a^nb^n$</td></tr>
+          <tr><td>sensíveis ao contexto</td><td>MT com fita limitada</td><td>$\alpha A \beta \to \alpha\gamma\beta$</td><td>$a^nb^nc^n$</td></tr>
+          <tr><td>recursivamente enumeráveis</td><td>máquina de Turing</td><td>irrestrita</td><td>$\{\langle M, w\rangle : M \text{ aceita } w\}$</td></tr>
+        </table>
+      </div>
+      <h2>Decidível × reconhecível</h2>
+      <p>Uma linguagem é <b>decidível</b> (recursiva) se alguma MT sempre para e responde certo. É <b>reconhecível</b> (recursivamente enumerável) se alguma MT aceita exatamente as palavras dela, podendo rodar para sempre nas outras. Todas as máquinas desta página são decisores: param em qualquer entrada.</p>
+      <h2>O problema da parada</h2>
+      <p>Não existe uma MT $H$ que, dada a descrição de qualquer máquina $M$ e uma entrada $w$, sempre diga se $M$ para em $w$. Prova por diagonalização: se $H$ existisse, construa $D$ que, com entrada $\langle M\rangle$, roda $H(\langle M\rangle, \langle M\rangle)$ e faz o contrário (se $H$ diz "para", entra em laço; se diz "não para", para). Então $D(\langle D\rangle)$ para se e somente se não para. Contradição.</p>
+      <div class="callout tip"><p>Daí vêm os outros indecidíveis, por <b>redução</b>: saber se um programa imprime "olá", se duas gramáticas livres de contexto geram a mesma linguagem, o problema da correspondência de Post. O Teorema de Rice generaliza: qualquer propriedade não trivial do <b>comportamento</b> de programas é indecidível. É por isso que nenhum antivírus ou analisador estático é perfeito.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { TM_PRESETS, runTM, BLANK, tapeString } from './automatos.js';
+
+    const W = 900, H = 450, CELLS = 17, CW = 48;
+    let M = null, symbols = [], states = [];
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'transições', lang: 'python', showVars: true,
+      render(step, s) {
+        // fita: janela que acompanha o cabeçote
+        const from = Math.max(-2, step.head - Math.floor(CELLS / 2));
+        const x0 = (W - CELLS * CW) / 2;
+        for (let i = 0; i < CELLS; i++) {
+          const k = from + i;
+          const c = step.tape.get(k) ?? BLANK;
+          const hot = k === step.head;
+          s.rect(`c${k}`, { x: x0 + i * CW, y: 70, w: CW - 4, h: CW - 4, rx: 6, fill: hot ? '#3d3a22' : COLORS.surface2, stroke: hot ? COLORS.yellow : COLORS.border, sw: hot ? 2.5 : 1 });
+          s.text(`ct${k}`, c === BLANK ? '' : c, { x: x0 + i * CW + (CW - 4) / 2, y: 70 + (CW - 4) / 2, size: 20, weight: 800, mono: true, fill: ['X', 'Y', 'Z'].includes(c) ? COLORS.purple : COLORS.text });
+          s.text(`ci${k}`, k, { x: x0 + i * CW + (CW - 4) / 2, y: 130, size: 10, mono: true, fill: COLORS.faint });
+        }
+        const hx = x0 + (step.head - from) * CW + (CW - 4) / 2;
+        s.path('head', `M ${hx} 62 l -10 -16 l 20 0 z`, { stroke: COLORS.yellow, fill: COLORS.yellow, sw: 1 });
+        s.text('state', step.state, { x: hx, y: 30, size: 16, weight: 800, mono: true, fill: step.halt === 'aceita' ? COLORS.green : step.halt === 'rejeita' ? COLORS.red : COLORS.yellow });
+        // tabela de transições
+        const tx = 60, ty = 175, cw = Math.min(130, (W - tx - 20) / (symbols.length + 1)), rh = Math.min(36, (H - ty - 20) / (states.length + 1));
+        s.text('th-q', 'estado', { x: tx + cw / 2, y: ty, size: 13, weight: 700, fill: COLORS.muted });
+        symbols.forEach((c, j) => s.text(`th${j}`, c, { x: tx + (j + 1) * cw + cw / 2, y: ty, size: 14, weight: 700, mono: true, fill: COLORS.muted }));
+        states.forEach((q, i) => {
+          const y = ty + 16 + i * rh;
+          s.text(`tq${i}`, q, { x: tx + cw / 2, y: y + rh / 2, size: 14, weight: 700, mono: true, fill: q === step.state ? COLORS.yellow : COLORS.text });
+          symbols.forEach((c, j) => {
+            const tr = M.delta[q]?.[c];
+            const hot = step.rule && step.rule[0] === q && step.rule[1] === c;
+            s.rect(`tc${i}-${j}`, { x: tx + (j + 1) * cw + 2, y: y + 2, w: cw - 4, h: rh - 4, rx: 4, fill: hot ? '#3d3a22' : COLORS.surface, stroke: hot ? COLORS.yellow : COLORS.border, sw: hot ? 2 : 1, layer: 'bg' });
+            if (tr) s.text(`tt${i}-${j}`, `${tr[0]}, ${tr[1]}, ${tr[2] === 'R' ? '→' : '←'}`, { x: tx + (j + 1) * cw + cw / 2, y: y + rh / 2, size: 12, mono: true, fill: hot ? COLORS.yellow : COLORS.muted });
+          });
+        });
+        if (step.halt) s.text('res', step.halt === 'aceita' ? 'ACEITA' : step.halt === 'rejeita' ? 'REJEITA' : 'LIMITE', { x: W - 30, y: 30, size: 22, weight: 800, anchor: 'end', fill: step.halt === 'aceita' ? COLORS.green : COLORS.red });
+      },
+    });
+
+    function run(reset = false) {
+      M = TM_PRESETS[$('#preset').value];
+      if (reset) $('#word').value = M.exemplo;
+      $('#descr').textContent = M.descr;
+      states = Object.keys(M.delta);
+      symbols = [...new Set(states.flatMap(q => Object.keys(M.delta[q])))].sort((a, b) => (a === BLANK) - (b === BLANK) || a.localeCompare(b));
+      const lines = states.flatMap(q => Object.entries(M.delta[q]).map(([c, [p, w, d]]) => ({ q, c, txt: `δ(${q}, ${c}) = (${p}, ${w}, ${d === 'R' ? 'D' : 'E'})` })));
+      player.setCode(lines.map(l => l.txt).join('\n'), 'python');
+      const steps = runTM(M, $('#word').value.trim()).map((st, i) => ({
+        ...st, line: st.rule ? lines.findIndex(l => l.q === st.rule[0] && l.c === st.rule[1]) + 1 : null,
+        vars: { passo: i, estado: st.state, cabeçote: st.head, fita: tapeString(st.tape) || '(vazia)' },
+      }));
+      player.load(steps);
+    }
+    $('#preset').innerHTML = Object.entries(TM_PRESETS).map(([k, p]) => `<option value="${k}">${p.nome}</option>`).join('');
+    $('#preset').addEventListener('change', () => run(true));
+    $('#go').addEventListener('click', () => run());
+    $('#word').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    run(true);
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantos passos a máquina de aⁿbⁿ desta página leva, aproximadamente, numa entrada de tamanho n?', options: ['$O(n^2)$: uma ida e volta por par', '$O(n)$', '$O(\\log n)$', '$O(2^n)$'], answer: 0, explain: 'São n/2 voltas, cada uma percorrendo até n casas.' },
+      { q: 'O que significa "a linguagem L é decidível"?', options: ['Existe uma MT que sempre para e aceita exatamente as palavras de L', 'Existe uma MT que aceita L, podendo não parar', 'L é finita', 'L é regular'], answer: 0, explain: 'Decidir exige parar em toda entrada, com a resposta certa.' },
+      { q: 'O complemento do problema da parada é…', options: ['nem reconhecível', 'decidível', 'reconhecível', 'regular'], answer: 0, explain: 'A parada é reconhecível (simule e aceite se parar). Se o complemento também fosse, a linguagem seria decidível, o que não é.' },
+      { q: 'Uma MT com várias fitas reconhece mais linguagens que uma com uma fita?', options: ['Não, só pode ser mais rápida (no máximo quadraticamente)', 'Sim', 'Só se as fitas forem infinitas para os dois lados', 'Depende do alfabeto'], answer: 0, explain: 'Uma fita simula k fitas intercalando as trilhas. O mesmo vale para MTs não determinísticas (com custo exponencial na simulação).' },
+    ]);
+  </script>
+</body>
+</html>

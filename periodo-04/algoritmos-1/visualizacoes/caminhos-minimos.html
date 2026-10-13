@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caminhos mínimos · Algoritmos I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg1">Algoritmos I</a>
+      <span class="sep">/</span><span>Caminhos mínimos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos I</div>
+    <h1>Caminhos mínimos: Dijkstra e Bellman-Ford</h1>
+    <p class="lead">O GPS, o roteamento da internet (OSPF usa Dijkstra, RIP usa Bellman-Ford) e o jogo que acha o caminho do personagem resolvem o mesmo problema: a menor distância de uma origem até todos os vértices de um grafo com pesos. A operação central dos dois algoritmos é o <b>relaxamento</b> de uma aresta.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="dijkstra">Dijkstra</button>
+        <button class="btn" data-alg="bellman">Bellman-Ford</button>
+      </div>
+      <label>Grafo <select id="preset">
+        <option value="cidades">pesos ≥ 0 (CLRS 24.6)</option>
+        <option value="negativa">com aresta negativa</option>
+        <option value="cicloNeg">com ciclo negativo</option>
+      </select></label>
+      <span class="spacer"></span>
+      <span class="c-muted" id="hint"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#58c4dd"></i>árvore de caminhos mínimos (pai)</span><span><i style="background:#f4d35e"></i>aresta examinada</span><span><i style="background:#83c167"></i>relaxou</span><span><i style="background:#fc6255"></i>problema</span><span>número sobre o vértice = dist</span></div>
+
+    <section class="prose">
+      <h2>Relaxar uma aresta</h2>
+      <p>Mantemos para cada vértice uma estimativa $\text{dist}[v]$, que começa em $\infty$. Relaxar a aresta $(u, v)$ de peso $w$ é perguntar: "chegar em $v$ passando por $u$ é melhor do que o que eu já conheço?"</p>
+      <p>$$\text{se } \text{dist}[u] + w(u, v) &lt; \text{dist}[v] \text{ então } \text{dist}[v] \leftarrow \text{dist}[u] + w(u, v),\ \text{pai}[v] \leftarrow u.$$</p>
+      <p>Todo algoritmo de caminho mínimo é uma estratégia para escolher <b>quais</b> arestas relaxar e <b>em que ordem</b>.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th></th><th>Dijkstra</th><th>Bellman-Ford</th><th>BFS</th></tr>
+          <tr><td>Pesos</td><td>≥ 0</td><td>quaisquer (detecta ciclo negativo)</td><td>todos iguais</td></tr>
+          <tr><td>Estratégia</td><td>guloso: extrai o mais próximo</td><td>relaxa tudo, V − 1 vezes</td><td>fila FIFO</td></tr>
+          <tr><td>Custo</td><td>$O((V + E) \log V)$ com heap</td><td>$O(V \cdot E)$</td><td>$O(V + E)$</td></tr>
+        </table>
+      </div>
+      <h2>Por que Dijkstra falha com peso negativo</h2>
+      <p>A prova de Dijkstra diz: quando $u$ sai da fila com a menor estimativa, nenhum caminho alternativo pode ser mais curto, porque ele teria de passar por algum vértice ainda na fila (com estimativa maior) e <b>depois só somar</b>. Com uma aresta negativa, "depois só somar" deixa de valer. Escolha o grafo "com aresta negativa" e rode os dois algoritmos: Dijkstra finaliza B com 2, mas A → C → B custa 5 + (−4) = 1.</p>
+      <h2>Por que V − 1 rodadas bastam</h2>
+      <p>Sem ciclos negativos, um caminho mínimo é simples e tem no máximo $V - 1$ arestas. Por indução, depois da rodada $i$ toda distância realizada por um caminho mínimo com até $i$ arestas está correta. Se ainda há melhoria na rodada $V$, só pode ser um ciclo negativo, e aí "distância mínima" nem está definida.</p>
+      <div class="callout tip"><p>Para <b>todos os pares</b> de vértices, use Floyd-Warshall: $O(V^3)$, três laços e uma tabela, um exemplo clássico de programação dinâmica: $d_k[i][j] = \min(d_{k-1}[i][j],\ d_{k-1}[i][k] + d_{k-1}[k][j])$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2><p class="c-muted">Simule Dijkstra de cabeça num grafo aleatório.</p></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { PRESETS, DIJKSTRA_CODE, BELLMAN_CODE, dijkstraSteps, bellmanFordSteps } from './grafos.js';
+    import { drawGraph, drawList } from './desenho-grafo.js';
+
+    const W = 900, H = 460;
+    let alg = 'dijkstra', G = PRESETS.cidades;
+    const shown = d => (d === Infinity ? '∞' : d);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: alg === 'dijkstra' ? 'dijkstra.cpp' : 'bellman_ford.cpp',
+      render(step, s) {
+        drawGraph(s, G, {
+          edgeStyle: k => {
+            if (k === step.edge) return { stroke: step.bad ? COLORS.red : step.relax ? COLORS.green : COLORS.yellow, sw: 4.5 };
+            if (step.tree.includes(k)) return { stroke: COLORS.blue, sw: 3.5 };
+            return {};
+          },
+          nodeStyle: u => {
+            const fin = alg === 'dijkstra' && step.feito[u];
+            const cur = u === step.u || (step.e && step.e[0] === u);
+            const tgt = u === step.v || (step.e && step.e[1] === u);
+            return {
+              fill: fin ? '#173530' : COLORS.surface2,
+              stroke: cur ? COLORS.yellow : tgt ? (step.bad ? COLORS.red : COLORS.green) : fin ? COLORS.teal : COLORS.muted,
+              sw: cur || tgt ? 3.5 : 2, top: shown(step.dist[u]), topColor: step.dist[u] === Infinity ? COLORS.faint : COLORS.yellow,
+            };
+          },
+        });
+        if (alg === 'dijkstra') {
+          drawList(s, 'pq', 'fila de prioridade (dist, vértice)', step.pq.map((e, i) => ({ id: `${e.u}-${e.d}`, label: `(${e.d}, ${G.names[e.u]})`, hot: i === 0, dim: step.feito[e.u] })), { x: 640, y: 30, w: 230, vertical: true });
+        } else {
+          s.text('rod', step.rodada ? `rodada ${step.rodada} de ${G.names.length - 1}` : 'inicialização', { x: 640, y: 40, size: 18, weight: 800, anchor: 'start', fill: COLORS.yellow });
+          s.text('ord', 'ordem das arestas em cada rodada:', { x: 640, y: 80, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+          G.edges.forEach(([u, v, w], i) => {
+            const hot = step.e && step.e[0] === u && step.e[1] === v;
+            s.text(`eo${i}`, `${G.names[u]}→${G.names[v]}  (${w})`, { x: 650, y: 106 + i * 24, size: 14, anchor: 'start', mono: true, fill: hot ? (step.relax ? COLORS.green : step.bad ? COLORS.red : COLORS.yellow) : COLORS.text, weight: hot ? 800 : 500 });
+          });
+        }
+        if (step.done || step.negCycle) {
+          const msg = step.negCycle ? 'ciclo negativo detectado' : `dist = [${step.dist.map((d, i) => `${G.names[i]}:${shown(d)}`).join('  ')}]`;
+          s.text('res', msg, { x: 20, y: H - 18, size: 15, anchor: 'start', weight: 700, mono: true, fill: step.negCycle ? COLORS.red : COLORS.teal });
+        }
+      },
+    });
+
+    function run() {
+      G = PRESETS[$('#preset').value];
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      player.root.querySelector('.code-panel .panel-title').textContent = alg === 'dijkstra' ? 'dijkstra.cpp' : 'bellman_ford.cpp';
+      player.setCode(alg === 'dijkstra' ? DIJKSTRA_CODE : BELLMAN_CODE, 'cpp');
+      player.load(alg === 'dijkstra' ? dijkstraSteps(G, 0) : bellmanFordSteps(G, 0));
+      $('#hint').textContent = $('#preset').value === 'negativa' ? 'compare a resposta dos dois algoritmos' : $('#preset').value === 'cicloNeg' ? 'B → C → D → B soma −2' : '';
+    }
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.alg; run(); }));
+    $('#preset').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quando um vértice u sai da fila de prioridade no Dijkstra (pesos ≥ 0), o que se garante?', options: ['dist[u] já é a distância mínima', 'u é vizinho da origem', 'Todos os vizinhos de u já foram finalizados', 'Nada; ele ainda pode melhorar'], answer: 0, explain: 'É o invariante guloso do algoritmo: qualquer outro caminho passaria por um vértice com estimativa ≥ dist[u] e só aumentaria.' },
+      { q: 'Somar uma constante grande a todos os pesos para eliminar os negativos e então rodar Dijkstra funciona?', options: ['Não: caminhos com mais arestas são penalizados mais', 'Sim, sempre', 'Só se o grafo for um DAG', 'Só se o grafo for não direcionado'], answer: 0, explain: 'Um caminho com k arestas ganha k·c. O caminho mínimo pode mudar. (O algoritmo de Johnson usa um reajuste mais esperto, com potenciais calculados por Bellman-Ford.)' },
+      { q: 'Quantas rodadas o Bellman-Ford precisa num grafo com 10 vértices (sem ciclo negativo) no pior caso?', options: ['9', '10', '45', '100'], answer: 0, explain: 'Um caminho mínimo simples tem no máximo V − 1 = 9 arestas. A 10ª rodada serve só para detectar ciclos negativos.' },
+    ]);
+
+    // Exercício: grafo aleatório pequeno, pergunta a distância até um vértice.
+    mountGenerator($('#gen'), {
+      label: 'Novo grafo',
+      generate() {
+        const n = 5, names = ['s', 'a', 'b', 'c', 'd'], edges = [];
+        for (let v = 1; v < n; v++) edges.push([randInt(0, v - 1), v, randInt(1, 9)]);
+        for (let t = 0; t < 4; t++) { const u = randInt(0, n - 1), v = randInt(0, n - 1); if (u !== v && !edges.some(e => e[0] === u && e[1] === v)) edges.push([u, v, randInt(1, 9)]); }
+        const g = { names, directed: true, edges, pos: names.map(() => [0, 0]) };
+        const dist = dijkstraSteps(g, 0).at(-1).dist;
+        const t = randInt(1, n - 1);
+        return {
+          q: `Arestas (origem → destino : peso): ${edges.map(([u, v, w]) => `<code>${names[u]}→${names[v]}:${w}</code>`).join(' ')}.<br>Qual a menor distância de <b>s</b> até <b>${names[t]}</b>?`,
+          input: true, answer: String(dist[t]),
+          explain: `Distâncias finais: ${dist.map((d, i) => `${names[i]} = ${d}`).join(', ')}.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

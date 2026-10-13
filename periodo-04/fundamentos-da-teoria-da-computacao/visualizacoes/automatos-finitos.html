@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autômatos finitos · Fundamentos da Teoria da Computação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 400px; font-size: 12.5px; } .toolbar input[type=text] { width: 150px; font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ftc">Fundamentos da Teoria da Computação</a>
+      <span class="sep">/</span><span>Autômatos finitos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos da Teoria da Computação</div>
+    <h1>Autômatos finitos: determinismo, não determinismo e o menor autômato</h1>
+    <p class="lead">Um autômato finito lê a palavra um símbolo por vez, sem memória além do estado atual. Um <b>AFN</b> pode estar em vários estados ao mesmo tempo (e mudar de estado sem ler nada, com ε); mesmo assim, reconhece exatamente as mesmas linguagens que um <b>AFD</b>, as <b>regulares</b>. Veja a simulação, a conversão AFN → AFD e a minimização.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Modo">
+        <button class="btn" data-mode="sim">Simular palavra</button>
+        <button class="btn" data-mode="subset">AFN → AFD</button>
+        <button class="btn" data-mode="min">Minimizar AFD</button>
+      </div>
+      <label>Autômato <select id="preset"></select></label>
+      <label id="word-wrap">Palavra <input id="word" type="text"></label>
+      <button class="btn primary small" id="go">Rodar</button>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Definição</h2>
+      <p>Um AFD é uma quíntupla $M = (Q, \Sigma, \delta, q_0, F)$: estados, alfabeto, função de transição $\delta: Q \times \Sigma \to Q$, estado inicial e estados finais. Ele aceita $w$ se, partindo de $q_0$ e seguindo $\delta$ símbolo a símbolo, termina em $F$. Num AFN, $\delta: Q \times (\Sigma \cup \{\varepsilon\}) \to 2^Q$: cada transição leva a um <b>conjunto</b> de estados, e o AFN aceita se <b>algum</b> caminho termina em $F$.</p>
+      <h2>Construção de subconjuntos</h2>
+      <p>Cada estado do AFD equivalente é um conjunto de estados do AFN: exatamente os conjuntos que a simulação percorre. Começando do fecho-ε do estado inicial, para cada conjunto $S$ e símbolo $a$ calcula-se $\text{fecho}_\varepsilon(\text{mover}(S, a))$. No pior caso surgem $2^n$ estados, e o exemplo "3º símbolo do fim é 1" mostra que isso acontece: o AFD precisa lembrar os 3 últimos símbolos, $2^3 = 8$ estados.</p>
+      <h2>Minimização</h2>
+      <p>Dois estados são <b>equivalentes</b> se nenhuma palavra os distingue (de um, $w$ leva a um final; do outro, não). O algoritmo de Moore parte de {finais, não finais} e refina: dois estados ficam no mesmo bloco enquanto, para cada símbolo, vão para o mesmo bloco. Quando nada muda, cada bloco é um estado do <b>AFD mínimo</b>, que é único (a menos de nomes). O Teorema de Myhill–Nerode diz que o número de estados dele é o número de classes de equivalência de "sufixos que importam" da linguagem.</p>
+      <div class="callout tip"><p>Pense no AFD de "binário múltiplo de 3": o estado é o resto da divisão por 3 do que já foi lido. Ler um bit $b$ transforma o número $n$ em $2n + b$, e o resto em $(2r + b) \bmod 3$. Um autômato finito é um programa com memória limitada a uma variável de tamanho fixo.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2><p class="c-muted">O AFD de "binário múltiplo de 3" aceita a palavra?</p></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { FA_PRESETS, simulate, subsetConstruction, minimize, isDFA, accepts } from './automatos.js';
+    import { drawAutomaton, faEdges, drawTape } from './desenho-automato.js';
+
+    const W = 900, H = 470;
+    const CODES = {
+      sim: `def aceita(M, w):
+    atuais = fecho_eps({M.inicial})
+    for a in w:
+        atuais = fecho_eps(mover(atuais, a))
+        if not atuais:
+            return False          # morreu
+    return any(q in M.finais for q in atuais)`,
+      subset: `def subconjuntos(N):
+    inicio = fecho_eps({N.inicial})
+    estados, fila = [inicio], [inicio]
+    while fila:
+        S = fila.pop(0)
+        for a in N.alfabeto:
+            T = fecho_eps(mover(S, a))
+            if T not in estados:      # estado novo do AFD
+                estados.append(T); fila.append(T)
+            delta[S][a] = T
+    finais = [S for S in estados if S & N.finais]`,
+      min: `def minimiza(M):
+    P = [M.finais, M.estados - M.finais]
+    while True:
+        novo = []
+        for bloco in P:
+            # assinatura: para qual bloco cada símbolo leva
+            grupos = agrupa(bloco, lambda q: [bloco_de(P, M.delta[q][a]) for a in M.alfabeto])
+            novo += grupos
+        if len(novo) == len(P):
+            return P              # cada bloco vira um estado
+        P = novo`,
+    };
+    let mode = 'sim';
+    const BLOCK_COLORS = [COLORS.blue, COLORS.yellow, COLORS.green, COLORS.pink, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.red];
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'automato.py', lang: 'python', showVars: false,
+      render(step, s) {
+        const A = FA_PRESETS[$('#preset').value];
+        if (mode === 'sim') {
+          const w = step.word;
+          drawTape(s, 'tape', [...w], { x: 40, y: 40, cell: 44, head: step.pos, done: step.pos });
+          drawAutomaton(s, A, faEdges(A), {
+            dy: 60, dx: 70,
+            nodeStyle: q => step.active.includes(q) ? { fill: step.result === false ? '#3a1b18' : step.result ? '#1f3319' : '#3d3a22', stroke: step.result === false ? COLORS.red : step.result ? COLORS.green : COLORS.yellow, sw: 3.5 } : {},
+            edgeStyle: (a, b, labels) => step.edges?.some(([x, y, c]) => x === a && y === b && labels.includes(c)) ? { stroke: COLORS.yellow, sw: 3 } : {},
+          });
+          if (step.result != null) s.text('res', step.result ? 'ACEITA' : 'REJEITA', { x: W - 30, y: 60, size: 26, weight: 800, anchor: 'end', fill: step.result ? COLORS.green : COLORS.red });
+        } else if (mode === 'subset') {
+          const cur = step.cur ? step.table[step.cur[0]] : null;
+          const curSet = cur ? cur.from.slice(1, -1).split(',') : [];
+          drawAutomaton(s, A, faEdges(A), { scale: 0.62, dx: 30, dy: 30, r: 20, fontSize: 13,
+            nodeStyle: q => curSet.includes(q) ? { fill: '#3d3a22', stroke: COLORS.yellow, sw: 3 } : {},
+            edgeStyle: (a, b, labels) => curSet.includes(a) && labels.includes(step.cur?.[1]) ? { stroke: COLORS.yellow, sw: 2.5 } : {} });
+          s.text('nfa-title', 'AFN', { x: 20, y: 18, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+          const x0 = 410, cw = (W - x0 - 10) / (A.alphabet.length + 1), rh = Math.min(34, (H - 60) / (step.dStates.length + 1));
+          s.text('tt', 'AFD (tabela de transições)', { x: x0, y: 18, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+          ['estado', ...A.alphabet].forEach((h, j) => s.text(`th${j}`, h, { x: x0 + j * cw + cw / 2, y: 46, size: 13, weight: 700, mono: true, fill: COLORS.muted }));
+          step.dStates.forEach((_, i) => {
+            const row = step.table[i];
+            const y = 62 + i * rh;
+            const name = row ? row.from : `{${step.dStates[i].join(',')}}`;
+            const hot = step.cur?.[0] === i;
+            s.rect(`tr${i}`, { x: x0, y, w: W - x0 - 10, h: rh - 4, rx: 5, fill: hot ? '#2a2a20' : COLORS.surface, stroke: hot ? COLORS.yellow : COLORS.border, sw: hot ? 1.5 : 1, layer: 'bg' });
+            s.text(`tn${i}`, `${row?.accept ? '*' : ''}${i === 0 ? '→' : ''}${name}`, { x: x0 + cw / 2, y: y + (rh - 4) / 2, size: 12, weight: 700, mono: true, fill: name === step.newState ? COLORS.green : row?.accept ? COLORS.teal : COLORS.text });
+            A.alphabet.forEach((a, j) => {
+              const v = row?.to[a];
+              if (v) s.text(`tv${i}-${j}`, v, { x: x0 + (j + 1) * cw + cw / 2, y: y + (rh - 4) / 2, size: 12, mono: true, fill: hot && step.cur[1] === a ? COLORS.yellow : v === '{}' ? COLORS.faint : COLORS.text });
+            });
+          });
+          s.text('leg', '→ inicial   * final   verde: estado novo', { x: x0, y: H - 12, size: 12, anchor: 'start', fill: COLORS.faint });
+        } else {
+          const blockOf = q => step.part.findIndex(b => b.includes(q));
+          drawAutomaton(s, A, faEdges(A), { dy: 30, dx: 40,
+            nodeStyle: q => { const b = blockOf(q); return b < 0 ? { opacity: 0.3 } : { fill: COLORS.surface2, stroke: BLOCK_COLORS[b % BLOCK_COLORS.length], sw: 4 }; } });
+          s.text('pt', 'partição', { x: 700, y: 30, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+          step.part.forEach((b, i) => s.text(`pb${i}`, `{${b.join(', ')}}`, { x: 700, y: 60 + i * 28, size: 15, anchor: 'start', weight: 700, mono: true, fill: BLOCK_COLORS[i % BLOCK_COLORS.length] }));
+        }
+      },
+    });
+
+    function fillPresets() {
+      const want = mode === 'subset' ? k => !isDFA(FA_PRESETS[k]) : mode === 'min' ? k => isDFA(FA_PRESETS[k]) : () => true;
+      const keep = $('#preset').value;
+      const keys = Object.keys(FA_PRESETS).filter(want);
+      $('#preset').innerHTML = keys.map(k => `<option value="${k}">${FA_PRESETS[k].nome}</option>`).join('');
+      if (keys.includes(keep)) $('#preset').value = keep;
+      else if (mode === 'min') $('#preset').value = 'redundante';
+      else if (mode === 'subset') $('#preset').value = 'termina01';
+    }
+
+    function run(resetWord = false) {
+      const A = FA_PRESETS[$('#preset').value];
+      if (resetWord) $('#word').value = A.exemplo;
+      $('#word-wrap').style.display = mode === 'sim' ? '' : 'none';
+      $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+      player.setCode(CODES[mode], 'python');
+      const L = CODES[mode].split('\n');
+      const ln = t => L.findIndex(l => l.includes(t)) + 1;
+      let steps;
+      if (mode === 'sim') {
+        const w = $('#word').value.trim();
+        steps = simulate(A, w).map((st, i, arr) => ({ ...st, word: w, line: i === 0 ? ln('atuais = fecho_eps({') : st.result != null && i === arr.length - 1 ? (st.dead || !st.active.length ? ln('return False') : ln('return any')) : ln('atuais = fecho_eps(mover') }));
+      } else if (mode === 'subset') {
+        steps = subsetConstruction(A).steps.map(st => ({ ...st, line: st.done ? ln('finais =') : st.newState ? ln('estados.append') : st.cur ? ln('T = fecho_eps') : ln('inicio =') }));
+      } else {
+        steps = minimize(A).steps.map((st, i) => ({ ...st, line: st.done ? ln('return P') : i === 0 ? ln('P = [M.finais') : ln('grupos = agrupa') }));
+      }
+      player.load(steps);
+    }
+    $$('[data-mode]').forEach(b => b.addEventListener('click', () => { mode = b.dataset.mode; fillPresets(); run(true); }));
+    $('#preset').addEventListener('change', () => run(true));
+    $('#go').addEventListener('click', () => run());
+    $('#word').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    fillPresets();
+    run(true);
+
+    mountQuiz($('#quiz'), [
+      { q: 'Um AFN com 5 estados pode precisar de quantos estados no AFD equivalente, no pior caso?', options: ['32', '5', '10', '25'], answer: 0, explain: 'Um estado do AFD para cada subconjunto: $2^5 = 32$. Há linguagens em que esse limite é atingido.' },
+      { q: 'AFNs reconhecem mais linguagens do que AFDs?', options: ['Não: os dois reconhecem exatamente as regulares', 'Sim, todas as livres de contexto', 'Sim, mas só com ε', 'Depende do alfabeto'], answer: 0, explain: 'A construção de subconjuntos transforma qualquer AFN num AFD equivalente. O não determinismo ajuda a escrever autômatos menores, não a reconhecer mais.' },
+      { q: 'Por que nenhum autômato finito reconhece $\\{a^n b^n : n \\ge 0\\}$?', options: ['Precisaria lembrar n, que não é limitado, com finitos estados', 'Porque o alfabeto tem 2 símbolos', 'Porque a linguagem é infinita', 'Reconhece sim'], answer: 0, explain: 'Pelo lema do bombeamento (ou Myhill–Nerode): os prefixos $a^0, a^1, a^2, \\dots$ são todos distinguíveis, então seriam necessários infinitos estados.' },
+      { q: 'O que o AFD mínimo de uma linguagem regular tem de especial?', options: ['É único a menos de renomear os estados', 'Não tem estados finais', 'Tem 2ⁿ estados', 'É sempre um AFN'], answer: 0, explain: 'Teorema de Myhill–Nerode: o número de estados do AFD mínimo é o índice da relação de equivalência da linguagem.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova palavra',
+      generate() {
+        const n = randInt(1, 63), w = n.toString(2);
+        const ok = accepts(FA_PRESETS.mod3, w);
+        return { q: `O AFD aceita <code>${w}</code>?`, options: ['Sim', 'Não'], answer: ok ? 0 : 1, shuffle: false, explain: `${w} em binário é ${n}, e ${n} mod 3 = ${n % 3}. O estado final é q${n % 3}.` };
+      },
+    });
+  </script>
+</body>
+</html>

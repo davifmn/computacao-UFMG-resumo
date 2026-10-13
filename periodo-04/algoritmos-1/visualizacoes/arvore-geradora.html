@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Árvore geradora mínima · Algoritmos I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg1">Algoritmos I</a>
+      <span class="sep">/</span><span>Árvore geradora mínima</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos I</div>
+    <h1>Árvore geradora mínima: Kruskal e Prim</h1>
+    <p class="lead">Ligar todas as cidades com fibra óptica gastando o mínimo de cabo. A resposta é uma <b>árvore geradora mínima</b> (MST): um subconjunto de $V - 1$ arestas que conecta todos os vértices, sem ciclos, com a menor soma de pesos. Dois algoritmos gulosos chegam lá por caminhos diferentes.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="kruskal">Kruskal (floresta que se une)</button>
+        <button class="btn" data-alg="prim">Prim (uma árvore que cresce)</button>
+      </div>
+      <label id="src-wrap">Raiz <select id="src"></select></label>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend" id="legend"></div>
+
+    <section class="prose">
+      <h2>A propriedade do corte</h2>
+      <p>Divida os vértices em dois grupos quaisquer (um <b>corte</b>). A aresta mais leve que cruza o corte pertence a alguma MST. Prova por troca: se uma MST $T$ não a usasse, acrescentá-la a $T$ formaria um ciclo que cruza o corte em outra aresta, pelo menos tão pesada. Trocando uma pela outra, o peso não aumenta.</p>
+      <ul>
+        <li><b>Prim</b> aplica isso ao corte "árvore atual × resto": sempre adiciona a aresta mais leve que sai da árvore.</li>
+        <li><b>Kruskal</b> pega a aresta mais leve do grafo inteiro que não forma ciclo. Ela é a mais leve que cruza o corte "componente de u × resto".</li>
+      </ul>
+      <h2>União-busca (union-find)</h2>
+      <p>Kruskal precisa responder rápido "u e v já estão conectados?". Cada conjunto é uma árvore de ponteiros <code>pai</code>, e o representante é a raiz. Duas otimizações deixam cada operação quase constante, $O(\alpha(n))$, em que $\alpha$ é a inversa da função de Ackermann (≤ 4 para qualquer $n$ do universo):</p>
+      <ul>
+        <li><b>Compressão de caminho</b>: ao achar a raiz, faça todos os nós do caminho apontarem direto para ela (é o <code>pai[x] = achar(pai[x])</code> do código).</li>
+        <li><b>União por posto</b>: pendure a árvore mais baixa sob a mais alta.</li>
+      </ul>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th></th><th>Kruskal</th><th>Prim</th></tr>
+          <tr><td>Estrutura</td><td>arestas ordenadas + união-busca</td><td>fila de prioridade</td></tr>
+          <tr><td>Custo</td><td>$O(E \log E)$</td><td>$O(E \log V)$ com heap binário</td></tr>
+          <tr><td>Melhor para</td><td>grafos esparsos, arestas já ordenadas</td><td>grafos densos (com matriz: $O(V^2)$)</td></tr>
+        </table>
+      </div>
+      <div class="callout warn"><p>MST ≠ caminhos mínimos. A árvore de Dijkstra minimiza a distância da origem a cada vértice; a MST minimiza a soma total das arestas. No grafo a–b (1), b–c (1), a–c (1,5), a MST usa a–b e b–c, mas o caminho mínimo de a até c é a aresta direta.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { PRESETS, KRUSKAL_CODE, PRIM_CODE, kruskalSteps, primSteps, ek } from './grafos.js';
+    import { drawGraph, drawList } from './desenho-grafo.js';
+
+    const W = 900, H = 460;
+    const G = PRESETS.rede;
+    let alg = 'kruskal';
+    const PALETTE = [COLORS.blue, COLORS.yellow, COLORS.green, COLORS.red, COLORS.teal, COLORS.purple, COLORS.orange, COLORS.pink, '#c9d1d9'];
+    $('#src').innerHTML = G.names.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'mst.cpp',
+      render(step, s) {
+        drawGraph(s, G, {
+          edgeStyle: k => {
+            if (k === step.edge) return { stroke: step.reject ? COLORS.red : COLORS.green, sw: 5 };
+            if (step.tree.includes(k)) return { stroke: COLORS.green, sw: 4 };
+            if (step.rejected?.includes(k)) return { stroke: COLORS.faint, sw: 1.5, dash: '4 5', opacity: 0.5 };
+            return {};
+          },
+          nodeStyle: u => {
+            if (alg === 'kruskal') {
+              const c = PALETTE[step.comp[u] % PALETTE.length];
+              return { fill: COLORS.surface2, stroke: c, sw: 3.5 };
+            }
+            return { fill: step.naArvore[u] ? '#1f3319' : COLORS.surface2, stroke: u === step.u ? COLORS.yellow : step.naArvore[u] ? COLORS.green : COLORS.muted, sw: u === step.u ? 4 : 2.5 };
+          },
+        });
+        if (alg === 'kruskal') {
+          s.text('lt', 'arestas em ordem de peso', { x: 660, y: 22, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+          step.sorted.forEach((e, i) => {
+            const k = ek(G, e.u, e.v);
+            const st = step.tree.includes(k) ? ['✓', COLORS.green] : step.rejected.includes(k) ? ['✗', COLORS.red] : ['', COLORS.text];
+            const hot = k === step.edge;
+            const x = 660 + (i >= 7 ? 120 : 0), y = 50 + (i % 7) * 28;
+            s.text(`ls${i}`, `${G.names[e.u]}–${G.names[e.v]} ${String(e.w).padStart(2)} ${st[0]}`, { x, y, size: 14, anchor: 'start', mono: true, weight: hot ? 800 : 500, fill: hot ? COLORS.yellow : st[1] });
+          });
+        } else {
+          drawList(s, 'pq', 'fila de prioridade (peso, de–para)', step.pq.slice(0, 11).map((e, i) => ({ id: `${e.p}-${e.u}`, label: `(${e.w}) ${e.p >= 0 ? G.names[e.p] : '·'}–${G.names[e.u]}`, hot: i === 0, dim: step.naArvore[e.u] })), { x: 660, y: 22, w: 210, vertical: true });
+        }
+        s.text('tot', `peso da árvore: ${step.total}`, { x: 20, y: H - 18, size: 16, anchor: 'start', weight: 800, fill: COLORS.green });
+      },
+    });
+
+    function run() {
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      $('#src-wrap').style.display = alg === 'prim' ? '' : 'none';
+      player.setCode(alg === 'kruskal' ? KRUSKAL_CODE : PRIM_CODE, 'cpp');
+      player.load(alg === 'kruskal' ? kruskalSteps(G) : primSteps(G, +$('#src').value));
+      $('#legend').innerHTML = alg === 'kruskal'
+        ? '<span>cor da borda = conjunto (componente) da união-busca</span><span><i style="background:#83c167"></i>na árvore</span><span><i style="background:#fc6255"></i>fecharia ciclo</span>'
+        : '<span><i style="background:#83c167"></i>na árvore</span><span><i style="background:#fc6255"></i>destino já está na árvore</span><span>itens apagados na fila: entradas velhas</span>';
+    }
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.alg; run(); }));
+    $('#src').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantas arestas tem uma árvore geradora de um grafo conexo com 50 vértices?', options: ['49', '50', '51', 'depende do grafo'], answer: 0, explain: 'Toda árvore com V vértices tem V − 1 arestas.' },
+      { q: 'Se todos os pesos das arestas são distintos, a MST é…', options: ['única', 'sempre um caminho', 'igual à árvore de BFS', 'não necessariamente única'], answer: 0, explain: 'Com pesos distintos, a aresta mais leve de cada corte é única, e o argumento de troca mostra que só há uma MST.' },
+      { q: 'A aresta mais <b>pesada</b> de um ciclo (com pesos distintos)…', options: ['não pertence a nenhuma MST', 'pertence a toda MST', 'é a primeira escolhida por Prim', 'nada se pode afirmar'], answer: 0, explain: 'Propriedade do ciclo: se ela estivesse na MST, removê-la e pôr outra aresta do ciclo reconectaria a árvore com peso menor.' },
+      { q: 'No Kruskal, o que <code>achar(u) == achar(v)</code> significa?', options: ['u e v já estão conectados; a aresta formaria ciclo', 'u e v são vizinhos', 'u = v', 'a aresta é a mais leve'], answer: 0, explain: 'Mesmo representante = mesmo componente da floresta parcial.' },
+    ]);
+  </script>
+</body>
+</html>

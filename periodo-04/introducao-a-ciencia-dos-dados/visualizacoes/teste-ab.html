@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste A/B por permutação · Introdução à Ciência dos Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .ctl { display: inline-grid; grid-template-columns: auto 160px 3.5em; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#icd">Introdução à Ciência dos Dados</a>
+      <span class="sep">/</span><span>Teste A/B</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Ciência dos Dados</div>
+    <h1>Teste A/B: a diferença é real ou foi sorte?</h1>
+    <p class="lead">O site novo (B) manteve os visitantes na página, em média, mais tempo que o antigo (A). Mas grupos diferentes de pessoas sempre dão médias um pouco diferentes. O <b>teste de permutação</b> pergunta: se o layout não fizesse diferença nenhuma, com que frequência uma divisão <b>aleatória</b> das mesmas pessoas em dois grupos daria uma diferença tão grande quanto a observada?</p>
+
+    <div class="toolbar">
+      <span class="ctl"><span>efeito real</span><input id="eff" type="range" min="0" max="2" step="0.1" value="0.8"><output id="eff-o"></output></span>
+      <span class="ctl"><span>pessoas por grupo</span><input id="n" type="range" min="10" max="150" step="10" value="30"><output id="n-o"></output></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="one">Embaralhar rótulos</button>
+      <button class="btn" id="many">+1000</button>
+      <button class="btn small" id="reset">Recomeçar</button>
+    </div>
+    <div class="stage"><svg id="viz" aria-label="Teste de permutação"></svg></div>
+
+    <section class="prose">
+      <h2>A lógica do teste</h2>
+      <ol class="step-list">
+        <li><b>Hipótese nula</b> $H_0$: o layout não muda nada; os rótulos A e B são arbitrários.</li>
+        <li><b>Estatística</b>: a diferença das médias, $\bar x_B - \bar x_A$.</li>
+        <li><b>Distribuição sob $H_0$</b>: se os rótulos não importam, qualquer redistribuição deles era igualmente provável. Embaralhe-os muitas vezes e recalcule a diferença (o histograma).</li>
+        <li><b>Valor-p</b>: a fração das diferenças embaralhadas pelo menos tão extremas quanto a observada. Se é pequeno (convenção: &lt; 0,05), o observado seria raro sob $H_0$, e rejeitamos $H_0$.</li>
+      </ol>
+      <h2>Brinque com os controles</h2>
+      <ul>
+        <li>Com <b>efeito real = 0</b>, recomece várias vezes: o valor-p fica abaixo de 0,05 em cerca de 5% das vezes. É o erro do tipo I, e é exatamente o que "nível de significância 5%" quer dizer.</li>
+        <li>Com efeito pequeno e poucas pessoas, o teste muitas vezes não detecta nada (erro do tipo II, falta de <b>poder</b>). Aumente o número de pessoas: o histograma estreita (o erro padrão cai com $\sqrt n$) e o mesmo efeito vira significativo.</li>
+      </ul>
+      <div class="callout warn"><p><b>Valor-p não é a probabilidade de $H_0$ ser verdadeira</b>, nem mede o tamanho do efeito: com milhões de usuários, uma diferença irrelevante de 0,1 segundo dá valor-p minúsculo. Reporte sempre o efeito com um intervalo de confiança. E se você testar 20 variantes, uma delas deve "dar significativa" por puro acaso (múltiplas comparações).</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { rng } from '../../../engine/random.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { abData, mean, std } from './icd.js';
+
+    const W = 1240, H = 560;
+    const scene = new Scene($('#viz'), { width: W, height: H });
+    $('#viz').style.setProperty('--dur', '500ms');
+    let data, labels, diffs, r, seed = 5;
+    const X = v => 80 + v / 10 * (W - 160);
+
+    function regen() {
+      data = abData(+$('#eff').value, +$('#n').value, seed);
+      labels = [...data.a.map(() => 0), ...data.b.map(() => 1)];
+      diffs = []; r = rng(seed * 7 + 1);
+      draw();
+    }
+
+    const all = () => [...data.a, ...data.b];
+    function shuffled() {
+      const p = [...labels];
+      for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+      return p;
+    }
+    const diffOf = lab => { const v = all(); return mean(v.filter((_, i) => lab[i] === 1)) - mean(v.filter((_, i) => lab[i] === 0)); };
+
+    function draw(cur = null) {
+      $('#eff-o').value = fmt(+$('#eff').value, 1); $('#n-o').value = $('#n').value;
+      const v = all(), lab = cur ?? labels;
+      const obs = data.b.length ? mean(data.b) - mean(data.a) : 0;
+      scene.frame(s => {
+        s.text('title', cur ? 'rótulos embaralhados (as mesmas pessoas, outra divisão)' : 'dados observados', { x: 80, y: 22, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+        const rowY = [80, 160];
+        ['A (antigo)', 'B (novo)'].forEach((name, g) => s.text(`gl${g}`, name, { x: 70, y: rowY[g], size: 14, anchor: 'end', weight: 800, fill: g ? COLORS.pink : COLORS.blue }));
+        const jitter = i => ((i * 37) % 23) / 23 * 30 - 15;
+        v.forEach((x, i) => {
+          const g = lab[i];
+          s.circle(`d${i}`, { x: X(Math.min(10, x)), y: rowY[g] + jitter(i), r: 4.5, fill: g ? COLORS.pink : COLORS.blue, stroke: 'none', opacity: 0.85 });
+        });
+        for (let g = 0; g < 2; g++) {
+          const m = mean(v.filter((_, i) => lab[i] === g));
+          s.line(`m${g}`, X(m), rowY[g] - 24, X(m), rowY[g] + 24, { stroke: COLORS.yellow, sw: 3 });
+          s.text(`mt${g}`, `média ${fmt(m, 2)}`, { x: X(m) + 8, y: rowY[g] - 26, size: 12, anchor: 'start', weight: 700, fill: COLORS.yellow });
+        }
+        for (let t = 0; t <= 10; t += 2) s.text(`ax${t}`, `${t} min`, { x: X(t), y: 205, size: 11, mono: true, fill: COLORS.faint, layer: 'bg' });
+        // distribuição nula
+        // janela do histograma: ~4 erros padrão sob H0 (ou o observado, se for maior)
+        const se = std(v) * Math.sqrt(1 / data.a.length + 1 / data.b.length);
+        const D = Math.max(4 * se, 1.25 * Math.abs(obs)), hx = d => W / 2 + d / D * (W / 2 - 100);
+        const tick = Plot.niceStep(2 * D, 8);
+        s.text('t2', `diferença das médias (B − A) em ${diffs.length} embaralhamentos`, { x: 80, y: 252, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+        const bins = 90, cnt = Array(bins).fill(0);
+        for (const d of diffs) { const b = Math.floor((d + D) / (2 * D) * bins); if (b >= 0 && b < bins) cnt[b]++; }
+        const maxc = Math.max(1, ...cnt), bw = (W - 200) / bins;
+        cnt.forEach((c, b) => {
+          const center = -D + (b + 0.5) * (2 * D / bins);
+          const extreme = Math.abs(center) >= Math.abs(obs);
+          const hgt = 220 * c / maxc;
+          s.rect(`h${b}`, { x: 100 + b * bw, y: H - 60 - hgt, w: bw - 1, h: hgt, rx: 1, fill: extreme ? COLORS.red : COLORS.surface3, stroke: 'none' });
+        });
+        s.line('zero', hx(0), 270, hx(0), H - 60, { stroke: COLORS.faint, sw: 1, dash: '3 4', layer: 'bg' });
+        for (let k = Math.ceil(-D / tick); k * tick <= D; k++) s.text(`dx${k}`, fmt(k * tick, 2), { x: hx(k * tick), y: H - 44, size: 11, mono: true, fill: COLORS.faint, layer: 'bg' });
+        for (const sg of [1, -1]) s.line(`obs${sg}`, hx(sg * obs), 270, hx(sg * obs), H - 60, { stroke: COLORS.yellow, sw: sg === 1 ? 2.5 : 1.5, dash: sg === 1 ? null : '5 4' });
+        s.text('obsl', `observado: ${fmt(obs, 3)}`, { x: hx(obs) + 6, y: 280, size: 12, anchor: 'start', weight: 700, fill: COLORS.yellow });
+        if (cur) { const d = diffOf(cur); s.circle('curd', { x: hx(d), y: H - 66, r: 6, fill: COLORS.text, stroke: 'none' }); }
+        if (diffs.length) {
+          const p = diffs.filter(d => Math.abs(d) >= Math.abs(obs) - 1e-12).length / diffs.length;
+          s.text('pv', `valor-p ≈ ${fmt(p, 4)} ${diffs.length >= 500 ? (p < 0.05 ? '→ rejeita H₀ (5%)' : '→ não rejeita H₀') : '(faça mais embaralhamentos)'}`, { x: W - 80, y: 252, size: 15, anchor: 'end', weight: 800, mono: true, fill: diffs.length >= 500 ? (p < 0.05 ? COLORS.green : COLORS.orange) : COLORS.muted });
+        }
+      });
+    }
+
+    $('#one').addEventListener('click', () => { const p = shuffled(); diffs.push(diffOf(p)); draw(p); });
+    $('#many').addEventListener('click', () => { let p; for (let t = 0; t < 1000; t++) { p = shuffled(); diffs.push(diffOf(p)); } draw(p); });
+    $('#reset').addEventListener('click', () => { seed++; regen(); });
+    for (const id of ['#eff', '#n']) $(id).addEventListener('input', regen);
+    regen();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O valor-p de um teste A/B deu 0,03. O que isso significa?', options: ['Se não houvesse efeito, uma diferença tão extrema apareceria em cerca de 3% das divisões aleatórias', 'Há 3% de chance de o layout novo ser pior', 'O efeito é de 3%', 'Há 97% de chance de o efeito ser real'], answer: 0, explain: 'O valor-p é calculado supondo $H_0$ verdadeira. Ele não é a probabilidade de $H_0$.' },
+      { q: 'Por que o teste de permutação não precisa supor que os dados são normais?', options: ['A distribuição sob H₀ é construída a partir dos próprios dados, embaralhando os rótulos', 'Porque usa a mediana', 'Porque o TCL vale sempre', 'Ele precisa sim'], answer: 0, explain: 'É um teste não paramétrico: só supõe que, sob $H_0$, os rótulos são trocáveis.' },
+      { q: 'Um teste com efeito real pequeno deu valor-p = 0,4. A conclusão correta é…', options: ['Não há evidência suficiente de efeito (o que não prova que o efeito é zero)', 'O layout não faz diferença', 'O layout piorou', 'O teste está errado'], answer: 0, explain: 'Ausência de evidência não é evidência de ausência. Com mais dados, o efeito poderia aparecer.' },
+    ]);
+  </script>
+</body>
+</html>

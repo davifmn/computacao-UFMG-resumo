@@ -80,6 +80,16 @@ python3 -m http.server 8000     # ou: npx serve
 | [Cálculo Diferencial e Integral II](periodo-03/calculo-diferencial-e-integral-2/) · MAT039 | Taylor · Superfícies 3D · Descida do gradiente | Python |
 | [Probabilidade](periodo-03/probabilidade/) · EST032 | Distribuições · TCL e Galton · Bayes e Monty Hall | Python |
 
+### 4º período
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Algoritmos I](periodo-04/algoritmos-1/) · DCC206 | BFS/DFS e ordenação topológica · Dijkstra e Bellman-Ford · Kruskal e Prim · Programação dinâmica · Teorema mestre | C++ |
+| [Organização de Computadores I](periodo-04/organizacao-de-computadores-1/) · DCC006 | Caminho de dados RISC-V · Pipeline · Memória cache | Python (montador e simulador RISC-V) |
+| [Fundamentos da Teoria da Computação](periodo-04/fundamentos-da-teoria-da-computacao/) · DCC129 | Autômatos finitos · Expressões regulares (Thompson) · Autômato de pilha · Máquina de Turing | Python |
+| [Álgebra A](periodo-04/algebra-a/) · MAT034 | Grupos e simetrias · Permutações · Teorema Chinês do Resto | Python |
+| [Introdução à Ciência dos Dados](periodo-04/introducao-a-ciencia-dos-dados/) · DCC212 | Bootstrap · Teste A/B · Simpson e Anscombe · k-NN e sobreajuste | Python |
+
 ### 7º período
 
 | Disciplina | Páginas interativas | Código |
@@ -88,8 +98,8 @@ python3 -m http.server 8000     # ou: npx serve
 
 ### Próximos períodos
 
-Os períodos 4 a 6, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
-"em construção" no site. Ideias já planejadas: grafos, BFS/DFS e Dijkstra (Algoritmos I), autômatos (FTC), escalonamento de processos (SO)...
+Os períodos 5 e 6, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+"em construção" no site. Ideias já planejadas: fluxo em redes e NP-completude (Algoritmos II), escalonamento de processos (SO), análise sintática (Compiladores)...
 
 ## Estrutura do repositório
 

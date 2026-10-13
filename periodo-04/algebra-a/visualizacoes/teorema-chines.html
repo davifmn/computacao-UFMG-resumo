@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teorema Chinês do Resto · Álgebra A</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 7em 1fr 3em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 8px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+    table.mini { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+    table.mini td, table.mini th { padding: 2px 8px; text-align: right; border-bottom: 1px solid var(--border); }
+    table.mini th { color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#algebra">Álgebra A</a>
+      <span class="sep">/</span><span>Teorema Chinês do Resto</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra A</div>
+    <h1>Teorema Chinês do Resto: um número, vários relógios</h1>
+    <p class="lead">"Há um número que, dividido por 3, deixa resto 2; por 5, resto 3; por 7, resto 2. Qual é?" (Sunzi, século III). Coloque cada inteiro $x$ na casa (resto por $m$, resto por $n$) de uma grade $m \times n$ e ande: se $m$ e $n$ são coprimos, a trilha <b>passa por todas as casas</b> antes de repetir, então cada par de restos corresponde a exatamente um $x$ módulo $mn$.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="grid" aria-label="Grade de restos"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Sistema</div>
+          <div class="ctl">
+            <span>m</span><input id="m" type="range" min="2" max="12" value="3"><output id="m-o"></output>
+            <span>n</span><input id="n" type="range" min="2" max="12" value="5"><output id="n-o"></output>
+            <span>x ≡ a (mod m)</span><input id="a" type="range" min="0" max="11" value="2"><output id="a-o"></output>
+            <span>x ≡ b (mod n)</span><input id="b" type="range" min="0" max="11" value="3"><output id="b-o"></output>
+            <span>trilha até x =</span><input id="t" type="range" min="0" max="144" value="0"><output id="t-o"></output>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="play">▶ Andar</button>
+            <label class="c-muted" style="font-size:14px"><input type="checkbox" id="units"> destacar unidades (φ)</label>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Solução</div><div class="readout" id="sol"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>O teorema</h2>
+      <p>Se $m$ e $n$ são coprimos, a função $x \bmod mn \mapsto (x \bmod m,\ x \bmod n)$ é uma <b>bijeção</b> $\mathbb{Z}_{mn} \to \mathbb{Z}_m \times \mathbb{Z}_n$, e mais: respeita soma e produto (é um <b>isomorfismo de anéis</b>). Logo o sistema $x \equiv a \pmod m$, $x \equiv b \pmod n$ tem solução única módulo $mn$.</p>
+      <p><b>Como achar:</b> pelo algoritmo de Euclides estendido, $mu + nv = 1$. Então $x = a\,nv + b\,mu$ funciona: módulo $m$, $nv \equiv 1$ e $mu \equiv 0$; módulo $n$, o contrário. Com módulos não coprimos, há solução se e só se $a \equiv b \pmod{\text{mdc}(m, n)}$, e ela é única módulo $\text{mmc}(m, n)$ (escolha $m = 4$ e $n = 6$ e veja a trilha cobrir só metade da grade).</p>
+      <h2>Por que $\varphi$ é multiplicativa</h2>
+      <p>$x$ é invertível módulo $mn$ se e só se é invertível módulo $m$ e módulo $n$. Na grade, as unidades formam um "retângulo" de linhas × colunas: $\varphi(mn) = \varphi(m)\,\varphi(n)$ para $m, n$ coprimos. Com a fatoração em primos, $\varphi(n) = n \prod_{p \mid n} (1 - 1/p)$.</p>
+      <div class="callout tip"><p><b>Onde isso é usado.</b> O RSA decifra até 4 vezes mais rápido calculando $c^d$ módulo $p$ e módulo $q$ separadamente e juntando pelo TCR. Bibliotecas de inteiros grandes e a transformada numérica de Fourier usam "aritmética de resíduos" para paralelizar contas.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, randInt, pick } from '../../../engine/page.js';
+    import { crt, gcd, lcm, phi } from './algebra.js';
+
+    const W = 640, H = 600;
+    const scene = new Scene($('#grid'), { width: W, height: H });
+    $('#grid').style.setProperty('--dur', '160ms');
+
+    function draw() {
+      const m = +$('#m').value, n = +$('#n').value;
+      $('#a').max = m - 1; $('#b').max = n - 1;
+      const a = +$('#a').value, b = +$('#b').value;
+      const L = lcm(m, n);
+      $('#t').max = L - 1;
+      const t = Math.min(+$('#t').value, L - 1);
+      for (const [id, v] of [['m', m], ['n', n], ['a', a], ['b', b], ['t', t]]) $(`#${id}-o`).value = v;
+      const res = crt(a, m, b, n);
+      const showUnits = $('#units').checked;
+      const c = Math.min(80, (W - 90) / n, (H - 130) / m);
+      const x0 = 70, y0 = 76;
+      scene.frame(s => {
+        s.text('lab-n', `x mod ${n} →`, { x: x0, y: 22, size: 13, anchor: 'start', fill: COLORS.muted });
+        s.text('lab-m2', `↓ x mod ${m}`, { x: x0 - 14, y: y0 + m * c + 16, size: 13, fill: COLORS.muted });
+        for (let j = 0; j < n; j++) s.text(`cn${j}`, j, { x: x0 + j * c + c / 2, y: y0 - 14, size: 12, mono: true, fill: j === b ? COLORS.yellow : COLORS.faint });
+        for (let i = 0; i < m; i++) s.text(`rm${i}`, i, { x: x0 - 14, y: y0 + i * c + c / 2, size: 12, mono: true, fill: i === a ? COLORS.yellow : COLORS.faint });
+        // número de cada casa (o x em [0, mmc) que cai nela)
+        const at = new Map();
+        for (let x = 0; x < L; x++) at.set(`${x % m},${x % n}`, x);
+        for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) {
+          const x = at.get(`${i},${j}`);
+          const visited = x != null && x <= t;
+          const target = i === a && j === b;
+          const unit = showUnits && gcd(i, m) === 1 && gcd(j, n) === 1;
+          s.rect(`g${i}-${j}`, { x: x0 + j * c, y: y0 + i * c, w: c - 3, h: c - 3, rx: 4,
+            fill: target && visited ? '#1f3319' : unit ? 'rgba(177,137,245,0.25)' : visited ? '#1c3640' : x == null ? COLORS.bg : COLORS.surface2,
+            stroke: target ? (res.sol ? COLORS.green : COLORS.red) : x === t ? COLORS.yellow : COLORS.border, sw: target || x === t ? 2.5 : 1 });
+          if (visited) s.text(`gt${i}-${j}`, x, { x: x0 + j * c + (c - 3) / 2, y: y0 + i * c + (c - 3) / 2, size: Math.min(14, c * 0.36), mono: true, weight: x === t ? 800 : 500, fill: x === t ? COLORS.yellow : COLORS.text });
+          else if (x == null) s.text(`gt${i}-${j}`, '·', { x: x0 + j * c + (c - 3) / 2, y: y0 + i * c + (c - 3) / 2, size: 12, fill: COLORS.faint });
+        }
+        // trilha: últimos passos como setas
+        for (let x = Math.max(0, t - 6); x < t; x++) {
+          const [i1, j1, i2, j2] = [x % m, x % n, (x + 1) % m, (x + 1) % n];
+          const wrap = i2 < i1 || j2 < j1;
+          s.line(`tr${x}`, x0 + j1 * c + c / 2, y0 + i1 * c + c / 2, x0 + j2 * c + c / 2, y0 + i2 * c + c / 2, { stroke: COLORS.yellow, sw: 1.5, opacity: wrap ? 0 : 0.35 + 0.1 * (x - t + 6), arrow: !wrap, layer: 'fx' });
+        }
+        s.text('summary', `a trilha 0, 1, …, ${L - 1} cobre ${L} das ${m * n} casas${gcd(m, n) === 1 ? ' (todas: m e n coprimos)' : ` (mdc(${m}, ${n}) = ${gcd(m, n)}: 1 em cada ${gcd(m, n)})`}`, { x: 20, y: H - 40, size: 13, anchor: 'start', mono: true, fill: COLORS.muted });
+        s.text('summary2', showUnits ? `unidades (roxo): φ(${m})·φ(${n}) = ${phi(m)}·${phi(n)} = ${phi(m) * phi(n)}${gcd(m, n) === 1 ? ` = φ(${m * n})` : ''}` : '', { x: 20, y: H - 16, size: 13, anchor: 'start', mono: true, fill: COLORS.purple });
+      });
+      $('#sol').innerHTML = `<div>x ≡ ${a} (mod ${m}), x ≡ ${b} (mod ${n})</div>
+        <table class="mini"><tr><th>q</th><th>r</th><th>s</th><th>t</th></tr>${res.rows.map(r => `<tr><td>${r.q ?? ''}</td><td>${r.r}</td><td>${r.s}</td><td>${r.t}</td></tr>`).join('')}</table>
+        ${res.steps.map(st => `<div>${st}</div>`).join('')}`;
+    }
+
+    let anim = null;
+    $('#play').addEventListener('click', () => {
+      anim?.cancel();
+      const L = lcm(+$('#m').value, +$('#n').value);
+      anim = tween(Math.min(9000, 120 * L), k => { $('#t').value = Math.round((L - 1) * k); draw(); }, ease.linear);
+    });
+    for (const id of ['m', 'n', 'a', 'b', 't', 'units']) $(`#${id}`).addEventListener('input', draw);
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O sistema $x \\equiv 1 \\pmod 4$, $x \\equiv 2 \\pmod 6$ tem solução?', options: ['Não: 1 e 2 têm paridades diferentes, e mdc(4, 6) = 2', 'Sim, x = 2', 'Sim, x = 5', 'Sim, infinitas módulo 24'], answer: 0, explain: 'É preciso que $a \\equiv b \\pmod{\\text{mdc}(m, n)}$.' },
+      { q: 'Quanto vale $\\varphi(35)$?', options: ['24', '34', '12', '30'], answer: 0, explain: '$\\varphi(5)\\varphi(7) = 4 \\cdot 6 = 24$.' },
+      { q: 'Qual o menor positivo que deixa resto 2 por 3, 3 por 5 e 2 por 7?', options: ['23', '8', '53', '128'], answer: 0, explain: 'É o problema de Sunzi: 23 (e as soluções são 23 + 105k).' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novo sistema',
+      generate() {
+        const [m, n] = pick([[3, 4], [3, 5], [4, 5], [5, 6], [5, 7], [7, 8], [4, 9], [7, 9], [8, 9], [5, 11]]);
+        const a = randInt(0, m - 1), b = randInt(0, n - 1);
+        const r = crt(a, m, b, n);
+        return { q: `Resolva: $x \\equiv ${a} \\pmod{${m}}$ e $x \\equiv ${b} \\pmod{${n}}$, com $0 \\le x &lt; ${m * n}$.`, input: true, answer: String(r.sol.x), explain: r.steps.join(' ') };
+      },
+    });
+  </script>
+</body>
+</html>
