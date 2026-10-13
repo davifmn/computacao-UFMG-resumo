@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caminho de dados RISC-V · Organização de Computadores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 420px; font-size: 12.5px; }
+    .bits { display: flex; gap: 3px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; margin: 6px 0 4px; }
+    .bits div { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; text-align: center; background: var(--surface); }
+    .bits small { display: block; color: var(--muted); font-size: 11px; }
+    .bits .o { border-color: var(--purple); } .bits .r { border-color: var(--blue); } .bits .f { border-color: var(--orange); } .bits .i { border-color: var(--yellow); }
+    #editor { width: 100%; min-height: 220px; font-family: var(--mono); font-size: 13px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .err { color: var(--red); font-family: var(--mono); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#oc1">Organização de Computadores I</a>
+      <span class="sep">/</span><span>Caminho de dados</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Organização de Computadores I</div>
+    <h1>O caminho de dados de um RISC-V, instrução por instrução</h1>
+    <p class="lead">Um processador monociclo executa cada instrução inteira num ciclo de relógio: busca, decodifica, calcula, acessa a memória e escreve o resultado. Escolha um programa e acompanhe por quais fios a informação passa, quais sinais de controle a unidade de controle liga e como os registradores e a memória mudam.</p>
+
+    <div class="toolbar">
+      <label>Programa <select id="prog"></select></label>
+      <button class="btn small" id="edit-btn">Editar o código</button>
+      <span class="spacer"></span>
+      <span class="c-muted" id="stats"></span>
+    </div>
+    <div id="edit-box" hidden style="margin-bottom:16px">
+      <textarea id="editor" spellcheck="false" aria-label="Código assembly"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><button class="btn primary small" id="assemble">Montar e executar</button><span class="err" id="err"></span></div>
+    </div>
+
+    <div id="player"></div>
+    <div id="encoding" class="prose" style="max-width:none"></div>
+
+    <section class="prose">
+      <h2>As cinco etapas, num ciclo só</h2>
+      <ol class="step-list">
+        <li><b>Busca (IF)</b>: o PC endereça a memória de instruções; ao mesmo tempo um somador calcula PC + 4.</li>
+        <li><b>Decodificação (ID)</b>: os campos da instrução vão para o banco de registradores (rs1, rs2, rd), para o gerador de imediato e para a unidade de controle (opcode).</li>
+        <li><b>Execução (EX)</b>: a ULA opera sobre rs1 e (rs2 ou o imediato, escolhido pelo mux <code>ALUSrc</code>). Para desvios, ela compara; um somador à parte calcula PC + imediato.</li>
+        <li><b>Memória (MEM)</b>: <code>lw</code> lê e <code>sw</code> escreve no endereço calculado pela ULA.</li>
+        <li><b>Escrita (WB)</b>: o mux <code>MemtoReg</code> escolhe entre o resultado da ULA, o dado lido ou PC + 4 (em <code>jal</code>/<code>jalr</code>), e o valor é escrito em rd se <code>RegWrite</code> = 1.</li>
+      </ol>
+      <p>O período do relógio precisa caber a instrução mais lenta (o <code>lw</code>, que passa por tudo). Por isso o monociclo é simples, mas desperdiça tempo nas instruções rápidas. A saída é o <b>pipeline</b>.</p>
+      <h2>Os formatos de instrução</h2>
+      <p>Toda instrução RV32I tem 32 bits, e os campos <b>rs1, rs2 e rd ficam sempre na mesma posição</b>: o hardware lê os registradores antes mesmo de saber qual instrução é. Os imediatos são embaralhados (formatos B e J) para que cada bit do imediato caia quase sempre no mesmo lugar, simplificando o gerador de imediato.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Formato</th><th>Uso</th><th>Exemplos</th></tr>
+          <tr><td>R</td><td>registrador–registrador</td><td>add, sub, and, or, slt, sll</td></tr>
+          <tr><td>I</td><td>imediato de 12 bits, loads, jalr</td><td>addi, lw, jalr</td></tr>
+          <tr><td>S</td><td>stores (o imediato é dividido para rd não existir)</td><td>sw</td></tr>
+          <tr><td>B</td><td>desvios condicionais (deslocamento múltiplo de 2)</td><td>beq, bne, blt, bge</td></tr>
+          <tr><td>U</td><td>imediato de 20 bits nos bits altos</td><td>lui, auipc</td></tr>
+          <tr><td>J</td><td>saltos de ±1 MiB</td><td>jal</td></tr>
+        </table>
+      </div>
+      <div class="callout tip"><p><b>Pseudoinstruções</b> são apelidos do montador: <code>li t0, 5</code> vira <code>addi t0, zero, 5</code>; <code>mv a0, t4</code> vira <code>addi a0, t4, 0</code>; <code>j rótulo</code> vira <code>jal zero, rótulo</code>; <code>ret</code> vira <code>jalr zero, 0(ra)</code>. Aqui, <code>la</code> também vira um <code>addi</code> porque os dados ficam em endereços baixos (num montador real, vira <code>auipc</code> + <code>addi</code>).</p></div>
+      <h2>Convenção de chamada</h2>
+      <p><code>a0</code>–<code>a7</code> passam argumentos (e <code>a0</code>/<code>a1</code> devolvem resultados), <code>ra</code> guarda o endereço de retorno, <code>sp</code> aponta para o topo da pilha (que cresce para baixo), <code>t0</code>–<code>t6</code> podem ser destruídos pela função chamada e <code>s0</code>–<code>s11</code> precisam ser preservados por ela.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados: codificação</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, pick, randInt } from '../../../engine/page.js';
+    import { PROGRAMS, run, fields, hex, ABI, DATA_BASE, assemble, encode, kindOf } from './riscv.js';
+
+    const W = 900, H = 540;
+    let program = null;
+
+    // ---------- Geometria do caminho de dados ----------
+    const U = {
+      pcmux: [20, 150, 22, 72, 'mux'], pc: [58, 160, 42, 50, 'PC'], add4: [128, 38, 48, 48, '+4'],
+      im: [128, 128, 104, 112, 'Mem. de\ninstruções'], ctrl: [268, 18, 96, 40, 'Controle'],
+      regs: [290, 110, 122, 130, 'Registradores'], imm: [296, 258, 110, 38, 'Gerador imed.'],
+      badd: [472, 36, 48, 48, '+'], alumux: [442, 166, 20, 60, 'mux'], alu: [482, 118, 60, 112, 'ULA'],
+      dm: [592, 118, 112, 112, 'Mem. de\ndados'], wbmux: [742, 136, 22, 84, 'mux'],
+    };
+    const WIRES = {
+      'pc-im': [[100, 185], [128, 185]],
+      'pc-add4': [[110, 185], [110, 62], [128, 62]],
+      'pc-badd': [[110, 185], [110, 100], [456, 100], [456, 50], [472, 50]],
+      'add4-mux': [[176, 62], [196, 62], [196, 12], [12, 12], [12, 162], [20, 162]],
+      'badd-mux': [[520, 60], [566, 60], [566, 6], [6, 6], [6, 186], [20, 186]],
+      'alu-pcmux': [[542, 174], [572, 174], [572, 248], [580, 248], [580, 0], [0, 0], [0, 210], [20, 210]],
+      'mux-pc': [[42, 186], [58, 186]],
+      'im-ctrl': [[232, 150], [250, 150], [250, 38], [268, 38]],
+      'im-reg': [[232, 172], [290, 172]],
+      'im-imm': [[232, 210], [262, 210], [262, 277], [296, 277]],
+      'imm-mux': [[406, 277], [432, 277], [432, 214], [442, 214]],
+      'imm-badd': [[406, 290], [464, 290], [464, 72], [472, 72]],
+      'rs1-alu': [[412, 144], [482, 144]],
+      'rs2-mux': [[412, 192], [442, 192]],
+      'rs2-dm': [[424, 192], [424, 246], [578, 246], [578, 206], [592, 206]],
+      'mux-alu': [[462, 196], [482, 196]],
+      'alu-dm': [[542, 160], [592, 160]],
+      'alu-wb': [[552, 160], [552, 108], [726, 108], [726, 156], [742, 156]],
+      'dm-wb': [[704, 178], [742, 178]],
+      'pc4-wb': [[186, 62], [186, 92], [734, 92], [734, 202], [742, 202]],
+      'wb-reg': [[764, 178], [782, 178], [782, 316], [272, 316], [272, 222], [290, 222]],
+    };
+    // unidades ligadas por cada fio (para acender as caixas por onde a instrução passa)
+    const WIRE_UNITS = {
+      'pc-im': ['pc', 'im'], 'pc-add4': ['pc', 'add4'], 'pc-badd': ['pc', 'badd'], 'add4-mux': ['add4', 'pcmux'], 'badd-mux': ['badd', 'pcmux'],
+      'alu-pcmux': ['alu', 'pcmux'], 'mux-pc': ['pcmux', 'pc'], 'im-ctrl': ['im', 'ctrl'], 'im-reg': ['im', 'regs'], 'im-imm': ['im', 'imm'],
+      'imm-mux': ['imm', 'alumux'], 'imm-badd': ['imm', 'badd'], 'rs1-alu': ['regs', 'alu'], 'rs2-mux': ['regs', 'alumux'], 'rs2-dm': ['regs', 'dm'],
+      'mux-alu': ['alumux', 'alu'], 'alu-dm': ['alu', 'dm'], 'alu-wb': ['alu', 'wbmux'], 'dm-wb': ['dm', 'wbmux'], 'pc4-wb': ['add4', 'wbmux'], 'wb-reg': ['wbmux', 'regs'],
+    };
+    const poly = pts => pts.map(([x, y], i) => `${i ? 'L' : 'M'} ${x} ${y}`).join(' ');
+
+    function drawDatapath(s, step) {
+      const on = new Set(step.path ?? []);
+      const usedUnits = new Set([...on].flatMap(w => WIRE_UNITS[w] ?? []));
+      for (const [k, pts] of Object.entries(WIRES)) {
+        const active = on.has(k);
+        s.path(`w-${k}`, poly(pts), { stroke: active ? COLORS.blue : COLORS.border, sw: active ? 2.4 : 1.3, arrow: true, layer: 'edges' });
+      }
+      for (const [k, [x, y, w, h, label]] of Object.entries(U)) {
+        const active = usedUnits.has(k);
+        s.rect(`u-${k}`, { x, y, w, h, rx: label === 'mux' ? 10 : k === 'ctrl' ? 20 : 6, fill: active ? '#1c3640' : COLORS.surface, stroke: active ? COLORS.blue : COLORS.faint, sw: active ? 2 : 1.2 });
+        if (label !== 'mux') label.split('\n').forEach((ln, i, arr) => s.text(`ul-${k}-${i}`, ln, { x: x + w / 2, y: y + h / 2 + (i - (arr.length - 1) / 2) * 15, size: label.length > 6 ? 11.5 : 14, weight: 700, fill: active ? COLORS.text : COLORS.muted }));
+      }
+      // valores nos fios
+      const v = (key, txt, x, y, color = COLORS.yellow, anchor = 'middle') => s.text(key, txt, { x, y, size: 11.5, weight: 700, mono: true, fill: color, anchor });
+      v('pcval', step.pc, 79, 222, COLORS.yellow);
+      if (step.ins) {
+        v('instr', hex(step.word), 180, 252, COLORS.purple);
+        const r = ABI;
+        if (on.has('rs1-alu')) v('rs1v', `${r[step.ins.rs1]}=${step.regs ? (step.prevRegs ?? step.regs)[step.ins.rs1] : ''}`, 447, 136);
+        if (on.has('rs2-mux')) v('rs2v', `${r[step.ins.rs2]}=${(step.prevRegs ?? step.regs)[step.ins.rs2]}`, 427, 184, COLORS.yellow, 'end');
+        if (on.has('im-imm')) v('immv', `imm=${step.ins.imm}`, 351, 306);
+        if (step.aluRes != null) v('aluv', step.aluRes, 565, 152);
+        if (step.kind === 'load') v('dmv', step.memVal, 722, 170);
+        if (step.kind === 'store') v('dmw', `${step.memVal} → M[${step.memAddr}]`, 648, 252, COLORS.green);
+        if (step.kind === 'branch') v('br', step.taken ? 'desvia' : 'não desvia', 512, 248, step.taken ? COLORS.green : COLORS.muted);
+        if (step.nextPc != null) v('npc', `próximo PC = ${step.nextPc}`, 79, 240, COLORS.muted);
+      }
+      // sinais de controle
+      s.text('ctl-title', 'Controle', { x: 800, y: 24, size: 12, anchor: 'start', weight: 700, fill: COLORS.muted });
+      const ctl = step.control ?? {};
+      ['RegWrite', 'ALUSrc', 'MemRead', 'MemWrite', 'MemtoReg', 'Branch', 'ALUOp'].forEach((name, i) => {
+        const val = ctl[name] ?? '—';
+        const lit = val === 1 || val === 'J' || val === 'PC+4' || (name === 'ALUOp' && val !== '—' && val !== 'X');
+        s.text(`ctl-${name}`, name, { x: 800, y: 50 + i * 22, size: 12, anchor: 'start', mono: true, fill: COLORS.muted });
+        s.text(`ctv-${name}`, val, { x: 896, y: 50 + i * 22, size: 13, anchor: 'end', weight: 800, mono: true, fill: lit ? COLORS.green : COLORS.faint });
+      });
+      if (step.kind) s.text('kind', `tipo: ${{ R: 'R', I: 'I (ULA)', load: 'I (load)', store: 'S', branch: 'B', jal: 'J', jalr: 'I (jalr)', lui: 'U' }[step.kind]}`, { x: 800, y: 214, size: 13, anchor: 'start', weight: 800, fill: COLORS.purple });
+    }
+
+    function drawRegs(s, step) {
+      const y0 = 338, cw = 110, ch = 24;
+      s.text('regs-title', 'banco de registradores (valores ≠ 0 em destaque)', { x: 10, y: y0 - 10, size: 12, anchor: 'start', weight: 700, fill: COLORS.muted });
+      ABI.forEach((name, i) => {
+        const col = Math.floor(i / 8), row = i % 8;
+        const x = 10 + col * (cw + 2) + 0, y = y0 + row * ch;
+        const val = step.regs[i];
+        const ch_ = step.changed === i;
+        s.rect(`rg${i}`, { x, y, w: cw - 4, h: ch - 3, rx: 4, fill: ch_ ? '#3d3a22' : COLORS.surface, stroke: ch_ ? COLORS.yellow : COLORS.border, sw: ch_ ? 2 : 1, layer: 'bg' });
+        s.text(`rgn${i}`, name, { x: x + 6, y: y + (ch - 3) / 2, size: 11, anchor: 'start', mono: true, fill: COLORS.muted });
+        s.text(`rgv${i}`, val, { x: x + cw - 10, y: y + (ch - 3) / 2, size: 12, anchor: 'end', weight: 700, mono: true, fill: ch_ ? COLORS.yellow : val ? COLORS.text : COLORS.faint });
+      });
+      // memória de dados
+      const mx = 470;
+      s.text('mem-title', 'memória de dados (palavras usadas)', { x: mx, y: y0 - 10, size: 12, anchor: 'start', weight: 700, fill: COLORS.muted });
+      const addrs = [...step.mem.keys()].sort((a, b) => a - b).slice(0, 24);
+      const lab = labelOf(program);
+      addrs.forEach((a, k) => {
+        const col = Math.floor(k / 8), row = k % 8;
+        const x = mx + col * 142, y = y0 + row * ch;
+        const hot = step.memAddr === a;
+        s.rect(`mm${a}`, { x, y, w: 138, h: ch - 3, rx: 4, fill: hot ? (step.memWrite ? '#1f3319' : '#1c3640') : COLORS.surface, stroke: hot ? (step.memWrite ? COLORS.green : COLORS.blue) : COLORS.border, sw: hot ? 2 : 1, layer: 'bg' });
+        s.text(`mma${a}`, lab.get(a) ?? hex(a, 3), { x: x + 6, y: y + (ch - 3) / 2, size: 11, anchor: 'start', mono: true, fill: COLORS.muted });
+        s.text(`mmv${a}`, step.mem.get(a), { x: x + 130, y: y + (ch - 3) / 2, size: 12, anchor: 'end', weight: 700, mono: true, fill: hot ? COLORS.yellow : COLORS.text });
+      });
+    }
+
+    function labelOf(prog) {
+      const m = new Map();
+      if (!prog) return m;
+      const labs = [...prog.labels.entries()].filter(([, a]) => a >= DATA_BASE).sort((a, b) => a[1] - b[1]);
+      labs.forEach(([name, a], i) => {
+        const end = labs[i + 1]?.[1] ?? Infinity;
+        for (let x = a; x < end && x < a + 64; x += 4) m.set(x, x === a ? name : `${name}+${x - a}`);
+      });
+      for (let x = 0x700; x < 0x800; x += 4) if (!m.has(x)) m.set(x, `pilha ${hex(x, 3)}`);
+      return m;
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa.s', lang: 'python', showVars: false,
+      render(step, s) { drawDatapath(s, step); drawRegs(s, step); },
+      onStep(step) { showEncoding(step.ins); },
+    });
+
+    function showEncoding(ins) {
+      const box = $('#encoding');
+      if (!ins) { box.innerHTML = ''; return; }
+      box.innerHTML = `<div class="c-muted" style="font-size:14px;margin-top:10px">Codificação de <code>${ins.text}</code> = <code>${hex(encode(ins))}</code></div>
+        <div class="bits">${fields(ins).map(f => `<div class="${f.cls}"><small>${f.name} [${f.hi}:${f.lo}]</small>${f.bin}</div>`).join('')}</div>`;
+    }
+
+    function load(src) {
+      try {
+        const r = run(src);
+        program = r.prog;
+        r.steps.forEach((st, i) => { st.prevRegs = r.steps[i - 1]?.regs; });
+        player.setCode(src, 'python');
+        player.load(r.steps);
+        $('#stats').textContent = `${r.prog.instrs.length} instruções no código · ${r.trace.length} executadas`;
+        $('#err').textContent = '';
+      } catch (e) { $('#err').textContent = e.message; }
+    }
+
+    $('#prog').innerHTML = Object.entries(PROGRAMS).map(([k, p]) => `<option value="${k}">${p.nome}</option>`).join('');
+    $('#prog').addEventListener('change', () => { $('#editor').value = PROGRAMS[$('#prog').value].src; load(PROGRAMS[$('#prog').value].src); });
+    $('#edit-btn').addEventListener('click', () => { $('#edit-box').hidden = !$('#edit-box').hidden; });
+    $('#assemble').addEventListener('click', () => load($('#editor').value));
+    $('#editor').value = PROGRAMS.soma.src;
+    load(PROGRAMS.soma.src);
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quais sinais de controle valem 1 num <code>lw</code>?', options: ['RegWrite, ALUSrc, MemRead e MemtoReg', 'MemWrite e ALUSrc', 'Só RegWrite', 'Branch e ALUSrc'], answer: 0, explain: 'lw escreve num registrador (RegWrite), usa o imediato como segundo operando (ALUSrc), lê a memória (MemRead) e escolhe o dado lido para a escrita (MemtoReg).' },
+      { q: 'Por que <code>sw</code> não usa o campo rd?', options: ['Não escreve em registrador; os bits viram parte do imediato (formato S)', 'Porque rd é sempre zero', 'Porque o imediato é de 20 bits', 'Usa sim'], answer: 0, explain: 'Um store precisa de dois registradores-fonte (base e dado) e nenhum destino.' },
+      { q: 'Qual instrução define o período do relógio num monociclo?', options: ['lw (passa por memória de instruções, registradores, ULA, memória de dados e volta)', 'add', 'beq', 'jal'], answer: 0, explain: 'O ciclo precisa ser longo o suficiente para o caminho crítico, e o do load é o mais longo.' },
+      { q: 'Quanto vale <code>x0</code> depois de <code>addi x0, x0, 5</code>?', options: ['0', '5', 'indefinido', 'erro de montagem'], answer: 0, explain: 'x0 é ligado ao terra: escritas são ignoradas. Por isso nop = addi x0, x0, 0.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova instrução',
+      generate() {
+        const r = () => pick(['t0', 't1', 't2', 's0', 's1', 'a0', 'a1', 'a2']);
+        const src = pick([
+          () => `${pick(['add', 'sub', 'and', 'or', 'xor', 'slt'])} ${r()}, ${r()}, ${r()}`,
+          () => `addi ${r()}, ${r()}, ${randInt(-50, 200)}`,
+          () => `lw ${r()}, ${4 * randInt(0, 10)}(${r()})`,
+          () => `sw ${r()}, ${4 * randInt(0, 10)}(${r()})`,
+        ])();
+        const ins = assemble(src).instrs[0];
+        const fs = fields(ins);
+        const f = pick(fs.filter(x => x.name !== 'opcode'));
+        return {
+          q: `Em <code>${src}</code> (formato ${{ R: 'R', I: 'I', load: 'I', store: 'S' }[kindOf(ins.op)]}), qual o valor <b>decimal</b> do campo <code>${f.name}</code> (bits ${f.hi} a ${f.lo})?`,
+          input: true, answer: String(f.value),
+          explain: `${fs.map(x => `${x.name} = ${x.bin}`).join(' | ')}. Palavra: <code>${hex(encode(ins))}</code>. Lembre: x5–x7 = t0–t2, x8 = s0, x9 = s1, x10–x12 = a0–a2.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>k vizinhos e sobreajuste · Introdução à Ciência dos Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 6em 1fr 3em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 15px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    #map { cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#icd">Introdução à Ciência dos Dados</a>
+      <span class="sep">/</span><span>k vizinhos e sobreajuste</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Ciência dos Dados</div>
+    <h1>k vizinhos mais próximos e o dilema viés × variância</h1>
+    <p class="lead">O classificador mais simples possível: para rotular um ponto novo, olhe os $k$ pontos de treino mais próximos e faça uma votação. Com $k = 1$ ele decora o treino (acerta 100% nele) e erra mais nos dados novos; com $k$ enorme, vota sempre na maioria. O melhor fica no meio, e só um conjunto de <b>teste</b> separado revela onde. <b>Clique no mapa</b> para classificar um ponto e ver os vizinhos.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="map" aria-label="Regiões de decisão"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Modelo</div>
+          <div class="ctl">
+            <span>k</span><input id="k" type="range" min="1" max="99" step="2" value="1"><output id="k-o"></output>
+            <span>ruído</span><input id="noise" type="range" min="0.05" max="0.5" step="0.05" value="0.3"><output id="noise-o"></output>
+          </div>
+          <div style="padding:0 14px 14px"><label class="c-muted" style="font-size:14px"><input type="checkbox" id="show-test" checked> mostrar pontos de teste (contorno)</label></div>
+        </div>
+        <div class="panel"><div class="panel-title">Acurácia × k</div><svg id="curve" aria-label="Curva de acurácia"></svg></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Treino, teste e sobreajuste</h2>
+      <p>Avaliar um modelo nos próprios dados de treino é como corrigir uma prova com o gabarito em mãos. Separe os dados (aqui, 70% treino e 30% teste) e só olhe o teste no fim. A curva mostra o padrão universal:</p>
+      <ul>
+        <li><b>k pequeno</b>: fronteira cheia de ilhas, que segue cada ponto ruidoso. Baixo viés, alta <b>variância</b>: mudando um pouco o treino, o modelo muda muito. É o <b>sobreajuste</b>.</li>
+        <li><b>k grande</b>: fronteira suave demais, que não acompanha as meias-luas. Alto <b>viés</b>, baixa variância. É o <b>subajuste</b>.</li>
+      </ul>
+      <p>Para escolher $k$ sem "gastar" o teste, use <b>validação cruzada</b>: divida o treino em $K$ partes, treine em $K - 1$ e valide na restante, revezando, e fique com o $k$ de melhor média.</p>
+      <div class="callout tip"><p>O k-NN não "aprende" nada no treino: só guarda os pontos (por isso é chamado de preguiçoso). Toda a conta fica para a hora de prever: $O(n)$ distâncias por consulta, ou menos com árvores k-d. Como usa distâncias, <b>normalize</b> as variáveis antes: altura em metros e salário em reais não podem pesar igual.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { moons, split, knnClassify, accuracy } from './icd.js';
+
+    const W = 780, H = 560, XR = [-1.6, 2.6], YR = [-1.4, 1.9];
+    const scene = new Scene($('#map'), { width: W, height: H });
+    const curve = new Scene($('#curve'), { width: 400, height: 240 });
+    $('#map').style.setProperty('--dur', '250ms');
+    $('#curve').style.setProperty('--dur', '200ms');
+    const X = x => (x - XR[0]) / (XR[1] - XR[0]) * W, Y = y => H - (y - YR[0]) / (YR[1] - YR[0]) * H;
+    const invX = px => XR[0] + px / W * (XR[1] - XR[0]), invY = py => YR[0] + (H - py) / H * (YR[1] - YR[0]);
+    const CC = [COLORS.blue, COLORS.orange];
+    const REGION = ['#21353f', '#3b2f26'];   // azul e laranja já misturados com o fundo (sem emendas entre as células)
+    let data, train, test, curveData, query = null;
+
+    function regen() {
+      data = moons(300, +$('#noise').value, 1);
+      ({ train, test } = split(data, 0.7, 7));
+      curveData = [];
+      for (let k = 1; k <= 99; k += 2) curveData.push({ k, tr: accuracy(train, train, k), te: accuracy(train, test, k) });
+      draw();
+    }
+
+    function draw() {
+      const k = +$('#k').value;
+      $('#k-o').value = k; $('#noise-o').value = fmt(+$('#noise').value, 2);
+      const G = 46, gw = W / G, gh = H / Math.round(G * H / W), GH = Math.round(G * H / W);
+      scene.frame(s => {
+        for (let i = 0; i < G; i++) for (let j = 0; j < GH; j++) {
+          const p = { x: invX((i + 0.5) * gw), y: invY((j + 0.5) * gh) };
+          const c = knnClassify(train, p, k).c;
+          s.rect(`g${i}-${j}`, { x: i * gw, y: j * gh, w: gw + 0.6, h: gh + 0.6, rx: 0, fill: REGION[c], stroke: 'none', layer: 'bg' });
+        }
+        train.forEach((p, i) => s.circle(`tr${i}`, { x: X(p.x), y: Y(p.y), r: 4.5, fill: CC[p.c], stroke: '#0e1116', sw: 1 }));
+        if ($('#show-test').checked) test.forEach((p, i) => {
+          const ok = knnClassify(train, p, k).c === p.c;
+          s.circle(`te${i}`, { x: X(p.x), y: Y(p.y), r: 6, fill: 'none', stroke: ok ? CC[p.c] : COLORS.red, sw: ok ? 2 : 3 });
+        });
+        if (query) {
+          const { c, neighbors } = knnClassify(train, query, k);
+          neighbors.forEach((q, i) => s.line(`nb${i}`, X(query.x), Y(query.y), X(q.x), Y(q.y), { stroke: COLORS.text, sw: 1, opacity: 0.5, layer: 'fx' }));
+          s.circle('q', { x: X(query.x), y: Y(query.y), r: 9, fill: CC[c], stroke: COLORS.text, sw: 2.5, layer: 'fx' });
+          const votes = [0, 1].map(cl => neighbors.filter(q => q.c === cl).length);
+          s.text('qv', `votos: ${votes[0]} azul × ${votes[1]} laranja`, { x: Math.min(W - 10, X(query.x) + 14), y: Y(query.y) - 16, size: 13, anchor: X(query.x) > W - 200 ? 'end' : 'start', weight: 800, fill: COLORS.text, layer: 'fx' });
+        }
+      });
+      // curva de acurácia
+      curve.frame(s => {
+        const cx = k2 => 36 + (k2 - 1) / 98 * 350, cy = a => 210 - (a - 0.4) / 0.6 * 190;
+        s.line('ax', 36, 210, 386, 210, { stroke: COLORS.border, sw: 1, layer: 'bg' });
+        for (const a of [0.5, 0.75, 1]) s.text(`ay${a}`, `${Math.round(a * 100)}%`, { x: 30, y: cy(a), size: 10, anchor: 'end', mono: true, fill: COLORS.faint });
+        for (const k2 of [1, 25, 51, 75, 99]) s.text(`axk${k2}`, k2, { x: cx(k2), y: 226, size: 10, mono: true, fill: COLORS.faint });
+        const path = key => curveData.map((d, i) => `${i ? 'L' : 'M'} ${cx(d.k)} ${cy(d[key])}`).join(' ');
+        s.path('ptr', path('tr'), { stroke: COLORS.muted, sw: 2 });
+        s.path('pte', path('te'), { stroke: COLORS.green, sw: 2.5 });
+        const best = curveData.reduce((b, d) => (d.te > b.te ? d : b));
+        s.circle('best', { x: cx(best.k), y: cy(best.te), r: 4, fill: COLORS.green, stroke: 'none' });
+        const cur = curveData.find(d => d.k === k);
+        s.line('cur', cx(k), 14, cx(k), 210, { stroke: COLORS.yellow, sw: 1.5, dash: '4 3' });
+        s.text('lt', `treino ${fmt(100 * cur.tr, 1)}%`, { x: 386, y: 14, size: 12, anchor: 'end', weight: 700, fill: COLORS.muted });
+        s.text('le', `teste ${fmt(100 * cur.te, 1)}%  (melhor: k = ${best.k})`, { x: 386, y: 32, size: 12, anchor: 'end', weight: 700, fill: COLORS.green });
+      });
+    }
+
+    $('#map').addEventListener('click', e => {
+      const rect = $('#map').getBoundingClientRect();
+      query = { x: invX((e.clientX - rect.left) / rect.width * W), y: invY((e.clientY - rect.top) / rect.height * H) };
+      draw();
+    });
+    $('#k').addEventListener('input', draw);
+    $('#show-test').addEventListener('change', draw);
+    $('#noise').addEventListener('change', regen);
+    $('#noise').addEventListener('input', () => { $('#noise-o').value = fmt(+$('#noise').value, 2); });
+    regen();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Com k = 1, qual a acurácia do k-NN nos próprios dados de treino (sem pontos repetidos)?', options: ['100%: cada ponto é o seu vizinho mais próximo', '50%', 'depende do ruído', '0%'], answer: 0, explain: 'Por isso a acurácia de treino não serve para escolher k.' },
+      { q: 'A acurácia de treino é 99% e a de teste é 70%. O diagnóstico mais provável é…', options: ['sobreajuste (variância alta)', 'subajuste (viés alto)', 'dados de teste errados', 'modelo perfeito'], answer: 0, explain: 'O modelo decorou o treino e não generaliza.' },
+      { q: 'Por que usar k ímpar com duas classes?', options: ['Para evitar empates na votação', 'Porque é mais rápido', 'Porque k par sobreajusta', 'Não faz diferença'], answer: 0, explain: 'Com duas classes e k ímpar, sempre há maioria.' },
+    ]);
+  </script>
+</body>
+</html>

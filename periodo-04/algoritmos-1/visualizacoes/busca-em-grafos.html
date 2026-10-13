@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BFS, DFS e ordenação topológica · Algoritmos I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12.5px; } #player svg [id], #player svg .sn { cursor: default; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg1">Algoritmos I</a>
+      <span class="sep">/</span><span>Busca em grafos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos I</div>
+    <h1>Busca em largura, em profundidade e ordenação topológica</h1>
+    <p class="lead">Quase todo algoritmo de grafos começa com uma <b>busca</b>: visitar os vértices alcançáveis sem repetir nenhum. A diferença entre as duas buscas clássicas é só a estrutura que guarda os vértices pendentes: uma <b>fila</b> (largura) ou uma <b>pilha</b> (profundidade).</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-alg="bfs">BFS (largura)</button>
+        <button class="btn" data-alg="dfs">DFS (profundidade)</button>
+      </div>
+      <label>Grafo <select id="preset">
+        <option value="bairro">não direcionado</option>
+        <option value="roupas">vestir-se (DAG)</option>
+        <option value="ciclo">direcionado com ciclo</option>
+      </select></label>
+      <label id="src-wrap">Origem <select id="src"></select></label>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend" id="legend"></div>
+
+    <section class="prose">
+      <h2>BFS: ondas a partir da origem</h2>
+      <p>A fila garante que os vértices saem na ordem da distância: todos os de distância 1, depois todos os de distância 2, e assim por diante. Por isso a BFS calcula o <b>caminho com menos arestas</b> (caminho mínimo em grafo sem pesos), e a árvore formada pelos ponteiros <code>pai</code> guarda esses caminhos.</p>
+      <h2>DFS: mergulhe e volte</h2>
+      <p>A DFS usa a pilha de chamadas da recursão. Os tempos de descoberta $d[u]$ e término $f[u]$ obedecem ao <b>teorema dos parênteses</b>: os intervalos $[d, f]$ de dois vértices ou são disjuntos ou um contém o outro, exatamente como parênteses bem aninhados. Num grafo direcionado, cada aresta $(u, v)$ é classificada pela cor de $v$ no momento em que é examinada:</p>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Cor de v</th><th>Tipo</th><th>Significado</th></tr>
+          <tr><td>branco</td><td class="c-blue">árvore</td><td>v é descoberto agora, a partir de u</td></tr>
+          <tr><td>cinza</td><td class="c-red">retorno</td><td>v é ancestral de u (está na pilha): <b>ciclo</b></td></tr>
+          <tr><td>preto, d[u] &lt; d[v]</td><td class="c-purple">avanço</td><td>v é descendente já terminado</td></tr>
+          <tr><td>preto, d[u] &gt; d[v]</td><td class="c-orange">cruzamento</td><td>v está em outro ramo ou outra árvore</td></tr>
+        </table>
+      </div>
+      <h2>Ordenação topológica</h2>
+      <p>Num grafo direcionado <b>acíclico</b> (DAG), uma ordenação topológica põe cada vértice antes de todos os vértices para onde ele aponta: a ordem de se vestir, de compilar módulos, de cursar disciplinas com pré-requisitos. Basta listar os vértices em ordem <b>decrescente de término</b> na DFS: se $(u, v)$ é aresta e não há ciclo, $f[v] &lt; f[u]$.</p>
+      <p>A alternativa é o <b>algoritmo de Kahn</b>: repetidamente tire um vértice sem arestas de entrada. Se os vértices acabarem antes, sobrou um ciclo.</p>
+      <div class="callout tip"><p>As duas buscas custam $O(V + E)$ com lista de adjacência: cada vértice é visitado uma vez e cada aresta é examinada uma vez (duas, se não for direcionada). Com matriz de adjacência, o custo vira $O(V^2)$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { PRESETS, BFS_CODE, DFS_CODE, bfsSteps, dfsSteps } from './grafos.js';
+    import { drawGraph, drawList } from './desenho-grafo.js';
+
+    const W = 900, H = 470;
+    let alg = 'bfs', G = PRESETS.bairro;
+    const KIND_COLOR = { arvore: COLORS.blue, retorno: COLORS.red, avanco: COLORS.purple, cruzamento: COLORS.orange };
+    const FILL = { branco: COLORS.surface2, cinza: '#4a505c', preto: '#07080b' };
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'busca.cpp',
+      render(step, s) {
+        const n = G.names;
+        if (alg === 'bfs') {
+          drawGraph(s, G, {
+            weights: false,
+            edgeStyle: k => (k === step.edge ? { stroke: step.seen ? COLORS.muted : COLORS.yellow, sw: 4 } : step.tree.includes(k) ? { stroke: COLORS.blue, sw: 3.5 } : {}),
+            nodeStyle: u => ({
+              fill: FILL[step.cor[u]], stroke: u === step.u ? COLORS.yellow : u === step.v ? COLORS.blue : step.cor[u] === 'preto' ? COLORS.teal : COLORS.muted,
+              sw: u === step.u ? 4 : 2, top: step.dist[u] >= 0 ? `d=${step.dist[u]}` : null,
+            }),
+          });
+          drawList(s, 'fila', 'fila (sai pela esquerda)', step.fila.map(x => ({ id: x, label: n[x] })), { x: 650, y: 40, w: 240, cell: 48 });
+          const cols = [['vértice', u => n[u], 690], ['dist', u => (step.dist[u] < 0 ? '∞' : step.dist[u]), 770], ['pai', u => (step.pai[u] >= 0 ? n[step.pai[u]] : '—'), 840]];
+          for (const [title, f, x] of cols) {
+            s.text(`dt-${title}`, title, { x, y: 190, size: 13, weight: 700, fill: COLORS.muted });
+            n.forEach((_, u) => s.text(`row${u}-${title}`, f(u), { x, y: 214 + u * 24, size: 14, mono: true, fill: u === step.u ? COLORS.yellow : COLORS.text }));
+          }
+        } else {
+          drawGraph(s, G, {
+            weights: false,
+            edgeStyle: k => {
+              const kind = step.kinds[k];
+              const st = kind ? { stroke: KIND_COLOR[kind], sw: kind === 'arvore' ? 3.5 : 2.5, dash: kind === 'cruzamento' || kind === 'avanco' ? '6 5' : null } : {};
+              return k === step.edge ? { ...st, stroke: st.stroke ?? COLORS.yellow, sw: 4.5 } : st;
+            },
+            nodeStyle: u => ({
+              fill: FILL[step.cor[u]], stroke: u === step.u ? COLORS.yellow : step.cor[u] === 'preto' ? COLORS.teal : COLORS.muted,
+              sw: u === step.u ? 4 : 2, top: step.d[u] != null ? `${step.d[u]}/${step.f[u] ?? '·'}` : null,
+            }),
+          });
+          drawList(s, 'pilha', 'pilha de chamadas (topo embaixo)', step.pilha.map((x, i) => ({ id: x, label: `dfs(${n[x]})`, hot: i === step.pilha.length - 1 })), { x: 660, y: 30, w: 200, vertical: true });
+          if (G.directed) {
+            s.text('ord-title', 'ordem topológica (decrescente de f):', { x: 20, y: H - 38, size: 13, anchor: 'start', weight: 700, fill: COLORS.muted });
+            s.text('ord', step.ordem.map(x => n[x]).join(' → ') || '…', { x: 20, y: H - 16, size: 14, anchor: 'start', weight: 700, mono: true, fill: COLORS.teal });
+          }
+        }
+      },
+    });
+
+    function legend() {
+      $('#legend').innerHTML = alg === 'bfs'
+        ? `<span><i style="background:${FILL.branco};border:1px solid #9aa3b0"></i>branco: não descoberto</span><span><i style="background:${FILL.cinza}"></i>cinza: na fila</span><span><i style="background:${FILL.preto};border:1px solid ${COLORS.teal}"></i>preto: terminado</span><span><i style="background:${COLORS.blue}"></i>aresta da árvore de BFS</span><span>d = distância (nº de arestas)</span>`
+        : `<span><i style="background:${COLORS.blue}"></i>árvore</span><span><i style="background:${COLORS.red}"></i>retorno (ciclo!)</span><span><i style="background:${COLORS.purple}"></i>avanço</span><span><i style="background:${COLORS.orange}"></i>cruzamento</span><span>rótulo d/f = descoberta / término</span>`;
+    }
+
+    function run() {
+      G = PRESETS[$('#preset').value];
+      const srcSel = $('#src');
+      if (srcSel.options.length !== G.names.length || srcSel.dataset.preset !== $('#preset').value) {
+        srcSel.innerHTML = G.names.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+        srcSel.dataset.preset = $('#preset').value;
+      }
+      $('#src-wrap').style.display = alg === 'bfs' ? '' : 'none';
+      $$('[data-alg]').forEach(b => b.setAttribute('aria-pressed', b.dataset.alg === alg));
+      player.setCode(alg === 'bfs' ? BFS_CODE : DFS_CODE, 'cpp');
+      player.load(alg === 'bfs' ? bfsSteps(G, +srcSel.value) : dfsSteps(G));
+      legend();
+    }
+    $$('[data-alg]').forEach(b => b.addEventListener('click', () => {
+      alg = b.dataset.alg;
+      if (alg === 'dfs' && $('#preset').value === 'bairro') $('#preset').value = 'roupas';
+      run();
+    }));
+    $('#preset').addEventListener('change', run);
+    $('#src').addEventListener('change', run);
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Num grafo sem pesos, qual busca encontra o caminho com o menor número de arestas?', options: ['BFS', 'DFS', 'as duas', 'nenhuma'], answer: 0, explain: 'A fila faz os vértices saírem em ordem de distância. A DFS pode chegar a um vértice por um caminho longo antes de ver o curto.' },
+      { q: 'Durante a DFS de um grafo direcionado, a aresta (u, v) é examinada quando v está <b>cinza</b>. O que isso indica?', options: ['O grafo tem um ciclo', 'v é descendente de u', 'O grafo é desconexo', 'Nada de especial'], answer: 0, explain: 'Cinza = v está na pilha, é ancestral de u. Com a aresta u → v fecha-se um ciclo (aresta de retorno).' },
+      { q: 'Na DFS, d[a] = 2, f[a] = 9 e d[b] = 4. O que podemos afirmar sobre f[b]?', options: ['f[b] < 9 (b é descendente de a)', 'f[b] > 9', 'f[b] = 9', 'Nada'], answer: 0, explain: 'Pelo teorema dos parênteses, o intervalo [4, f[b]] começa dentro de [2, 9], então está inteiro dentro dele.' },
+      { q: 'Qual o custo da BFS com matriz de adjacência?', options: ['$O(V^2)$', '$O(V + E)$', '$O(E \\log V)$', '$O(V \\cdot E)$'], answer: 0, explain: 'Para achar os vizinhos de u é preciso varrer a linha inteira da matriz: V operações por vértice.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memória cache · Organização de Computadores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.toolbar input[type=text] { width: 300px; font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#oc1">Organização de Computadores I</a>
+      <span class="sep">/</span><span>Memória cache</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Organização de Computadores I</div>
+    <h1>Memória cache: tag, índice e deslocamento</h1>
+    <p class="lead">Ler a memória principal custa centenas de ciclos; a cache, um ou poucos. Ela funciona porque programas reais têm <b>localidade</b>: usam de novo o que usaram há pouco (temporal) e o que está perto (espacial). Escolha a organização, mande uma sequência de endereços e veja cada acerto e cada falta, classificada nos "3 Cs".</p>
+
+    <div class="toolbar">
+      <label>Linhas <select id="lines"><option>4</option><option selected>8</option><option>16</option></select></label>
+      <label>Bloco <select id="block"><option value="4">4 bytes</option><option value="8">8 bytes</option><option value="16" selected>16 bytes</option></select></label>
+      <label>Associatividade <select id="ways"><option value="1" selected>direto (1 via)</option><option value="2">2 vias</option><option value="4">4 vias</option><option value="0">total</option></select></label>
+    </div>
+    <div class="toolbar">
+      <label>Endereços <input id="addrs" type="text"></label>
+      <button class="btn primary small" id="go">Simular</button>
+      <span class="spacer"></span>
+      <button class="btn small" data-seq="vetor">percorrer vetor</button>
+      <button class="btn small" data-seq="conflito">conflito</button>
+      <button class="btn small" data-seq="laco">laço que cabe</button>
+      <button class="btn small" data-seq="grande">vetor maior que a cache</button>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Como um endereço é dividido</h2>
+      <p>Com blocos de $B$ bytes e $S$ conjuntos, o endereço se divide em três campos:</p>
+      <p>$$\underbrace{\text{tag}}_{\text{o resto}} \;|\; \underbrace{\text{índice}}_{\log_2 S \text{ bits}} \;|\; \underbrace{\text{deslocamento}}_{\log_2 B \text{ bits}}$$</p>
+      <p>O deslocamento escolhe o byte dentro do bloco; o índice escolhe o conjunto; a tag, guardada na linha, diz <b>qual</b> dos muitos blocos que caem naquele conjunto está lá. Numa cache de mapeamento direto, cada conjunto tem uma linha só; numa associativa de $n$ vias, $n$ linhas (comparadas em paralelo); na totalmente associativa, um único conjunto com todas as linhas (não há índice).</p>
+      <h2>Os 3 Cs das faltas</h2>
+      <ul>
+        <li><b>Compulsória</b>: o primeiro acesso a um bloco. Diminui com blocos maiores (busca antecipada).</li>
+        <li><b>Capacidade</b>: o conjunto de trabalho não cabe na cache. Só uma cache maior resolve.</li>
+        <li><b>Conflito</b>: havia espaço, mas o bloco disputava o mesmo conjunto com outros. Diminui com mais associatividade. (Medida aqui comparando com uma cache totalmente associativa LRU do mesmo tamanho.)</li>
+      </ul>
+      <h2>Desempenho</h2>
+      <p>$$\text{tempo médio de acesso} = t_{\text{acerto}} + \text{taxa de faltas} \times \text{penalidade}$$</p>
+      <p>Com acerto em 1 ciclo, penalidade de 100 ciclos e 5% de faltas, o tempo médio é $1 + 0{,}05 \times 100 = 6$ ciclos: a taxa de faltas domina. Por isso os processadores têm vários níveis (L1, L2, L3), e por isso percorrer uma matriz por linhas (como ela está na memória, em C) é muito mais rápido do que por colunas.</p>
+      <div class="callout warn"><p><b>Escrita.</b> <i>Write-through</i> escreve na cache e na memória (simples, gasta banda; usa um buffer de escrita). <i>Write-back</i> só escreve na memória quando a linha é expulsa, marcada por um bit de sujo (<i>dirty</i>).</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, fmt, pick, randInt } from '../../../engine/page.js';
+    import { cacheSim } from './riscv.js';
+
+    const W = 900, H = 500, BITS = 12;
+    let cfg = null;
+    const SEQ = {
+      vetor: () => Array.from({ length: 16 }, (_, i) => 4 * i),
+      conflito: () => { const span = cfg.lines * cfg.blockBytes / cfg.ways; return [0, span, 0, span, 0, span, 2 * span, 0]; },
+      laco: () => { const r = []; for (let k = 0; k < 3; k++) for (let i = 0; i < 6; i++) r.push(4 * i); return r; },
+      grande: () => { const n = cfg.lines * cfg.blockBytes / 4 + cfg.blockBytes / 4; const r = []; for (let k = 0; k < 2; k++) for (let i = 0; i < n; i++) r.push(4 * i); return r; },
+    };
+    const CODE = `// endereço de ${BITS} bits
+bloco  = endereco / TAM_BLOCO
+desloc = endereco % TAM_BLOCO
+indice = bloco % NUM_CONJUNTOS
+tag    = bloco / NUM_CONJUNTOS
+
+conjunto = cache[indice]
+para cada via em conjunto:
+    se via.valida e via.tag == tag:
+        ACERTO        // atualiza LRU
+FALTA:
+    escolhe via inválida ou a menos usada recentemente (LRU)
+    via = { valida, tag, dados = memória[bloco] }`;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'cache (pseudocódigo)', lang: 'python', code: CODE,
+      render(step, s) {
+        // endereço em bits
+        if (step.addr != null) {
+          const b = step.addr.toString(2).padStart(BITS, '0');
+          const bw = 30, x0 = 30;
+          s.text('addr-title', `endereço ${step.addr} =`, { x: x0, y: 22, size: 14, anchor: 'start', weight: 700, fill: COLORS.muted });
+          [...b].forEach((bit, i) => {
+            const field = i < step.tagBits ? 'tag' : i < step.tagBits + step.idxBits ? 'idx' : 'off';
+            const col = { tag: COLORS.purple, idx: COLORS.yellow, off: COLORS.teal }[field];
+            s.rect(`bit${i}`, { x: x0 + i * bw, y: 38, w: bw - 3, h: 30, rx: 4, fill: COLORS.surface2, stroke: col, sw: 1.8 });
+            s.text(`bitt${i}`, bit, { x: x0 + i * bw + (bw - 3) / 2, y: 53, size: 16, weight: 700, mono: true, fill: col });
+          });
+          const lbl = (key, text, from, len, col) => len > 0 && s.text(key, text, { x: x0 + (from + len / 2) * bw, y: 84, size: 12, weight: 700, fill: col });
+          lbl('lt', `tag = ${step.tag}`, 0, step.tagBits, COLORS.purple);
+          lbl('li', `índice = ${step.idx}`, step.tagBits, step.idxBits, COLORS.yellow);
+          lbl('lo', `desl. = ${step.off}`, step.tagBits + step.idxBits, step.offBits, COLORS.teal);
+          s.text('verdict', step.hit ? 'ACERTO' : 'FALTA', { x: 520, y: 53, size: 26, weight: 800, anchor: 'start', fill: step.hit ? COLORS.green : COLORS.red });
+          if (!step.hit) s.text('kind', { compulsoria: 'compulsória', capacidade: 'de capacidade', conflito: 'de conflito' }[step.kind], { x: 525, y: 82, size: 14, anchor: 'start', weight: 700, fill: COLORS.red });
+        }
+        // a cache
+        const sets = step.cache.length, ways = step.cache[0].length;
+        const top = 110, rowH = Math.min(40, (H - top - 70) / sets);
+        const colW = Math.min(250, 760 / ways);
+        s.text('h-set', 'conj.', { x: 50, y: top - 8, size: 12, weight: 700, fill: COLORS.muted });
+        step.cache.forEach((set, i) => {
+          const y = top + i * rowH;
+          s.text(`si${i}`, i, { x: 50, y: y + rowH / 2, size: 13, mono: true, weight: 700, fill: i === step.idx ? COLORS.yellow : COLORS.faint });
+          set.forEach((ln, w) => {
+            const x = 80 + w * colW;
+            const hot = i === step.idx && w === step.way;
+            const fill = hot ? (step.hit ? '#1f3319' : '#3a1b18') : i === step.idx ? '#2a2a20' : COLORS.surface2;
+            s.rect(`ln${i}-${w}`, { x, y: y + 2, w: colW - 8, h: rowH - 4, rx: 5, fill, stroke: hot ? (step.hit ? COLORS.green : COLORS.red) : COLORS.border, sw: hot ? 2.2 : 1 });
+            const small = colW < 120;
+            const txt = ln.valid ? (small ? `t${ln.tag}` : `v=1 tag=${ln.tag}  bloco ${ln.block}`) : (small ? '—' : 'v=0');
+            s.text(`lt${i}-${w}`, txt, { x: x + 10, y: y + rowH / 2, size: small ? 11 : 12.5, anchor: 'start', mono: true, fill: ln.valid ? COLORS.text : COLORS.faint });
+            if (ln.valid && !small) s.text(`lb${i}-${w}`, `M[${ln.block * cfg.blockBytes}..${ln.block * cfg.blockBytes + cfg.blockBytes - 1}]`, { x: x + colW - 16, y: y + rowH / 2, size: 11, anchor: 'end', mono: true, fill: COLORS.faint });
+          });
+        });
+        // placar
+        const tot = step.hits + step.misses;
+        s.text('score', `acertos ${step.hits} · faltas ${step.misses} (compulsórias ${step.counts.compulsoria}, capacidade ${step.counts.capacidade}, conflito ${step.counts.conflito})`, { x: 30, y: H - 40, size: 13, anchor: 'start', mono: true, fill: COLORS.muted });
+        s.rect('hr-bg', { x: 30, y: H - 24, w: 400, h: 10, rx: 5, fill: COLORS.surface3, stroke: 'none' });
+        s.rect('hr', { x: 30, y: H - 24, w: tot ? 400 * step.hits / tot : 0, h: 10, rx: 5, fill: COLORS.green, stroke: 'none' });
+        s.text('hrt', `taxa de acertos ${tot ? fmt(100 * step.hits / tot, 1) : 0}%`, { x: 440, y: H - 19, size: 13, anchor: 'start', weight: 700, fill: COLORS.green });
+      },
+    });
+
+    function readCfg() {
+      const lines = +$('#lines').value, w = +$('#ways').value;
+      cfg = { lines, blockBytes: +$('#block').value, ways: w === 0 ? lines : Math.min(w, lines), addrBits: BITS };
+    }
+    function simulate() {
+      readCfg();
+      const addrs = $('#addrs').value.split(/[\s,;]+/).filter(Boolean).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < 2 ** BITS);
+      const { steps } = cacheSim(addrs, cfg);
+      steps.forEach((st, i) => { st.line = i === 0 ? null : st.hit ? 10 : [11, 12, 13]; st.vars = st.addr == null ? {} : { endereço: st.addr, bloco: st.block, índice: st.idx, tag: st.tag, deslocamento: st.off }; });
+      player.load(steps);
+    }
+    function useSeq(name) { readCfg(); $('#addrs').value = SEQ[name]().join(' '); simulate(); }
+    $$('[data-seq]').forEach(b => b.addEventListener('click', () => useSeq(b.dataset.seq)));
+    $('#go').addEventListener('click', simulate);
+    $('#addrs').addEventListener('keydown', e => { if (e.key === 'Enter') simulate(); });
+    for (const id of ['#lines', '#block', '#ways']) $(id).addEventListener('change', simulate);
+    useSeq('vetor');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Uma cache de mapeamento direto tem 64 linhas de 16 bytes; endereços de 32 bits. Quantos bits têm a tag, o índice e o deslocamento?', options: ['22, 6, 4', '26, 4, 2', '24, 6, 2', '20, 8, 4'], answer: 0, explain: 'Deslocamento: log₂ 16 = 4. Índice: log₂ 64 = 6. Tag: 32 − 6 − 4 = 22.' },
+      { q: 'Percorrer um vetor de inteiros com blocos de 16 bytes dá qual taxa de acertos (cache vazia)?', options: ['75%: 1 falta a cada 4 acessos', '0%', '50%', '100%'], answer: 0, explain: 'Cada falta traz 4 inteiros; os 3 seguintes acertam. É a localidade espacial.' },
+      { q: 'Qual tipo de falta aumentar a associatividade reduz?', options: ['Conflito', 'Compulsória', 'Capacidade', 'Nenhuma'], answer: 0, explain: 'Com mais vias, blocos que caem no mesmo conjunto podem conviver.' },
+      { q: 'Por que somar uma matriz em C por colunas é mais lento do que por linhas?', options: ['Elementos de uma coluna estão longe na memória: cada acesso cai num bloco diferente', 'Porque o compilador não otimiza', 'Porque as colunas são maiores', 'Não é mais lento'], answer: 0, explain: 'C guarda matrizes por linhas. Percorrer por colunas desperdiça a localidade espacial.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novo endereço',
+      generate() {
+        const lines = pick([8, 16, 32, 64]), block = pick([4, 8, 16, 32]), ways = pick([1, 2, 4]);
+        const sets = lines / ways, ob = Math.log2(block), ib = Math.log2(sets);
+        const addr = randInt(0, 4095);
+        const field = pick(['tag', 'índice', 'deslocamento']);
+        const blk = Math.floor(addr / block);
+        const ans = field === 'tag' ? Math.floor(blk / sets) : field === 'índice' ? blk % sets : addr % block;
+        return {
+          q: `Cache com ${lines} linhas, blocos de ${block} bytes, ${ways === 1 ? 'mapeamento direto' : `${ways} vias`}. Qual o <b>${field}</b> do endereço ${addr}?`,
+          input: true, answer: String(ans),
+          explain: `${ob} bits de deslocamento, ${ib} de índice (${sets} conjuntos). Bloco = ⌊${addr}/${block}⌋ = ${blk}; índice = ${blk} mod ${sets} = ${blk % sets}; tag = ⌊${blk}/${sets}⌋ = ${Math.floor(blk / sets)}; deslocamento = ${addr} mod ${block} = ${addr % block}.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

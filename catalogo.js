@@ -173,7 +173,66 @@ export const PERIODOS = [
       },
     ],
   },
-  { numero: 4, id: 'periodo-04', planejadas: ['Algoritmos I', 'Organização de Computadores I', 'Fundamentos da Teoria da Computação', 'Álgebra A', 'Introdução à Ciência dos Dados'] },
+  {
+    numero: 4,
+    id: 'periodo-04',
+    disciplinas: [
+      {
+        id: 'alg1', codigo: 'DCC206', nome: 'Algoritmos I', cor: 'blue',
+        pasta: 'periodo-04/algoritmos-1',
+        resumo: 'Grafos (buscas, caminhos mínimos, árvore geradora), algoritmos gulosos, divisão e conquista e programação dinâmica.',
+        visualizacoes: [
+          { titulo: 'BFS, DFS e ordenação topológica', arquivo: 'busca-em-grafos.html', descricao: 'A fila da BFS e a pilha da DFS, tempos d/f, classificação de arestas e a ordem de se vestir.' },
+          { titulo: 'Caminhos mínimos', arquivo: 'caminhos-minimos.html', descricao: 'Dijkstra com a fila de prioridade, Bellman-Ford rodada a rodada e o grafo em que Dijkstra erra.' },
+          { titulo: 'Árvore geradora mínima', arquivo: 'arvore-geradora.html', descricao: 'Kruskal com a união-busca colorida e Prim crescendo a partir da raiz.' },
+          { titulo: 'Programação dinâmica', arquivo: 'programacao-dinamica.html', descricao: 'Mochila 0/1, LCS e distância de edição: a tabela, as dependências e a reconstrução.' },
+          { titulo: 'Teorema mestre', arquivo: 'divisao-e-conquista.html', descricao: 'A árvore de recursão de aT(n/b) + nᶜ e o custo de cada nível: raiz, folhas ou empate.' },
+        ],
+      },
+      {
+        id: 'oc1', codigo: 'DCC006', nome: 'Organização de Computadores I', cor: 'green',
+        pasta: 'periodo-04/organizacao-de-computadores-1',
+        resumo: 'Linguagem de máquina RISC-V, caminho de dados e controle, pipeline e hierarquia de memória.',
+        visualizacoes: [
+          { titulo: 'Caminho de dados RISC-V', arquivo: 'caminho-de-dados.html', descricao: 'Simulador monociclo: fios e sinais de controle de cada instrução, registradores, memória e codificação.' },
+          { titulo: 'Pipeline', arquivo: 'pipeline.html', descricao: 'Diagrama de ciclos com bolhas, adiantamento, load-use e descarte depois de desvios.' },
+          { titulo: 'Memória cache', arquivo: 'cache.html', descricao: 'Tag, índice e deslocamento; acertos e faltas em caches diretas e associativas, LRU e os 3 Cs.' },
+        ],
+      },
+      {
+        id: 'ftc', codigo: 'DCC129', nome: 'Fundamentos da Teoria da Computação', cor: 'purple',
+        pasta: 'periodo-04/fundamentos-da-teoria-da-computacao',
+        resumo: 'Autômatos finitos, expressões regulares, gramáticas e autômatos de pilha, máquinas de Turing e indecidibilidade.',
+        visualizacoes: [
+          { titulo: 'Autômatos finitos', arquivo: 'automatos-finitos.html', descricao: 'AFD e AFN lendo palavras, construção de subconjuntos e minimização.' },
+          { titulo: 'Expressões regulares', arquivo: 'expressoes-regulares.html', descricao: 'A construção de Thompson peça por peça e o AFN resultante testando palavras.' },
+          { titulo: 'Autômato de pilha', arquivo: 'automato-de-pilha.html', descricao: 'aⁿbⁿ, parênteses balanceados e wcwᴿ com a pilha crescendo e encolhendo.' },
+          { titulo: 'Máquina de Turing', arquivo: 'maquina-de-turing.html', descricao: 'Fita, cabeçote e tabela de transições para incremento binário, aⁿbⁿcⁿ e palíndromos.' },
+        ],
+      },
+      {
+        id: 'algebra', codigo: 'MAT034', nome: 'Álgebra A', cor: 'yellow',
+        pasta: 'periodo-04/algebra-a',
+        resumo: 'Inteiros e congruências, Teorema Chinês do Resto, grupos, subgrupos, Lagrange, permutações, anéis e corpos.',
+        visualizacoes: [
+          { titulo: 'Grupos e simetrias', arquivo: 'grupos.html', descricao: 'Tabelas de Cayley de ℤₙ, ℤₙ×, Dₙ e Sₙ, subgrupos, classes laterais e o polígono girando.' },
+          { titulo: 'Permutações', arquivo: 'permutacoes.html', descricao: 'Composição, ciclos, ordem, sinal e o embaralhamento perfeito que volta em 8 passos.' },
+          { titulo: 'Teorema Chinês do Resto', arquivo: 'teorema-chines.html', descricao: 'A trilha de x ↦ (x mod m, x mod n) cobrindo a grade, a solução e φ(mn) = φ(m)φ(n).' },
+        ],
+      },
+      {
+        id: 'icd', codigo: 'DCC212', nome: 'Introdução à Ciência dos Dados', cor: 'teal',
+        pasta: 'periodo-04/introducao-a-ciencia-dos-dados',
+        resumo: 'Análise exploratória, bootstrap, testes de hipótese, regressão, classificação e sobreajuste.',
+        visualizacoes: [
+          { titulo: 'Bootstrap', arquivo: 'bootstrap.html', descricao: 'Reamostras com reposição formando a distribuição da média e o intervalo de confiança.' },
+          { titulo: 'Teste A/B por permutação', arquivo: 'teste-ab.html', descricao: 'Rótulos embaralhados, a distribuição sob H₀, valor-p, erro tipo I e poder.' },
+          { titulo: 'Correlação e regressão', arquivo: 'correlacao.html', descricao: 'O paradoxo de Simpson e o quarteto de Anscombe.' },
+          { titulo: 'k vizinhos e sobreajuste', arquivo: 'knn.html', descricao: 'Regiões de decisão do k-NN e a curva de acurácia de treino × teste.' },
+        ],
+      },
+    ],
+  },
   { numero: 5, id: 'periodo-05', planejadas: ['Algoritmos II', 'Linguagens de Programação', 'Pesquisa Operacional', 'Equações Diferenciais C'] },
   { numero: 6, id: 'periodo-06', planejadas: ['Engenharia de Software', 'Sistemas Operacionais', 'Compiladores I'] },
   {

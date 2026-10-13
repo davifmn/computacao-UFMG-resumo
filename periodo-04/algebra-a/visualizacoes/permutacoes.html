@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Permutações e ciclos · Álgebra A</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .toolbar input[type=text] { width: 150px; font-family: var(--mono); }
+    .err { color: var(--red); font-family: var(--mono); font-size: 14px; }
+    .ctl { display: grid; grid-template-columns: 9em 1fr 4em; gap: 8px; align-items: center; max-width: 720px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#algebra">Álgebra A</a>
+      <span class="sep">/</span><span>Permutações</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra A</div>
+    <h1>Permutações: ciclos, composição e o embaralhamento perfeito</h1>
+    <p class="lead">Uma permutação é uma bijeção de $\{1, \dots, n\}$ nele mesmo. Escrevê-la em <b>ciclos disjuntos</b> revela tudo: a ordem (o mmc dos tamanhos dos ciclos), o sinal (par ou ímpar) e o que acontece quando ela é repetida. Digite duas permutações e veja a composição.</p>
+
+    <div class="toolbar">
+      <label>n <select id="n"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
+      <label>σ = <input id="s" type="text" value="(1 2 3)(4 5)"></label>
+      <label>τ = <input id="t" type="text" value="(1 4)(2 6)"></label>
+      <button class="btn primary small" id="go">Compor</button>
+      <span class="err" id="err"></span>
+    </div>
+    <div class="stage"><svg id="perm" aria-label="Permutações em duas linhas"></svg></div>
+
+    <section class="prose">
+      <h2>Lendo a figura</h2>
+      <p>Cada permutação aparece em <b>duas linhas</b>: a seta sai de $i$ (em cima) e chega em $\sigma(i)$ (embaixo). Na composição $\sigma \circ \tau$, aplica-se $\tau$ primeiro e depois $\sigma$, como funções: siga as setas de cima para baixo pelas duas camadas. Em geral $\sigma \circ \tau \ne \tau \circ \sigma$: $S_n$ não é abeliano para $n \ge 3$.</p>
+      <h2>Fatos que caem na prova</h2>
+      <ul>
+        <li>Toda permutação é produto de <b>ciclos disjuntos</b> (de forma única, a menos da ordem), e ciclos disjuntos comutam.</li>
+        <li>A <b>ordem</b> é o mmc dos tamanhos dos ciclos: $(1\,2\,3)(4\,5)$ tem ordem $\text{mmc}(3, 2) = 6$.</li>
+        <li>Todo ciclo de tamanho $k$ é produto de $k - 1$ transposições: $(a_1\, a_2 \cdots a_k) = (a_1\, a_k) \cdots (a_1\, a_3)(a_1\, a_2)$. O <b>sinal</b> $(-1)^{n - \#\text{ciclos}}$ não depende da decomposição escolhida. As pares formam o grupo alternado $A_n$, com $n!/2$ elementos.</li>
+        <li><b>Teorema de Cayley:</b> todo grupo finito é isomorfo a um subgrupo de algum $S_n$ (cada elemento permuta os outros pela multiplicação).</li>
+      </ul>
+      <h2>O embaralhamento perfeito</h2>
+      <p>Corte o baralho ao meio e intercale as cartas perfeitamente, mantendo a primeira e a última no lugar (<i>out-shuffle</i>). Isso é uma permutação fixa, e repeti-la $k$ vezes é aplicar sua $k$-ésima potência. Quantas vezes até o baralho voltar à ordem original? A ordem da permutação: para 52 cartas, só <b>8</b>. Com o <i>in-shuffle</i> (a primeira carta vai para a segunda posição), são 52.</p>
+    </section>
+
+    <div class="ctl" style="margin:16px 0">
+      <span>cartas</span><input id="cards" type="range" min="4" max="52" step="2" value="52"><output id="cards-o"></output>
+      <span>embaralhamentos</span><input id="k" type="range" min="0" max="52" value="0"><output id="k-o"></output>
+    </div>
+    <div class="toolbar"><label><input type="radio" name="sh" value="out" checked> out-shuffle (mantém as pontas)</label><label><input type="radio" name="sh" value="in"> in-shuffle</label><button class="btn small" id="step">+1 embaralhamento</button><span class="spacer"></span><span class="c-muted" id="shinfo"></span></div>
+    <div class="stage"><svg id="deck" aria-label="Baralho"></svg></div>
+
+    <section class="prose"><h2>Teste seu entendimento</h2></section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt, shuffle } from '../../../engine/page.js';
+    import { parseCycles, compose, cycles, cycleString, permOrder, sign, outShuffle, inShuffle, identity, inverse } from './algebra.js';
+
+    const W = 1240, H = 430;
+    const ps = new Scene($('#perm'), { width: W, height: H });
+    const ds = new Scene($('#deck'), { width: W, height: 170 });
+    $('#perm').style.setProperty('--dur', '350ms');
+    $('#deck').style.setProperty('--dur', '700ms');
+
+    function twoLine(s, key, p, x0, y0, w, title, color) {
+      const n = p.length, dx = w / n;
+      s.text(`${key}-title`, title, { x: x0 + w / 2, y: y0 - 26, size: 16, weight: 800, mono: true, fill: color });
+      for (let i = 0; i < n; i++) {
+        const xa = x0 + dx * (i + 0.5), xb = x0 + dx * (p[i] + 0.5);
+        s.circle(`${key}-a${i}`, { x: xa, y: y0, r: 14, fill: COLORS.surface2, stroke: COLORS.muted, sw: 1.5 });
+        s.text(`${key}-at${i}`, i + 1, { x: xa, y: y0, size: 13, weight: 700 });
+        s.line(`${key}-l${i}`, xa, y0 + 16, xb, y0 + 84, { stroke: p[i] === i ? COLORS.faint : color, sw: 2, arrow: true });
+      }
+      for (let i = 0; i < n; i++) {
+        const x = x0 + dx * (i + 0.5);
+        s.circle(`${key}-b${i}`, { x, y: y0 + 100, r: 14, fill: COLORS.surface2, stroke: COLORS.muted, sw: 1.5 });
+        s.text(`${key}-bt${i}`, i + 1, { x, y: y0 + 100, size: 13, weight: 700 });
+      }
+      const info = `${cycleString(p)} · ordem ${permOrder(p)} · ${sign(p) > 0 ? 'par' : 'ímpar'}`;
+      s.text(`${key}-info`, info, { x: x0 + w / 2, y: y0 + 136, size: 13, mono: true, fill: COLORS.muted });
+    }
+
+    function drawPerms() {
+      const n = +$('#n').value;
+      let sg, tg;
+      try { sg = parseCycles($('#s').value, n); tg = parseCycles($('#t').value, n); $('#err').textContent = ''; }
+      catch (e) { $('#err').textContent = e.message; return; }
+      const st = compose(sg, tg), ts = compose(tg, sg);
+      ps.frame(s => {
+        const w = 280;
+        twoLine(s, 'tau', tg, 30, 60, w, 'τ', COLORS.blue);
+        twoLine(s, 'sig', sg, 30, 260, w, 'σ', COLORS.yellow);
+        s.text('then', '↓ depois', { x: 30 + w / 2, y: 218, size: 12, fill: COLORS.faint });
+        twoLine(s, 'st', st, 400, 60, w, 'σ ∘ τ (τ primeiro)', COLORS.green);
+        twoLine(s, 'ts', ts, 400, 260, w, 'τ ∘ σ (σ primeiro)', COLORS.pink);
+        twoLine(s, 'inv', inverse(sg), 770, 60, w, 'σ⁻¹', COLORS.purple);
+        // ciclos de σ como anéis
+        const cs = cycles(sg).filter(c => c.length > 1);
+        s.text('cyc-title', 'ciclos de σ', { x: 770 + w / 2, y: 234, size: 16, weight: 800, fill: COLORS.yellow });
+        cs.forEach((c, k) => {
+          const cx = 770 + (k + 0.5) * (w / Math.max(1, cs.length)), cy = 320, R = Math.min(48, 24 + 8 * c.length);
+          c.forEach((v, i) => {
+            const a = (2 * Math.PI * i) / c.length - Math.PI / 2, b = (2 * Math.PI * (i + 1)) / c.length - Math.PI / 2;
+            const [x1, y1] = [cx + R * Math.cos(a), cy + R * Math.sin(a)], [x2, y2] = [cx + R * Math.cos(b), cy + R * Math.sin(b)];
+            s.circle(`cy${k}-${i}`, { x: x1, y: y1, r: 13, fill: COLORS.surface2, stroke: COLORS.yellow, sw: 1.5 });
+            s.text(`cyt${k}-${i}`, v + 1, { x: x1, y: y1, size: 12, weight: 700 });
+            const L = Math.hypot(x2 - x1, y2 - y1);
+            if (c.length > 1) s.line(`cyl${k}-${i}`, x1 + (x2 - x1) / L * 15, y1 + (y2 - y1) / L * 15, x2 - (x2 - x1) / L * 16, y2 - (y2 - y1) / L * 16, { stroke: COLORS.yellow, sw: 1.8, arrow: true });
+          });
+        });
+        if (!cs.length) s.text('cyc-none', 'σ é a identidade', { x: 770 + w / 2, y: 320, size: 14, fill: COLORS.faint });
+      });
+    }
+
+    // ---------- baralho ----------
+    let deckK = 0;
+    function drawDeck() {
+      const n = +$('#cards').value, k = +$('#k').value;
+      $('#cards-o').value = n; $('#k-o').value = k;
+      const P = $$('[name=sh]').find(r => r.checked).value === 'out' ? outShuffle(n) : inShuffle(n);
+      const ord = permOrder(P);
+      $('#k').max = Math.max(ord, 8);
+      // posição da carta c depois de k embaralhamentos
+      let pos = identity(n);
+      for (let t = 0; t < k; t++) pos = pos.map(i => P[i]);
+      $('#shinfo').innerHTML = `ordem da permutação: <b>${ord}</b> · ciclos: ${cycles(P).map(c => c.length).join(' + ')} = ${n}${k && k % ord === 0 ? ' · <span class="c-green">baralho de volta à ordem original!</span>' : ''}`;
+      ds.frame(s => {
+        const cw = Math.min(40, (W - 40) / n);
+        for (let c = 0; c < n; c++) {
+          const hue = Math.round((300 * c) / n);
+          s.rect(`card${c}`, { x: 20 + pos[c] * cw, y: 40, w: cw - 3, h: 80, rx: 4, fill: `hsl(${hue} 70% 60%)`, stroke: 'none' });
+          if (cw >= 22) s.text(`cardt${c}`, c + 1, { x: 20 + pos[c] * cw + (cw - 3) / 2, y: 80, size: Math.min(12, cw * 0.45), weight: 800, fill: '#0b1a20' });
+        }
+        s.text('cap', k === 0 ? 'ordem original: as cores formam um arco-íris' : `depois de ${k} embaralhamento(s)`, { x: 20, y: 20, size: 13, anchor: 'start', fill: COLORS.muted });
+      });
+      deckK = k;
+    }
+    $('#step').addEventListener('click', () => { const max = +$('#k').max; $('#k').value = (deckK + 1) % (max + 1); drawDeck(); });
+    for (const id of ['#cards', '#k']) $(id).addEventListener('input', drawDeck);
+    $$('[name=sh]').forEach(r => r.addEventListener('change', () => { $('#k').value = 0; drawDeck(); }));
+    $('#go').addEventListener('click', drawPerms);
+    $('#n').addEventListener('change', drawPerms);
+    for (const id of ['#s', '#t']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter') drawPerms(); });
+    drawPerms();
+    drawDeck();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual a ordem de $(1\\,2\\,3\\,4)(5\\,6\\,7)(8\\,9)$?', options: ['12', '9', '24', '4'], answer: 0, explain: 'mmc(4, 3, 2) = 12.' },
+      { q: 'O sinal de um ciclo de tamanho 5 é…', options: ['+1 (par): são 4 transposições', '−1 (ímpar)', 'depende dos números', '0'], answer: 0, explain: 'Um k-ciclo é produto de k − 1 transposições.' },
+      { q: 'Qual a maior ordem de um elemento de $S_7$?', options: ['12, de (1 2 3 4)(5 6 7)', '7', '5040', '10'], answer: 0, explain: 'Maximize o mmc de uma partição de 7: 4 + 3 dá 12; 7 dá 7; 5 + 2 dá 10.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova permutação',
+      generate() {
+        const n = randInt(5, 8);
+        const p = shuffle(identity(n));
+        return {
+          q: `Escreva em ciclos a permutação que leva ${p.map((v, i) => `${i + 1}↦${v + 1}`).join(', ')}. Qual a sua <b>ordem</b>?`,
+          input: true, answer: String(permOrder(p)),
+          explain: `Ciclos: ${cycleString(p)}. Ordem = mmc(${cycles(p).map(c => c.length).join(', ')}) = ${permOrder(p)}. Sinal: ${sign(p) > 0 ? 'par' : 'ímpar'}.`,
+        };
+      },
+    });
+  </script>
+</body>
+</html>

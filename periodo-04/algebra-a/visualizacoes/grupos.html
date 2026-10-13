@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grupos e simetrias · Álgebra A</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+    #table .cell, #table .hdr { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#algebra">Álgebra A</a>
+      <span class="sep">/</span><span>Grupos e simetrias</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Álgebra A</div>
+    <h1>Grupos: a álgebra das simetrias</h1>
+    <p class="lead">Somar horas num relógio, girar um quadrado, embaralhar cartas: todas são operações que se combinam, têm um "não fazer nada" e podem ser desfeitas. Isso é um <b>grupo</b>. A tabela de Cayley mostra a operação inteira de uma vez. <b>Clique num elemento</b> (cabeçalho de linha) para ver o subgrupo que ele gera e as classes laterais, e <b>numa célula</b> para ver o produto agindo sobre a figura.</p>
+
+    <div class="toolbar">
+      <label>Grupo <select id="kind">
+        <option value="D">Dₙ: simetrias do polígono</option>
+        <option value="Z">ℤₙ: soma mod n</option>
+        <option value="U">ℤₙ×: produto mod n</option>
+        <option value="S">Sₙ: permutações</option>
+      </select></label>
+      <label>n <select id="n"></select></label>
+      <span class="spacer"></span>
+      <span class="c-muted" id="facts"></span>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="table" aria-label="Tabela de Cayley"></svg></div>
+      <div class="side">
+        <div class="stage"><svg id="geo" aria-label="Ação do elemento"></svg></div>
+        <div class="panel"><div class="panel-title">Produto</div><div class="readout" id="prod"></div></div>
+        <div class="panel"><div class="panel-title">Subgrupo gerado e classes laterais</div><div class="readout" id="sub"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Os axiomas</h2>
+      <p>Um grupo é um conjunto $G$ com uma operação $\cdot$ que é <b>fechada</b>, <b>associativa</b>, tem <b>elemento neutro</b> $e$ e em que todo elemento tem <b>inverso</b>. Na tabela, isso aparece como: cada linha e cada coluna é uma permutação dos elementos (um <b>quadrado latino</b>), porque $a \cdot x = b$ tem solução única $x = a^{-1}b$. Se a tabela é simétrica, o grupo é <b>abeliano</b> ($ab = ba$). $D_n$ não é: girar e depois refletir não é o mesmo que refletir e depois girar.</p>
+      <h2>Ordem, subgrupos e Lagrange</h2>
+      <p>A <b>ordem</b> de $g$ é o menor $k \ge 1$ com $g^k = e$; as potências de $g$ formam o <b>subgrupo cíclico</b> $\langle g \rangle$. As <b>classes laterais</b> $gH = \{gh : h \in H\}$ têm todas o tamanho de $H$ e particionam $G$ (as cores da tabela). Daí o <b>Teorema de Lagrange</b>: $|H|$ divide $|G|$. Consequências imediatas:</p>
+      <ul>
+        <li>A ordem de qualquer elemento divide $|G|$, logo $g^{|G|} = e$.</li>
+        <li>Em $\mathbb{Z}_n^\times$, que tem $\varphi(n)$ elementos: $a^{\varphi(n)} \equiv 1 \pmod n$ (<b>Euler</b>), e $a^{p-1} \equiv 1 \pmod p$ (<b>Fermat</b>). É a matemática do RSA.</li>
+        <li>Todo grupo de ordem prima é cíclico.</li>
+      </ul>
+      <h2>Homomorfismos e isomorfismos</h2>
+      <p>Uma função $f: G \to H$ com $f(ab) = f(a)f(b)$ preserva a estrutura. Se é bijetora, os grupos são <b>isomorfos</b>: "o mesmo grupo com outros nomes". Compare $D_3$ e $S_3$ (as simetrias do triângulo são exatamente as permutações dos 3 vértices), ou $\mathbb{Z}_5^\times$ e $\mathbb{Z}_4$ (ambos cíclicos de ordem 4), e $\mathbb{Z}_8^\times$, que não é cíclico (todo elemento tem ordem ≤ 2). O <b>núcleo</b> de um homomorfismo é um subgrupo <b>normal</b> ($gNg^{-1} = N$), e $G/\ker f \cong \text{Im} f$.</p>
+      <div class="callout tip"><p><b>Anéis e corpos.</b> $\mathbb{Z}_n$ com soma e produto é um anel. Ele é um <b>corpo</b> (todo não nulo tem inverso) se e somente se $n$ é primo. Corpos finitos $\mathbb{F}_{p^k}$ são a base do AES, dos códigos de Reed–Solomon (CDs, QR codes) e das curvas elípticas.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, pick, randInt } from '../../../engine/page.js';
+    import { cyclicGroup, unitGroup, dihedralGroup, symmetricGroup, order, generated, leftCosets, isAbelian, isCyclic, isNormal, inverseOf, subgroups, phi, gcd, identity } from './algebra.js';
+
+    const NS_OPTS = { D: [3, 4, 5, 6], Z: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], U: [5, 7, 8, 9, 10, 12, 15], S: [3, 4] };
+    const DEFAULT_N = { D: 4, Z: 12, U: 7, S: 3 };
+    const PALETTE = [COLORS.blue, COLORS.yellow, COLORS.green, COLORS.pink, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.red, '#c9d1d9', '#7aa2f7', '#e0af68', '#9ece6a'];
+    const TW = 640, TH = 640;
+    const tscene = new Scene($('#table'), { width: TW, height: TH });
+    const gscene = new Scene($('#geo'), { width: 360, height: 300 });
+    $('#geo').style.setProperty('--dur', '600ms');
+    $('#table').style.setProperty('--dur', '200ms');
+    let G = null, sel = null, cell = null;
+
+    function build() {
+      const k = $('#kind').value, n = +$('#n').value;
+      G = k === 'D' ? dihedralGroup(n) : k === 'Z' ? cyclicGroup(n) : k === 'U' ? unitGroup(n) : symmetricGroup(n);
+      sel = null; cell = null;
+      const subs = subgroups(G);
+      $('#facts').textContent = `|G| = ${G.n} · ${isAbelian(G) ? 'abeliano' : 'não abeliano'} · ${isCyclic(G) ? 'cíclico' : 'não cíclico'} · ${subs.length} subgrupos`;
+      draw();
+    }
+
+    function draw() {
+      const n = G.n, c = Math.min(46, (TW - 70) / (n + 1));
+      const left = Math.max(20, (TW - (n + 1) * c) / 2), top = Math.max(20, (TH - (n + 1) * c) / 2);
+      const x0 = left + c, y0 = top + c;
+      const H = sel != null ? generated(G, sel) : null;
+      const cos = H ? leftCosets(G, H) : null;
+      const cosetOf = x => cos ? cos.findIndex(cl => cl.elements.includes(x)) : 0;
+      const fs = Math.min(15, c * (G.kind === 'simetrico' ? 0.26 : 0.4));
+      tscene.frame(s => {
+        s.text('op', G.data.op ?? '∘', { x: x0 - c / 2, y: y0 - c / 2, size: 16, weight: 700, fill: COLORS.faint });
+        for (let i = 0; i < n; i++) {
+          const inH = H?.includes(i);
+          const hr = s.rect(`hr${i}`, { x: left, y: y0 + i * c, w: c - 3, h: c - 3, rx: 4, fill: i === sel ? '#3d3a22' : COLORS.surface, stroke: i === sel ? COLORS.yellow : inH ? COLORS.yellow : COLORS.border, sw: i === sel ? 2.5 : 1 });
+          hr.classList.add('hdr'); hr.dataset.g = i;
+          s.text(`hrt${i}`, G.labels[i], { x: left + (c - 3) / 2, y: y0 + i * c + (c - 3) / 2, size: fs, weight: 700, mono: true, fill: i === sel ? COLORS.yellow : COLORS.text }).style.pointerEvents = 'none';
+          s.text(`hct${i}`, G.labels[i], { x: x0 + i * c + (c - 3) / 2, y: top + (c - 3) / 2, size: fs, weight: 700, mono: true, fill: COLORS.muted });
+          for (let j = 0; j < n; j++) {
+            const v = G.mul(i, j);
+            const col = H ? PALETTE[cosetOf(v) % PALETTE.length] : COLORS.border;
+            const hot = cell && cell[0] === i && cell[1] === j;
+            const r = s.rect(`c${i}-${j}`, { x: x0 + j * c, y: y0 + i * c, w: c - 3, h: c - 3, rx: 4, fill: H ? col : COLORS.surface2, stroke: hot ? COLORS.text : v === G.e ? COLORS.faint : 'none', sw: hot ? 3 : 1, opacity: H ? (cosetOf(v) === 0 ? 0.85 : 0.45) : 1 });
+            r.classList.add('cell'); r.dataset.i = i; r.dataset.j = j;
+            s.text(`ct${i}-${j}`, G.labels[v], { x: x0 + j * c + (c - 3) / 2, y: y0 + i * c + (c - 3) / 2, size: fs, mono: true, weight: v === G.e ? 800 : 500, fill: H ? '#0b1a20' : v === G.e ? COLORS.yellow : COLORS.text }).style.pointerEvents = 'none';
+          }
+        }
+      });
+      drawGeo();
+      // painéis
+      if (cell) {
+        const [a, b] = cell, v = G.mul(a, b), w = G.mul(b, a);
+        $('#prod').innerHTML = `<div><b>${G.labels[a]} ${G.data.op ?? '∘'} ${G.labels[b]} = ${G.labels[v]}</b></div>
+          ${G.data.op ? '' : `<div class="c-muted" style="font-size:14px">(primeiro ${G.labels[b]}, depois ${G.labels[a]}, como composição de funções)</div>`}
+          <div>${v === w ? 'comutam' : `mas ${G.labels[b]} ${G.data.op ?? '∘'} ${G.labels[a]} = ${G.labels[w]}: <span class="c-red">não comutam</span>`}</div>`;
+      } else $('#prod').innerHTML = '<span class="c-muted">Clique numa célula da tabela.</span>';
+      if (sel != null) {
+        const idx = cos.length, normal = isNormal(G, H);
+        $('#sub').innerHTML = `<div>ordem de ${G.labels[sel]}: <b>${H.length}</b>, inverso: ${G.labels[inverseOf(G, sel)]}</div>
+          <div>⟨${G.labels[sel]}⟩ = {${H.map(x => G.labels[x]).join(', ')}}</div>
+          <div>${idx} classe(s) lateral(is): ${G.n} = ${H.length} × ${idx} (Lagrange)</div>
+          <div class="c-muted" style="font-size:14px">${cos.map((cl, k) => `<span style="color:${PALETTE[k % PALETTE.length]}">${G.labels[cl.rep]}H = {${cl.elements.map(x => G.labels[x]).join(', ')}}</span>`).join('<br>')}</div>
+          <div>${normal ? 'subgrupo <b>normal</b>' : 'não é normal (gH ≠ Hg para algum g)'}</div>`;
+      } else $('#sub').innerHTML = '<span class="c-muted">Clique num elemento (cabeçalho de linha).</span>';
+    }
+
+    function drawGeo() {
+      const shown = cell ? G.mul(cell[0], cell[1]) : sel != null ? sel : G.e;
+      gscene.frame(s => {
+        const cx = 180, cy = 150, R = 105;
+        if (G.kind === 'diedral' || G.kind === 'simetrico') {
+          const m = G.data.n, p = G.data.perms[shown];
+          const P = k => [cx + R * Math.sin((2 * Math.PI * k) / m), cy - R * Math.cos((2 * Math.PI * k) / m)];
+          if (G.kind === 'diedral') {
+            s.path('poly', identity(m).map(k => P(k)).map(([x, y], i) => `${i ? 'L' : 'M'} ${x} ${y}`).join(' ') + ' Z', { stroke: COLORS.muted, sw: 2, fill: 'rgba(88,196,221,0.08)' });
+            // eixo de reflexão, se for uma reflexão
+            if (shown >= m) {
+              const k = shown - m;   // s·rᵏ fixa os pontos com i ≡ −i − k
+              const ang = -Math.PI * k / m;
+              s.line('axis', cx + 135 * Math.sin(ang), cy - 135 * Math.cos(ang), cx - 135 * Math.sin(ang), cy + 135 * Math.cos(ang), { stroke: COLORS.pink, sw: 1.5, dash: '6 5' });
+            }
+          } else {
+            identity(m).forEach(k => s.circle(`slot${k}`, { ...{ x: P(k)[0], y: P(k)[1] }, r: 20, fill: COLORS.surface, stroke: COLORS.border, sw: 1 }));
+          }
+          // o vértice que estava na posição i vai para a posição p[i]
+          identity(m).forEach(i => {
+            const [x, y] = P(p[i]);
+            s.circle(`v${i}`, { x, y, r: 16, fill: PALETTE[i % PALETTE.length], stroke: 'none' });
+            s.text(`vt${i}`, i + 1, { x, y, size: 15, weight: 800, fill: '#0b1a20' });
+          });
+          s.text('cap', G.kind === 'diedral' ? `posição dos vértices depois de ${G.labels[shown]}` : `${G.labels[shown]} aplicada a 1…${m}`, { x: cx, y: 290, size: 13, fill: COLORS.muted });
+        } else {
+          const n = G.data.n;
+          const P = k => [cx + R * Math.sin((2 * Math.PI * k) / n), cy - R * Math.cos((2 * Math.PI * k) / n)];
+          identity(n).forEach(k => {
+            const unit = G.kind !== 'unidades' || gcd(k, n) === 1;
+            s.circle(`d${k}`, { x: P(k)[0], y: P(k)[1], r: 13, fill: unit ? COLORS.surface2 : COLORS.bg, stroke: unit ? COLORS.muted : COLORS.border, sw: 1.5 });
+            s.text(`dt${k}`, k, { x: P(k)[0], y: P(k)[1], size: 12, mono: true, weight: 700, fill: unit ? COLORS.text : COLORS.faint });
+          });
+          const g = shown, H = generated(G, g);
+          const val = x => (G.kind === 'unidades' ? G.data.els[x] : x);
+          for (let t = 0; t < H.length; t++) {
+            const a = val(H[t]), b = val(H[(t + 1) % H.length]);
+            if (H.length === 1) break;
+            const [x1, y1] = P(a), [x2, y2] = P(b);
+            const L = Math.hypot(x2 - x1, y2 - y1) || 1;
+            s.line(`ar${t}`, x1 + (x2 - x1) / L * 15, y1 + (y2 - y1) / L * 15, x2 - (x2 - x1) / L * 17, y2 - (y2 - y1) / L * 17, { stroke: COLORS.yellow, sw: 2, arrow: true });
+          }
+          s.text('cap', `potências de ${G.labels[g]}: ${H.map(x => G.labels[x]).join(' → ')} → …`, { x: cx, y: 290, size: 12, mono: true, fill: COLORS.muted });
+        }
+      });
+    }
+
+    $('#table').addEventListener('click', e => {
+      const t = e.target;
+      if (t.dataset.g != null) { sel = +t.dataset.g === sel ? null : +t.dataset.g; cell = null; draw(); return; }
+      if (t.dataset.i != null) { cell = [+t.dataset.i, +t.dataset.j]; draw(); }
+    });
+    function fillN() {
+      const k = $('#kind').value;
+      $('#n').innerHTML = NS_OPTS[k].map(v => `<option ${v === DEFAULT_N[k] ? 'selected' : ''}>${v}</option>`).join('');
+    }
+    $('#kind').addEventListener('change', () => { fillN(); build(); });
+    $('#n').addEventListener('change', build);
+    fillN();
+    build();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantos elementos tem $D_6$, o grupo de simetrias do hexágono?', options: ['12', '6', '36', '720'], answer: 0, explain: '6 rotações e 6 reflexões: $|D_n| = 2n$.' },
+      { q: 'Um grupo tem 15 elementos. Que ordem um subgrupo dele <b>não</b> pode ter?', options: ['6', '1', '3', '5'], answer: 0, explain: 'Pelo Teorema de Lagrange, a ordem de um subgrupo divide 15.' },
+      { q: 'Quanto vale $3^{100} \\bmod 7$?', options: ['4', '1', '3', '2'], answer: 0, explain: 'Por Fermat, $3^6 \\equiv 1$. Como $100 = 6 \\cdot 16 + 4$, $3^{100} \\equiv 3^4 = 81 \\equiv 4 \\pmod 7$.' },
+      { q: '$\\mathbb{Z}_8^\\times = \\{1, 3, 5, 7\\}$ é cíclico?', options: ['Não: todo elemento tem ordem 1 ou 2', 'Sim, gerado por 3', 'Sim, gerado por 5', 'Não é um grupo'], answer: 0, explain: '$3^2 = 9 \\equiv 1$, $5^2 = 25 \\equiv 1$, $7^2 = 49 \\equiv 1$. É o grupo de Klein, $\\mathbb{Z}_2 \\times \\mathbb{Z}_2$.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novo exercício',
+      generate() {
+        if (Math.random() < 0.5) {
+          const n = pick([8, 9, 10, 12, 14, 15, 16, 18, 20]), k = randInt(1, n - 1);
+          return { q: `Qual a ordem de ${k} em $\\mathbb{Z}_{${n}}$ (com a soma)?`, input: true, answer: String(n / gcd(k, n)), explain: `A ordem de k em $\\mathbb{Z}_n$ é $n / \\text{mdc}(k, n) = ${n} / ${gcd(k, n)} = ${n / gcd(k, n)}$.` };
+        }
+        const n = pick([7, 9, 10, 11, 13, 14, 15, 18]);
+        const G = unitGroup(n), g = randInt(0, G.n - 1);
+        return { q: `Qual a ordem de ${G.labels[g]} em $\\mathbb{Z}_{${n}}^\\times$ (com o produto)?`, input: true, answer: String(order(G, g)), explain: `Potências: ${generated(G, g).map(x => G.labels[x]).join(', ')}. A ordem divide $\\varphi(${n}) = ${phi(n)}$.` };
+      },
+    });
+  </script>
+</body>
+</html>

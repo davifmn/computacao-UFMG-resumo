@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline · Organização de Computadores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 360px; font-size: 12.5px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#oc1">Organização de Computadores I</a>
+      <span class="sep">/</span><span>Pipeline</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Organização de Computadores I</div>
+    <h1>Pipeline: cinco instruções ao mesmo tempo</h1>
+    <p class="lead">Como numa lavanderia (lavar, secar, dobrar), o processador divide a instrução em cinco estágios e começa a próxima antes de a anterior terminar. No ideal, sai uma instrução por ciclo. Na prática aparecem os <b>conflitos</b> (hazards): uma instrução precisa de um valor que ainda não foi escrito, ou um desvio muda o caminho depois que outras já entraram.</p>
+
+    <div class="toolbar">
+      <label>Programa <select id="prog"></select></label>
+      <label><input type="checkbox" id="fwd" checked> Adiantamento (forwarding)</label>
+      <span class="spacer"></span>
+      <span class="c-muted" id="stats"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend">
+      <span><i style="background:#58c4dd"></i>IF busca</span><span><i style="background:#b189f5"></i>ID decodifica e lê registradores</span><span><i style="background:#f4d35e"></i>EX ULA</span><span><i style="background:#83c167"></i>MEM memória</span><span><i style="background:#5cd0b3"></i>WB escreve</span><span><i style="background:#fc6255"></i>bolha (parado)</span><span>riscado = descartada (desvio)</span><span>seta = adiantamento</span>
+    </div>
+
+    <section class="prose">
+      <h2>Desempenho</h2>
+      <p>Com $k$ estágios e $n$ instruções, sem conflitos, são $k + n - 1$ ciclos: o CPI tende a 1 e o ganho tende a $k$ (cada estágio dura cerca de $1/k$ do ciclo do monociclo). Cada bolha soma um ciclo: $\text{CPI} = 1 + \text{bolhas por instrução}$.</p>
+      <h2>Os três tipos de conflito</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <tr><th>Conflito</th><th>Causa</th><th>Solução</th></tr>
+          <tr><td>Estrutural</td><td>dois estágios querem o mesmo hardware</td><td>duplicar o recurso (memórias separadas de instruções e dados)</td></tr>
+          <tr><td>De dados</td><td>uma instrução lê um registrador que uma anterior ainda vai escrever</td><td>adiantamento; bolhas; reordenar instruções (compilador)</td></tr>
+          <tr><td>De controle</td><td>só se sabe o próximo PC depois de avaliar o desvio</td><td>previsão de desvio; descarte (flush) se errar; desvio atrasado</td></tr>
+        </table>
+      </div>
+      <h2>Adiantamento e o load-use</h2>
+      <p>O resultado de um <code>add</code> existe no fim do seu EX, mas só é escrito no banco de registradores no WB, dois ciclos depois. O <b>adiantamento</b> leva o valor direto dos registradores de pipeline EX/MEM ou MEM/WB para a entrada da ULA, eliminando as bolhas entre instruções de ULA. A exceção é o <b>load seguido de uso</b>: o dado do <code>lw</code> só existe no fim do MEM, então quem o usa logo em seguida precisa esperar <b>uma</b> bolha mesmo com adiantamento. No programa "Load-use", veja como uma instrução independente entre o <code>lw</code> e o uso esconde a bolha: é o que os compiladores fazem ao reordenar o código.</p>
+      <h2>Desvios</h2>
+      <p>Aqui o desvio é resolvido no EX, e o processador prevê "não desvia": continua buscando as instruções seguintes. Se o desvio for tomado, as duas instruções buscadas por engano são descartadas (2 ciclos perdidos). Processadores reais adiantam a decisão para o ID e usam <b>previsores dinâmicos</b> (contadores de 2 bits por desvio), que acertam mais de 90% das vezes em laços.</p>
+      <div class="callout tip"><p>Sem adiantamento, quem lê precisa estar no ID no mesmo ciclo do WB do produtor (o banco escreve na primeira metade do ciclo e lê na segunda): até 2 bolhas por dependência.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { PIPE_PROGRAMS, run, pipeline, stageAt, ABI } from './riscv.js';
+
+    const W = 900, H = 470;
+    const COLOR = { IF: COLORS.blue, ID: COLORS.purple, EX: COLORS.yellow, MEM: COLORS.green, WB: COLORS.teal };
+    let sched = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa.s', lang: 'python', showVars: true,
+      render(step, s) {
+        const rows = sched.rows, C = sched.cycles;
+        const left = 190, top = 46;
+        const cw = Math.min(46, (W - left - 10) / C), rh = Math.min(34, (H - top - 20) / rows.length);
+        for (let c = 1; c <= C; c++) {
+          const x = left + (c - 1) * cw;
+          s.text(`cyc${c}`, c, { x: x + cw / 2, y: top - 16, size: 12, mono: true, weight: c === step.cycle ? 800 : 500, fill: c === step.cycle ? COLORS.yellow : COLORS.faint });
+        }
+        s.rect('curcol', { x: left + (step.cycle - 1) * cw - 1, y: top - 4, w: cw + 2, h: rows.length * rh + 6, rx: 4, fill: 'rgba(244, 211, 94, 0.07)', stroke: COLORS.yellow, sw: 1.2, layer: 'bg' });
+        rows.forEach((row, i) => {
+          const y = top + i * rh;
+          s.text(`rl${i}`, row.ins.text, { x: 10, y: y + rh / 2, size: 12.5, anchor: 'start', mono: true, fill: row.flushed ? COLORS.faint : COLORS.text, opacity: row.flushed ? 0.7 : 1 });
+          if (row.flushed && step.cycle > row.flushAt) s.line(`strike${i}`, 8, y + rh / 2, left - 10, y + rh / 2, { stroke: COLORS.red, sw: 1.5, layer: 'labels' });
+          for (let c = 1; c <= Math.min(C, step.cycle); c++) {
+            const st = stageAt(row, c);
+            if (!st) continue;
+            const x = left + (c - 1) * cw;
+            const stall = st.endsWith('*');
+            const name = st.replace('*', '');
+            const dead = row.flushed && c >= row.flushAt;
+            s.rect(`cell${i}-${c}`, { x: x + 1, y: y + 2, w: cw - 2, h: rh - 4, rx: 4, fill: stall ? 'rgba(252, 98, 85, 0.18)' : COLOR[name], stroke: stall ? COLORS.red : 'none', sw: 1, opacity: row.flushed ? 0.35 : dead ? 0.35 : 0.9, dash: stall ? '3 3' : null });
+            s.text(`ct${i}-${c}`, stall ? 'bolha' : name, { x: x + cw / 2, y: y + rh / 2, size: stall ? 9.5 : 11, weight: 700, mono: true, fill: stall ? COLORS.red : '#0b1a20', opacity: row.flushed ? 0.6 : 1 });
+          }
+          // setas de adiantamento no ciclo em que o consumidor está no EX
+          if (row.EX && row.EX <= step.cycle) row.forwards.forEach((f, k) => {
+            const px = left + (row.EX - 1) * cw + cw / 2, py = top + f.from * rh + rh - 3;
+            s.path(`fw${i}-${k}`, `M ${px - 6 + k * 6} ${py} L ${px - 6 + k * 6} ${y + 3}`, { stroke: COLORS.orange, sw: 2.2, arrow: true, layer: 'fx' });
+          });
+        });
+        s.text('summary', `${sched.instructions} instruções · ${sched.cycles} ciclos · CPI = ${fmt(sched.cpi, 2)} · bolhas: ${sched.stalls} · descartadas: ${sched.flushes}`, { x: 10, y: H - 14, size: 13, anchor: 'start', mono: true, weight: 700, fill: COLORS.muted });
+      },
+    });
+
+    function buildSteps(prog, rows) {
+      const steps = [];
+      for (let c = 1; c <= sched.cycles; c++) {
+        const inFlight = rows.map((r, i) => ({ r, i, st: stageAt(r, c) })).filter(x => x.st);
+        const parts = [];
+        for (const { r, st } of inFlight) {
+          if (st === 'ID*') {
+            const hz = r.hazards[0];
+            const prod = hz ? rows[hz.from].ins.text : '';
+            parts.push(`<code>${r.ins.text}</code> fica <b>parada no ID</b>${hz ? `: precisa de ${ABI[hz.reg]}, que <code>${prod}</code> ainda não produziu${hz.load && $('#fwd').checked ? ' (o dado de um lw só sai no fim do MEM)' : ''}` : ''}.`);
+          }
+        }
+        for (const { r } of inFlight) if (r.EX === c && r.forwards.length) parts.push(`<code>${r.ins.text}</code> recebe ${r.forwards.map(f => `${ABI[f.reg]} por adiantamento (${f.type})`).join(' e ')}.`);
+        for (const r of rows) if (r.flushed && r.flushAt === c) parts.push(`O desvio foi tomado: <code>${r.ins.text}</code> estava no caminho errado e é <b>descartada</b>.`);
+        const wb = inFlight.find(x => x.st === 'WB');
+        if (wb && !parts.length) parts.push(`<code>${wb.r.ins.text}</code> termina (WB).`);
+        if (!parts.length) parts.push(`Pipeline ${inFlight.length === 5 ? '<b>cheio</b>: cinco instruções em andamento' : `com ${inFlight.length} instrução(ões)`}.`);
+        const vars = {};
+        for (const name of ['IF', 'ID', 'EX', 'MEM', 'WB']) {
+          const x = inFlight.find(f => f.st.replace('*', '') === name && !(f.r.flushed && c > f.r.flushAt));
+          vars[name] = x ? `${x.r.ins.text}${x.st.endsWith('*') ? ' (parada)' : ''}` : '—';
+        }
+        steps.push({ cycle: c, line: inFlight.filter(x => !x.r.flushed).map(x => x.r.ins.line), msg: `Ciclo ${c}. ${parts.join(' ')}`, vars });
+      }
+      return steps;
+    }
+
+    function load() {
+      const src = PIPE_PROGRAMS[$('#prog').value].src;
+      const r = run(src);
+      const fw = $('#fwd').checked;
+      sched = pipeline(r.trace, { forwarding: fw, instrs: r.prog.instrs });
+      const other = pipeline(r.trace, { forwarding: !fw, instrs: r.prog.instrs });
+      player.setCode(src, 'python');
+      player.load(buildSteps(r.prog, sched.rows));
+      $('#stats').textContent = `${fw ? 'sem' : 'com'} adiantamento seriam ${other.cycles} ciclos (CPI ${fmt(other.cpi, 2)})`;
+    }
+    $('#prog').innerHTML = Object.entries(PIPE_PROGRAMS).map(([k, p]) => `<option value="${k}">${p.nome}</option>`).join('');
+    $('#prog').addEventListener('change', load);
+    $('#fwd').addEventListener('change', load);
+    load();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Um pipeline de 5 estágios sem conflitos executa 100 instruções em quantos ciclos?', options: ['104', '100', '500', '105'], answer: 0, explain: '$k + n - 1 = 5 + 100 - 1$: 4 ciclos para encher o pipeline e depois uma instrução por ciclo.' },
+      { q: 'Com adiantamento, <code>lw t1, 0(t0)</code> seguida de <code>add t2, t1, t1</code> custa quantas bolhas?', options: ['1', '0', '2', '3'], answer: 0, explain: 'O dado só existe no fim do MEM do lw, e o add precisa dele no início do EX: um ciclo de diferença.' },
+      { q: 'Por que o adiantamento não resolve todos os conflitos de dados?', options: ['Não dá para mandar um valor para trás no tempo: o do lw só existe depois do MEM', 'Porque gasta energia', 'Porque o banco de registradores é lento', 'Ele resolve todos'], answer: 0, explain: 'O adiantamento só encurta o caminho de um valor que já existe.' },
+      { q: 'Num laço que repete 1000 vezes com previsão "não desvia", quantas vezes o desvio do fim do laço é previsto errado?', options: ['999', '1', '0', '1000'], answer: 0, explain: 'Ele é tomado 999 vezes e só não desvia na saída. Um previsor dinâmico (que lembra a última decisão) erraria só 1 ou 2 vezes.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Correlação e regressão · Introdução à Ciência dos Dados</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-04">4º período</a>
+      <span class="sep">/</span><a href="../../../index.html#icd">Introdução à Ciência dos Dados</a>
+      <span class="sep">/</span><span>Correlação e regressão</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Ciência dos Dados</div>
+    <h1>Correlação, regressão e duas armadilhas famosas</h1>
+    <p class="lead">A reta de regressão e o coeficiente de correlação resumem uma nuvem de pontos em dois números. Resumos ajudam, mas escondem coisas. Duas demonstrações clássicas: o <b>paradoxo de Simpson</b>, em que a tendência se inverte ao separar os dados em grupos, e o <b>quarteto de Anscombe</b>, quatro conjuntos com as mesmas estatísticas e formas completamente diferentes.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Demonstração">
+        <button class="btn" data-demo="simpson">Paradoxo de Simpson</button>
+        <button class="btn" data-demo="anscombe">Quarteto de Anscombe</button>
+      </div>
+      <label id="split-wrap"><input type="checkbox" id="split"> separar por faixa etária</label>
+      <span class="spacer"></span>
+      <span class="c-muted" id="info"></span>
+    </div>
+    <div class="stage"><svg id="viz" aria-label="Gráficos de dispersão"></svg></div>
+
+    <section class="prose">
+      <h2>Mínimos quadrados e correlação</h2>
+      <p>A reta $\hat y = a x + b$ que minimiza $\sum (y_i - \hat y_i)^2$ tem</p>
+      <p>$$a = \frac{\sum (x_i - \bar x)(y_i - \bar y)}{\sum (x_i - \bar x)^2} = r\,\frac{s_y}{s_x}, \qquad b = \bar y - a \bar x,$$</p>
+      <p>em que $r = \dfrac{\sum (x_i - \bar x)(y_i - \bar y)}{\sqrt{\sum (x_i - \bar x)^2 \sum (y_i - \bar y)^2}} \in [-1, 1]$ é o <b>coeficiente de correlação de Pearson</b>. $r^2$ é a fração da variância de $y$ "explicada" pela reta. A mesma reta sai da descida do gradiente sobre o erro quadrático médio (veja <a href="../../../periodo-03/calculo-diferencial-e-integral-2/visualizacoes/gradiente.html">Cálculo II</a>) ou das equações normais (veja <a href="../../../periodo-03/algebra-linear-computacional/visualizacoes/minimos-quadrados.html">ALC</a>).</p>
+      <h2>Simpson: a variável escondida</h2>
+      <p>Nos dados simulados, dentro de cada faixa etária, quem se exercita mais tem colesterol menor. Juntando tudo, parece o contrário: os mais velhos se exercitam mais <b>e</b> têm colesterol mais alto por causa da idade. A idade é uma <b>variável de confusão</b>: influencia as duas coisas ao mesmo tempo. O caso real mais citado é o das admissões de Berkeley em 1973: no geral, as mulheres eram admitidas em proporção menor; departamento por departamento, não. Elas se candidatavam mais aos departamentos mais concorridos.</p>
+      <h2>Anscombe: sempre desenhe os dados</h2>
+      <p>Os quatro conjuntos têm média de $x$ = 9, média de $y \approx$ 7,50, variâncias quase iguais, $r \approx 0{,}816$ e a mesma reta $\hat y \approx 0{,}5x + 3$. Só o primeiro é bem descrito por ela: o segundo é uma curva, o terceiro tem um outlier que puxa a reta e o quarto é um único ponto determinando tudo.</p>
+      <div class="callout warn"><p><b>Correlação não é causalidade.</b> Venda de sorvete e afogamentos são correlacionados (ambos sobem no verão). Para afirmar causa é preciso um <b>experimento controlado e aleatorizado</b> (como o teste A/B) ou um modelo causal explícito que trate as variáveis de confusão.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt } from '../../../engine/page.js';
+    import { simpsonData, linreg, ANSCOMBE, mean, variance } from './icd.js';
+
+    const W = 1240, H = 560;
+    const scene = new Scene($('#viz'), { width: W, height: H });
+    $('#viz').style.setProperty('--dur', '600ms');
+    const groups = simpsonData();
+    const GC = [COLORS.blue, COLORS.teal, COLORS.yellow, COLORS.orange, COLORS.pink];
+    let demo = 'simpson';
+
+    function panel(s, key, pts, box, xr, yr, opts = {}) {
+      const [l, t, w, h] = box;
+      const X = x => l + (x - xr[0]) / (xr[1] - xr[0]) * w, Y = y => t + h - (y - yr[0]) / (yr[1] - yr[0]) * h;
+      s.rect(`${key}-bg`, { x: l, y: t, w, h, rx: 6, fill: COLORS.surface, stroke: COLORS.border, sw: 1, layer: 'bg' });
+      pts.forEach((p, i) => s.circle(`${key}-p${i}`, { x: X(p.x), y: Y(p.y), r: opts.r ?? 5, fill: p.color ?? COLORS.blue, stroke: 'none', opacity: 0.85 }));
+      for (const [k, ln] of Object.entries(opts.lines ?? {})) {
+        s.line(`${key}-l${k}`, X(xr[0]), Y(ln.slope * xr[0] + ln.intercept), X(xr[1]), Y(ln.slope * xr[1] + ln.intercept), { stroke: ln.color, sw: ln.sw ?? 2.5, opacity: ln.opacity ?? 1, layer: 'fx' });
+      }
+      return { X, Y };
+    }
+
+    function draw() {
+      $$('[data-demo]').forEach(b => b.setAttribute('aria-pressed', b.dataset.demo === demo));
+      $('#split-wrap').style.display = demo === 'simpson' ? '' : 'none';
+      scene.frame(s => {
+        if (demo === 'simpson') {
+          const split = $('#split').checked;
+          const all = groups.flatMap(g => g.pts.map(p => ({ ...p, color: split ? GC[p.g] : COLORS.blue })));
+          const L = linreg(all.map(p => p.x), all.map(p => p.y));
+          const lines = { all: { ...L, color: COLORS.text, sw: split ? 1.5 : 3, opacity: split ? 0.35 : 1 } };
+          if (split) groups.forEach((g, k) => { const l = linreg(g.pts.map(p => p.x), g.pts.map(p => p.y)); lines[k] = { ...l, color: GC[k], sw: 3 }; });
+          // retas por grupo só no intervalo do grupo: desenhadas à parte
+          const box = [90, 30, 760, 470];
+          const { X, Y } = panel(s, 'sp', all, box, [0, 12], [80, 270], { lines: { all: lines.all } });
+          if (split) groups.forEach((g, k) => {
+            const xs = g.pts.map(p => p.x), lo = Math.min(...xs), hi = Math.max(...xs), l = lines[k];
+            s.line(`sp-g${k}`, X(lo), Y(l.slope * lo + l.intercept), X(hi), Y(l.slope * hi + l.intercept), { stroke: GC[k], sw: 3.5, layer: 'fx' });
+          });
+          s.text('xl', 'horas de exercício por semana', { x: 90 + 380, y: H - 24, size: 13, fill: COLORS.muted });
+          s.text('yl', 'colesterol (mg/dL)', { x: 20, y: 20, size: 13, anchor: 'start', fill: COLORS.muted });
+          for (let x = 0; x <= 12; x += 2) s.text(`tx${x}`, x, { x: X(x), y: 516, size: 11, mono: true, fill: COLORS.faint });
+          for (let y = 100; y <= 260; y += 40) s.text(`ty${y}`, y, { x: 80, y: Y(y), size: 11, anchor: 'end', mono: true, fill: COLORS.faint });
+          // legenda e números
+          s.text('lg', 'inclinação da reta', { x: 900, y: 50, size: 14, anchor: 'start', weight: 800, fill: COLORS.muted });
+          s.text('lg-all', `todos juntos: ${L.slope > 0 ? '+' : ''}${fmt(L.slope, 2)}  (r = ${fmt(L.r, 2)})`, { x: 900, y: 82, size: 14, anchor: 'start', mono: true, weight: 700, fill: COLORS.text });
+          groups.forEach((g, k) => {
+            const l = linreg(g.pts.map(p => p.x), g.pts.map(p => p.y));
+            s.text(`lg${k}`, `${g.nome}: ${fmt(l.slope, 2)}`, { x: 900, y: 120 + k * 28, size: 14, anchor: 'start', mono: true, weight: 700, fill: GC[k], opacity: split ? 1 : 0.25 });
+          });
+          s.text('moral', split ? 'Em todo grupo a reta desce.' : 'Juntando tudo, a reta sobe…', { x: 900, y: 290, size: 17, anchor: 'start', weight: 800, fill: split ? COLORS.green : COLORS.orange });
+          $('#info').textContent = 'dados simulados';
+        } else {
+          ANSCOMBE.forEach((q, k) => {
+            const pts = q.x.map((x, i) => ({ x, y: q.y[i], color: GC[k] }));
+            const L = linreg(q.x, q.y);
+            const col = k % 2, row = Math.floor(k / 2);
+            const box = [80 + col * 590, 20 + row * 270, 520, 230];
+            panel(s, `a${k}`, pts, box, [2, 20], [2, 14], { lines: { r: { ...L, color: COLORS.text, sw: 2 } }, r: 6 });
+            s.text(`at${k}`, ['I', 'II', 'III', 'IV'][k], { x: box[0] + 14, y: box[1] + 18, size: 16, weight: 800, anchor: 'start', fill: GC[k] });
+            s.text(`as${k}`, `x̄ = ${fmt(mean(q.x), 2)}  ȳ = ${fmt(mean(q.y), 2)}  s²ᵧ = ${fmt(variance(q.y), 2)}  r = ${fmt(L.r, 3)}  ŷ = ${fmt(L.slope, 2)}x + ${fmt(L.intercept, 2)}`, { x: box[0] + box[2] - 10, y: box[1] + box[3] - 14, size: 11, anchor: 'end', mono: true, fill: COLORS.muted });
+          });
+          $('#info').textContent = 'Anscombe (1973)';
+        }
+      });
+    }
+    $$('[data-demo]').forEach(b => b.addEventListener('click', () => { demo = b.dataset.demo; scene.clear(); draw(); }));
+    $('#split').addEventListener('change', draw);
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'r = 0 significa que…', options: ['não há relação <b>linear</b> entre x e y (pode haver outra)', 'x e y são independentes', 'a reta é horizontal e os dados estão sobre ela', 'há erro nos dados'], answer: 0, explain: 'y = x² com x simétrico em torno de 0 tem r = 0 e dependência perfeita.' },
+      { q: 'Cidades com mais bombeiros têm mais incêndios. Qual a explicação mais provável?', options: ['Variável de confusão: cidades maiores têm mais das duas coisas', 'Bombeiros causam incêndios', 'Incêndios atraem bombeiros de fora', 'Erro de medição'], answer: 0, explain: 'O tamanho da cidade influencia as duas variáveis.' },
+      { q: 'Se trocarmos x e y, a correlação r…', options: ['não muda', 'vira 1/r', 'vira −r', 'muda de forma imprevisível'], answer: 0, explain: 'A fórmula de r é simétrica em x e y. A reta de regressão, não: regredir x em y dá outra reta.' },
+    ]);
+  </script>
+</body>
+</html>
