@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compressão · Algoritmos II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; } .toolbar input[type=text] { width: 300px; font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg2">Algoritmos II</a>
+      <span class="sep">/</span><span>Compressão</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos II</div>
+    <h1>Compressão: Huffman e LZW</h1>
+    <p class="lead">Duas ideias para gastar menos bits. <b>Huffman</b> dá códigos curtos aos símbolos frequentes, construindo de baixo para cima a árvore ótima de prefixos. <b>LZW</b> (o do GIF e do <code>compress</code>) aprende sequências repetidas enquanto lê e as substitui por um único código.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-a="huffman">Huffman</button>
+        <button class="btn" data-a="lzw">LZW</button>
+      </div>
+      <label>texto <input id="s" type="text" value="ABRACADABRA" maxlength="40"></label>
+      <button class="btn primary small" id="go">Rodar</button>
+      <select id="ex" aria-label="Exemplos">
+        <option value="">exemplos…</option>
+        <option>ABRACADABRA</option>
+        <option>TOBEORNOTTOBEORTOBEORNOT</option>
+        <option>O RATO ROEU A ROUPA DO REI DE ROMA</option>
+        <option>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</option>
+        <option>ABCDEFGH</option>
+      </select>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Códigos de prefixo e a árvore de Huffman</h2>
+      <p>Um código é <b>de prefixo</b> se nenhuma palavra-código é início de outra: assim a sequência de bits se decodifica sem separadores, descendo na árvore até uma folha. O custo de uma árvore é $\sum_c f(c) \cdot \text{prof}(c)$, e Huffman acha a de custo mínimo.</p>
+      <ul>
+        <li><b>Escolha gulosa:</b> existe uma árvore ótima em que os dois símbolos menos frequentes são irmãos no nível mais fundo (trocá-los com quem estiver lá não piora o custo).</li>
+        <li><b>Subestrutura ótima:</b> fundindo esses dois num símbolo de frequência $f_a + f_b$, uma árvore ótima para o alfabeto menor vira uma ótima para o original. Indução no tamanho do alfabeto.</li>
+        <li>Custo $O(k \log k)$ para $k$ símbolos, com uma fila de prioridade.</li>
+        <li><b>Limite de Shannon:</b> nenhum código de símbolos faz menos que a entropia $H = -\sum p_c \log_2 p_c$ bits por símbolo, e Huffman fica a menos de 1 bit dela: $H \le \bar L < H + 1$.</li>
+      </ul>
+      <h2>LZW: um dicionário que ninguém transmite</h2>
+      <p>O codificador mantém a maior sequência $w$ já conhecida; ao ler $c$, se $wc$ ainda está no dicionário, cresce; senão emite o código de $w$, aprende $wc$ e recomeça de $c$. O decodificador recebe os códigos e reconstrói <b>o mesmo dicionário</b>, uma entrada atrás. O único susto é o padrão $cScSc$: chega um código que o decodificador ainda não aprendeu, e ele vale "a entrada anterior + a primeira letra dela".</p>
+      <div class="callout tip"><p><b>Na prática.</b> ZIP, gzip e PNG usam DEFLATE = LZ77 (referências "volte $d$ e copie $\ell$") + Huffman nos resultados. JPEG e MP3 também terminam com Huffman, depois da parte com perdas. Nenhum compressor sem perdas reduz <i>todos</i> os arquivos: há $2^n$ arquivos de $n$ bits e menos de $2^n$ mais curtos (princípio da casa dos pombos).</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt, pick } from '../../../engine/page.js';
+    import { CODES, huffmanSteps, lzwSteps, entropy, frequencies } from './compressao.js';
+
+    const W = 900, H = 500;
+    let alg = 'huffman';
+    const show = c => (c === ' ' ? '␣' : c);
+
+    function renderHuffman(step, s) {
+      const N = step.nodes;
+      // posição x das folhas na ordem das árvores da fila; nós internos no meio dos filhos
+      const pos = {};
+      let leaf = 0;
+      const nLeaves = N.filter(n => n.esq == null).length;
+      const dxLeaf = Math.min(80, (W - 60) / nLeaves);
+      const left = (W - dxLeaf * (nLeaves - 1)) / 2;
+      const height = id => (N[id].esq == null ? 0 : 1 + Math.max(height(N[id].esq), height(N[id].dir)));
+      const maxH = Math.max(...step.roots.map(height));
+      const dy = Math.min(78, 330 / Math.max(1, maxH));
+      const place = (id, depth) => {
+        const nd = N[id];
+        if (nd.esq == null) pos[id] = [left + dxLeaf * leaf++, 0];
+        else {
+          place(nd.esq, depth + 1); place(nd.dir, depth + 1);
+          pos[id] = [(pos[nd.esq][0] + pos[nd.dir][0]) / 2, 0];
+        }
+        pos[id][1] = depth;
+      };
+      // folhas alinhadas embaixo: profundidade conta a partir da altura da árvore
+      for (const r of step.roots) {
+        const h = height(r);
+        place(r, 0);
+        const fix = (id, d) => { pos[id][1] = 400 - (h - d) * dy; if (N[id].esq != null) { fix(N[id].esq, d + 1); fix(N[id].dir, d + 1); } };
+        fix(r, 0);
+      }
+      const visible = new Set(Object.keys(pos).map(Number));
+      for (const id of visible) {
+        const nd = N[id];
+        if (nd.esq == null) continue;
+        for (const [ch, bit] of [[nd.esq, '0'], [nd.dir, '1']]) {
+          s.line(`e${ch}`, pos[id][0], pos[id][1], pos[ch][0], pos[ch][1], { stroke: id === step.made ? COLORS.yellow : COLORS.faint, sw: 2 });
+          s.text(`b${ch}`, bit, { x: (pos[id][0] + pos[ch][0]) / 2 + (bit === '0' ? -9 : 9), y: (pos[id][1] + pos[ch][1]) / 2 - 4, size: 12, mono: true, fill: COLORS.blue });
+        }
+      }
+      for (const id of visible) {
+        const nd = N[id], [x, y] = pos[id];
+        const picked = step.pick?.includes(id), made = id === step.made;
+        const isLeaf = nd.esq == null;
+        s.circle(`n${id}`, { x, y, r: isLeaf ? 19 : 16, fill: made ? '#3d3a22' : picked ? '#1c3640' : COLORS.surface2, stroke: made ? COLORS.yellow : picked ? COLORS.blue : isLeaf ? COLORS.green : COLORS.border, sw: picked || made ? 3 : 1.5 });
+        s.text(`nf${id}`, nd.freq, { x, y, size: 13, mono: true, weight: 700 });
+        if (isLeaf) {
+          s.text(`nc${id}`, show(nd.c), { x, y: y + 34, size: 17, mono: true, weight: 800, fill: COLORS.green });
+          if (step.codes) s.text(`cd${id}`, step.codes[nd.c], { x, y: y + 56, size: 13, mono: true, fill: COLORS.yellow });
+        }
+      }
+      if (step.done) {
+        const src = $('#s').value.toUpperCase().slice(0, 40);
+        s.text('ent', `entropia H = ${entropy(src).toFixed(3)} bits/símbolo · Huffman = ${(step.bits / src.length).toFixed(3)} bits/símbolo`, { x: W / 2, y: H - 18, size: 14, mono: true, fill: COLORS.muted });
+      }
+    }
+
+    function renderLzw(step, s) {
+      const n = step.s.length;
+      const cell = Math.min(36, (W - 60) / n);
+      const x0 = (W - cell * n) / 2;
+      const wStart = step.pos - step.w.length;
+      [...step.s].forEach((c, k) => {
+        const inW = !step.done && k >= wStart && k < step.pos;
+        const cur = k === step.pos && !step.done;
+        s.rect(`s${k}`, { x: x0 + k * cell, y: 30, w: cell - 3, h: cell - 3, rx: 4, fill: inW ? '#1c3640' : k < step.pos ? COLORS.surface : COLORS.surface2, stroke: cur ? COLORS.yellow : inW ? COLORS.blue : COLORS.border, sw: cur || inW ? 2.5 : 1 });
+        s.text(`st${k}`, show(c), { x: x0 + k * cell + (cell - 3) / 2, y: 30 + (cell - 3) / 2, size: Math.min(17, cell * 0.5), mono: true, weight: 700, fill: k < wStart && !step.done ? COLORS.faint : COLORS.text });
+      });
+      s.text('wlab', `w = "${step.w}"`, { x: x0, y: 30 + cell + 22, size: 14, anchor: 'start', mono: true, fill: COLORS.blue });
+      // saída
+      s.text('olab', 'saída', { x: 20, y: 130, size: 13, anchor: 'start', fill: COLORS.muted });
+      const oc = Math.min(52, (W - 40) / Math.max(1, step.out.length));
+      step.out.forEach((o, k) => {
+        const last = k === step.out.length - 1 && step.learned;
+        s.rect(`o${k}`, { x: 20 + k * oc, y: 142, w: oc - 4, h: 34, rx: 4, fill: last ? '#3d3a22' : COLORS.surface2, stroke: last ? COLORS.yellow : o.code >= 256 ? COLORS.purple : COLORS.border, sw: last ? 2.5 : 1.5 });
+        s.text(`ot${k}`, o.code, { x: 20 + k * oc + (oc - 4) / 2, y: 159, size: Math.min(14, oc * 0.38), mono: true, weight: 700, fill: o.code >= 256 ? COLORS.purple : COLORS.text });
+      });
+      // dicionário (entradas novas)
+      s.text('dlab', 'dicionário aprendido (as entradas 0–255 são os caracteres)', { x: 20, y: 214, size: 13, anchor: 'start', fill: COLORS.muted });
+      const cols = 5, cw = (W - 40) / cols;
+      step.dic.forEach(([str, code], k) => {
+        const x = 20 + (k % cols) * cw, y = 230 + Math.floor(k / cols) * 34;
+        const isNew = str === step.learned;
+        s.rect(`d${code}`, { x, y, w: cw - 8, h: 28, rx: 4, fill: isNew ? '#3d3a22' : COLORS.surface2, stroke: isNew ? COLORS.yellow : COLORS.border });
+        s.text(`dt${code}`, `${code}: ${[...str].map(show).join('')}`, { x: x + 10, y: y + 14, size: 13, anchor: 'start', mono: true, fill: isNew ? COLORS.yellow : COLORS.purple });
+      });
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'cadeias.cpp',
+      render(step, s) { (alg === 'huffman' ? renderHuffman : renderLzw)(step, s); },
+    });
+
+    function run() {
+      $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === alg));
+      let txt = $('#s').value.toUpperCase().slice(0, 40);
+      if (txt.length < 2) txt = 'AB';
+      if (alg === 'huffman' && frequencies(txt).length > 14) txt = txt.slice(0, 20);
+      player.setCode(CODES[alg], 'cpp');
+      player.load(alg === 'huffman' ? huffmanSteps(txt) : lzwSteps(txt));
+    }
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => {
+      alg = b.dataset.a;
+      if (alg === 'lzw' && $('#s').value === 'ABRACADABRA') $('#s').value = 'TOBEORNOTTOBEORTOBEORNOT';
+      if (alg === 'huffman' && $('#s').value === 'TOBEORNOTTOBEORTOBEORNOT') $('#s').value = 'ABRACADABRA';
+      run();
+    }));
+    $('#go').addEventListener('click', run);
+    $('#s').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    $('#ex').addEventListener('change', e => { if (!e.target.value) return; $('#s').value = e.target.value; e.target.value = ''; run(); });
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Os códigos {0, 10, 110, 111} formam um código de prefixo?', options: ['Sim', 'Não, 1 é prefixo de 10', 'Não, 0 é prefixo de 10', 'Só se as frequências forem iguais'], answer: 0, explain: 'Nenhuma palavra começa outra (1 não é palavra-código). É uma árvore com folhas nas profundidades 1, 2, 3, 3.' },
+      { q: 'Com 8 símbolos de frequências iguais, quantos bits por símbolo o Huffman usa?', options: ['3', '1', '8', 'depende da ordem'], answer: 0, explain: 'A árvore fica completa e balanceada: $\\log_2 8 = 3$, igual à entropia.' },
+      { q: 'O que o decodificador LZW faz ao receber um código que ainda não está no dicionário?', options: ['Usa a entrada anterior + a primeira letra dela', 'Pede o dicionário ao codificador', 'Descarta o código', 'Isso nunca acontece'], answer: 0, explain: 'Só ocorre em sequências do tipo cScSc, e nesse caso o código é exatamente $w + w[0]$.' },
+      { q: 'Por que o guloso de Huffman funciona e o guloso da mochila 0/1 não?', options: ['Porque vale a propriedade da escolha gulosa: juntar os dois menores está em alguma solução ótima', 'Porque Huffman usa programação dinâmica escondida', 'Porque Huffman é aproximativo', 'Porque a fila de prioridade é ótima'], answer: 0, explain: 'É o argumento de troca: em qualquer árvore ótima, dá para trocar os dois menos frequentes para o fundo sem piorar.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novas frequências',
+      generate() {
+        const k = randInt(4, 6);
+        const syms = 'ABCDEF'.slice(0, k);
+        const fr = [...syms].map(() => randInt(1, 12));
+        const txt = [...syms].map((c, i) => c.repeat(fr[i])).join('');
+        const st = huffmanSteps(txt).at(-1);
+        return { q: `Frequências: ${[...syms].map((c, i) => `${c} = ${fr[i]}`).join(', ')}. Quantos bits ocupa o texto codificado com Huffman?`, input: true, answer: String(st.bits),
+          explain: `Códigos: ${Object.entries(st.codes).map(([c, b]) => `${c} = ${b}`).join(', ')}. Soma de frequência × comprimento = ${st.bits}. (Empates podem mudar os códigos, mas nunca o total.)` };
+      },
+    });
+  </script>
+</body>
+</html>

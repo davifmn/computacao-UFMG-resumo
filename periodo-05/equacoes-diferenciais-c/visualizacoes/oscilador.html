@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oscilador massa-mola · Equações Diferenciais C</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 7.5em 1fr 3.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#edc">Equações Diferenciais C</a>
+      <span class="sep">/</span><span>Oscilador massa-mola</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Equações Diferenciais C</div>
+    <h1>O oscilador: amortecimento e ressonância</h1>
+    <p class="lead">$m\,y'' + c\,y' + k\,y = F_0 \cos(\omega t)$ descreve uma massa numa mola com atrito, um circuito RLC, a suspensão de um carro e um prédio num terremoto. As raízes da <b>equação característica</b> $mr^2 + cr + k = 0$ decidem se ele oscila; a frequência da força decide quanto ele balança.</p>
+
+    <div class="lab">
+      <div class="col">
+        <div class="stage"><svg id="main" aria-label="Massa e gráfico de y(t)"></svg></div>
+        <div class="stage"><svg id="resp" aria-label="Curva de resposta em frequência"></svg></div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="panel-title">Parâmetros</div>
+          <div class="ctl" id="ctl"></div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <button class="btn primary" id="play">▶ Animar</button>
+            <select id="preset" aria-label="Exemplos">
+              <option value="">exemplos…</option>
+              <option value="sub">subamortecido</option>
+              <option value="crit">amortecimento crítico</option>
+              <option value="super">superamortecido</option>
+              <option value="livre">sem atrito</option>
+              <option value="resson">ressonância (sem atrito)</option>
+              <option value="bat">batimentos</option>
+              <option value="forc">forçado com atrito</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Análise</div><div class="readout" id="out"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Oscilações livres ($F_0 = 0$)</h2>
+      <p>Tentando $y = e^{rt}$: $mr^2 + cr + k = 0$. Com $\omega_0 = \sqrt{k/m}$ (frequência natural) e $\zeta = c / (2\sqrt{mk})$ (razão de amortecimento):</p>
+      <ul>
+        <li>$\zeta &lt; 1$, <b>subamortecido</b>: raízes complexas $-\frac{c}{2m} \pm i\mu$, e $y = e^{-ct/2m}(A\cos\mu t + B\,\text{sen}\,\mu t)$: oscila com amplitude decaindo.</li>
+        <li>$\zeta = 1$, <b>crítico</b>: raiz dupla, $y = (A + Bt)e^{-ct/2m}$. Volta ao repouso o mais rápido possível sem oscilar (é o que se busca em amortecedores e ponteiros de instrumentos).</li>
+        <li>$\zeta &gt; 1$, <b>superamortecido</b>: duas raízes reais negativas; volta devagar, sem oscilar.</li>
+      </ul>
+      <h2>Oscilações forçadas</h2>
+      <p>A solução geral é <b>homogênea + particular</b>. Com atrito, a homogênea some (o <b>transiente</b>) e sobra o <b>regime permanente</b> $y_p = A(\omega)\cos(\omega t - \delta)$, com $A(\omega) = F_0 / \sqrt{(k - m\omega^2)^2 + (c\omega)^2}$. A curva de baixo mostra $A(\omega)$: o pico, perto de $\omega_0$, é a <b>ressonância</b>, e fica mais alto e estreito quanto menor o atrito.</p>
+      <p>Sem atrito e com $\omega = \omega_0$, o método dos coeficientes a determinar precisa de um fator $t$: $y_p = \frac{F_0}{2m\omega_0}\,t\,\text{sen}\,\omega_0 t$, uma amplitude que <b>cresce sem limite</b>. Com $\omega$ perto (mas diferente) de $\omega_0$, aparecem os <b>batimentos</b>: $\cos \omega t - \cos \omega_0 t = 2\,\text{sen}\frac{(\omega_0 - \omega)t}{2}\,\text{sen}\frac{(\omega_0 + \omega)t}{2}$, uma oscilação rápida dentro de um envelope lento.</p>
+      <div class="callout tip"><p><b>Transformada de Laplace.</b> Aplicando $\mathcal{L}$, $y'' \mapsto s^2 Y - s\,y(0) - y'(0)$ e a EDO vira uma equação algébrica: $Y(s) = \dfrac{(ms + c)\,y_0 + m v_0 + F(s)}{ms^2 + cs + k}$. O denominador é o polinômio característico, e seus zeros (os <b>polos</b>) são as raízes $r$ acima. Frações parciais e a tabela de transformadas devolvem $y(t)$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { oscillator, characteristic, amplitude, resonance } from './edo.js';
+
+    const W = 860, H = 340, T = 30;
+    const main = new Scene($('#main'), { width: W, height: H });
+    const resp = new Scene($('#resp'), { width: W, height: 200 });
+    main.setAnimated(false); resp.setAnimated(false);
+    const plot = new Plot(main, { x: [0, T], y: [-3, 3], box: [190, 14, W - 14, H - 26] });
+    plot.clip(['edges']);
+    const rplot = new Plot(resp, { x: [0, 5], y: [0, 3], box: [190, 12, W - 14, 176] });
+    rplot.clip(['edges']);
+
+    const P = { m: 1, c: 0.4, k: 4, F0: 0, w: 1.5, y0: 2, v0: 0 };
+    const SPEC = [['m', 'massa m', 0.25, 4, 0.05], ['c', 'atrito c', 0, 6, 0.05], ['k', 'mola k', 0.25, 10, 0.05], ['F0', 'força F₀', 0, 3, 0.05], ['w', 'freq. ω', 0, 5, 0.01], ['y0', 'y(0)', -2.5, 2.5, 0.1], ['v0', "y'(0)", -4, 4, 0.1]];
+    $('#ctl').innerHTML = SPEC.map(([id, lb, a, b, st]) => `<span>${lb}</span><input id="${id}" type="range" min="${a}" max="${b}" step="${st}" value="${P[id]}"><output id="${id}-o"></output>`).join('');
+    let sol = null, tCur = T, anim = null;
+
+    const PRESETS = {
+      sub: { m: 1, c: 0.4, k: 4, F0: 0, w: 1.5, y0: 2, v0: 0 },
+      crit: { m: 1, c: 4, k: 4, F0: 0, w: 1.5, y0: 2, v0: 0 },
+      super: { m: 1, c: 6, k: 4, F0: 0, w: 1.5, y0: 2, v0: 0 },
+      livre: { m: 1, c: 0, k: 4, F0: 0, w: 1.5, y0: 2, v0: 0 },
+      resson: { m: 1, c: 0, k: 4, F0: 0.3, w: 2, y0: 0, v0: 0 },
+      bat: { m: 1, c: 0, k: 4, F0: 0.6, w: 1.75, y0: 0, v0: 0 },
+      forc: { m: 1, c: 0.3, k: 4, F0: 1, w: 1.9, y0: 0, v0: 0 },
+    };
+
+    function spring(s, y) {
+      // mola vertical: teto em 30, massa centrada em yMass
+      const cx = 95, top = 30;
+      const yMass = H / 2 - 20 + Math.max(-3.2, Math.min(3.2, -y)) * 30 + 40;
+      s.line('ceil', cx - 50, top, cx + 50, top, { stroke: COLORS.muted, sw: 3, layer: 'fx' });
+      const coils = 12, len = yMass - 22 - top;
+      let d = `M ${cx} ${top}`;
+      for (let i = 1; i <= coils; i++) d += ` L ${cx + (i % 2 ? 16 : -16)} ${top + (i - 0.5) * len / coils}`;
+      d += ` L ${cx} ${yMass - 22}`;
+      s.path('spring', d, { stroke: COLORS.blue, sw: 2.5, layer: 'fx' });
+      s.rect('mass', { x: cx - 30, y: yMass - 22, w: 60, h: 44, rx: 6, fill: '#3d3a22', stroke: COLORS.yellow, sw: 2 });
+      s.text('massl', 'm', { x: cx, y: yMass, size: 16, weight: 800, fill: COLORS.yellow });
+      s.line('eq', cx - 60, H / 2 + 20, cx + 60, H / 2 + 20, { stroke: COLORS.faint, sw: 1, dash: '4 4', layer: 'fx' });
+      s.text('eql', 'y = 0', { x: cx + 62, y: H / 2 + 20, size: 11, anchor: 'start', fill: COLORS.faint });
+      if (P.F0 > 0) s.text('forc', `F = ${fmt(P.F0 * Math.cos(P.w * tCur), 2)}`, { x: cx, y: H - 12, size: 12, mono: true, fill: COLORS.red });
+      else s.text('forc', '', { x: cx, y: H - 12 });
+    }
+
+    function drawMain() {
+      const idx = Math.min(sol.length - 1, Math.round((tCur / T) * (sol.length - 1)));
+      const ymax = Math.max(3, ...sol.map(p => Math.abs(p[1]))) * 1.1;
+      plot.setView([0, T], [-ymax, ymax]);
+      main.frame(s => {
+        plot.axes(s, { xLabel: 't', yLabel: 'y' });
+        const ch = characteristic(P.m, P.c, P.k);
+        if (ch.disc < 0 && P.c > 0) {
+          const env = t => Math.exp(-(P.c / (2 * P.m)) * t) * Math.hypot(P.y0, (P.v0 + (P.c / (2 * P.m)) * P.y0) / ch.roots[0].im);
+          if (P.F0 === 0) { plot.fn(s, 'env1', env, { stroke: COLORS.faint, sw: 1.2, dash: '5 5' }); plot.fn(s, 'env2', t => -env(t), { stroke: COLORS.faint, sw: 1.2, dash: '5 5' }); }
+        }
+        if (P.F0 > 0 && P.c > 0) { const A = amplitude(P.m, P.c, P.k, P.F0, P.w); plot.fn(s, 'ss1', () => A, { stroke: COLORS.purple, sw: 1, dash: '3 5' }); plot.fn(s, 'ss2', () => -A, { stroke: COLORS.purple, sw: 1, dash: '3 5' }); }
+        s.path('y', 'M ' + sol.slice(0, idx + 1).map(([t, y]) => `${plot.X(t)} ${plot.Y(y)}`).join(' L '), { stroke: COLORS.yellow, sw: 2.5 });
+        s.path('yrest', 'M ' + sol.slice(idx).map(([t, y]) => `${plot.X(t)} ${plot.Y(y)}`).join(' L '), { stroke: COLORS.yellow, sw: 1.5, opacity: 0.25 });
+        s.circle('cur', { x: plot.X(sol[idx][0]), y: plot.Y(sol[idx][1]), r: 5, fill: COLORS.yellow, stroke: 'none', sw: 0, layer: 'fx' });
+        spring(s, sol[idx][1] * (3 / ymax));
+      });
+    }
+
+    function drawResp() {
+      const w0 = Math.sqrt(P.k / P.m);
+      const wmax = Math.max(5, w0 * 2);
+      const F = P.F0 || 1;
+      let peak = 0;
+      for (let i = 0; i <= 400; i++) peak = Math.max(peak, amplitude(P.m, P.c, P.k, F, (i / 400) * wmax));
+      rplot.setView([0, wmax], [0, Math.min(peak, 6 * F / P.k) * 1.15]);   // sem atrito o pico é infinito: corta em 6× a deflexão estática
+      resp.frame(s => {
+        rplot.axes(s, { xLabel: 'ω', yLabel: 'A(ω)' });
+        rplot.fn(s, 'A', w => amplitude(P.m, P.c, P.k, P.F0 || 1, w), { stroke: COLORS.purple, sw: 2.5 });
+        s.line('w0', rplot.X(w0), 12, rplot.X(w0), 176, { stroke: COLORS.faint, sw: 1, dash: '4 4' });
+        s.text('w0l', 'ω₀', { x: rplot.X(w0) + 4, y: 22, size: 12, anchor: 'start', fill: COLORS.muted });
+        const A = amplitude(P.m, P.c, P.k, P.F0 || 1, P.w);
+        s.circle('wc', { x: rplot.X(P.w), y: rplot.Y(Math.min(A, rplot.yr[1])), r: 6, fill: COLORS.red, stroke: COLORS.text, sw: 1.5 });
+        s.text('rl', P.F0 ? '' : '(curva para F₀ = 1)', { x: W - 20, y: 24, size: 12, anchor: 'end', fill: COLORS.faint });
+      });
+    }
+
+    function recompute() {
+      for (const [id] of SPEC) { P[id] = +$(`#${id}`).value; $(`#${id}-o`).value = P[id]; }
+      sol = oscillator(P, T, 1500);
+      const ch = characteristic(P.m, P.c, P.k);
+      const w0 = Math.sqrt(P.k / P.m), zeta = P.c / (2 * Math.sqrt(P.m * P.k));
+      const fr = z => (z.im ? `${fmt(z.re, 3)} ${z.im > 0 ? '+' : '−'} ${fmt(Math.abs(z.im), 3)}i` : fmt(z.re, 3));
+      const nomes = { subamortecido: 'subamortecido (oscila decaindo)', critico: 'amortecimento crítico', superamortecido: 'superamortecido (não oscila)', 'nao-amortecido': 'sem amortecimento (oscila para sempre)' };
+      const wr = resonance(P.m, P.c, P.k);
+      $('#out').innerHTML = `<div>ω₀ = √(k/m) = <b>${fmt(w0, 3)}</b>, ζ = <b>${fmt(zeta, 3)}</b></div>
+        <div>raízes: ${fr(ch.roots[0])} e ${fr(ch.roots[1])}</div>
+        <div>regime: <b>${nomes[ch.tipo]}</b></div>
+        ${P.F0 > 0 ? `<div>${P.c > 0 ? `amplitude permanente A(ω) = <b>${fmt(amplitude(P.m, P.c, P.k, P.F0, P.w), 3)}</b>${wr ? `; pico em ω = ${fmt(wr, 3)}` : ''}` : Math.abs(P.w - w0) < 0.02 ? '<span class="c-red">ω = ω₀ sem atrito: <b>ressonância</b>, a amplitude cresce linearmente</span>' : `sem atrito e ω ≠ ω₀: <b>batimentos</b>: o envelope pulsa a cada ${fmt(2 * Math.PI / Math.abs(w0 - P.w), 2)} unidades de tempo`}</div>` : ''}`;
+      tCur = T;
+      drawMain(); drawResp();
+    }
+
+    for (const [id] of SPEC) $(`#${id}`).addEventListener('input', () => { anim?.cancel(); recompute(); });
+    $('#preset').addEventListener('change', e => {
+      const p = PRESETS[e.target.value]; if (!p) return;
+      for (const [k, v] of Object.entries(p)) $(`#${k}`).value = v;
+      e.target.value = '';
+      recompute();
+    });
+    $('#play').addEventListener('click', () => {
+      anim?.cancel();
+      anim = tween(12000, k => { tCur = k * T; drawMain(); }, ease.linear);
+    });
+    recompute();
+
+    mountQuiz($('#quiz'), [
+      { q: "Para $y'' + 4y' + 4y = 0$, o regime é…", options: ['crítico', 'subamortecido', 'superamortecido', 'sem amortecimento'], answer: 0, explain: '$c^2 - 4mk = 16 - 16 = 0$: raiz dupla $r = -2$.' },
+      { q: "A solução geral de $y'' + 9y = 0$ é…", options: ['$A\\cos 3t + B\\,\\text{sen}\\,3t$', '$Ae^{3t} + Be^{-3t}$', '$(A + Bt)e^{3t}$', '$A\\cos 9t$'], answer: 0, explain: '$r^2 + 9 = 0 \\Rightarrow r = \\pm 3i$.' },
+      { q: "Por que $y'' + y = \\cos t$ não aceita $y_p = A\\cos t + B\\,\\text{sen}\\,t$?", options: ['Porque isso já é solução da homogênea; é preciso multiplicar por t', 'Porque falta o termo constante', 'Porque cos t não é contínua', 'Aceita sim'], answer: 0, explain: 'É o caso de ressonância: $y_p = \\frac{t}{2}\\,\\text{sen}\\,t$.' },
+      { q: 'Com atrito, depois de muito tempo, a resposta a $F_0\\cos\\omega t$ oscila com qual frequência?', options: ['ω, a da força', 'ω₀, a natural', 'zero', 'ω + ω₀'], answer: 0, explain: 'O transiente (com a frequência natural) decai; sobra o regime permanente, que acompanha a força.' },
+    ]);
+  </script>
+</body>
+</html>

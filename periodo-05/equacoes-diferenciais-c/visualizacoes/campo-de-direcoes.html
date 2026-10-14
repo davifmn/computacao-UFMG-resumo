@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campo de direções · Equações Diferenciais C</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 6em 1fr 3.5em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+    table.mini { border-collapse: collapse; font-family: var(--mono); font-size: 13px; width: 100%; }
+    table.mini td, table.mini th { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--border); }
+    table.mini th { color: var(--muted); font-weight: 600; }
+    .stage svg { cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#edc">Equações Diferenciais C</a>
+      <span class="sep">/</span><span>Campo de direções</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Equações Diferenciais C</div>
+    <h1>Campo de direções e métodos numéricos</h1>
+    <p class="lead">A equação $y' = f(t, y)$ diz, em cada ponto do plano, a <b>inclinação</b> que a solução tem que ter ali. Desenhe esses tracinhos e as soluções aparecem: são as curvas que seguem o campo. <b>Clique no gráfico</b> para escolher a condição inicial e compare a solução exata com Euler, Heun e Runge-Kutta, que seguem o campo em passos de tamanho $h$.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Campo de direções"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Equação</div>
+          <div class="ctl" style="grid-template-columns:1fr"><select id="eq"></select></div>
+          <div class="readout" id="nota"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Método numérico</div>
+          <div class="ctl" style="grid-template-columns:1fr">
+            <div class="chips" role="group" aria-label="Método">
+              <button class="btn small" data-m="euler">Euler</button>
+              <button class="btn small" data-m="heun">Heun</button>
+              <button class="btn small" data-m="rk4">RK4</button>
+              <button class="btn small" data-m="none">nenhum</button>
+            </div>
+          </div>
+          <div class="ctl">
+            <span>passo h</span><input id="h" type="range" min="0.05" max="1" step="0.05" value="0.5"><output id="h-o"></output>
+          </div>
+          <div class="ctl" style="grid-template-columns:1fr"><label><input type="checkbox" id="many"> várias soluções (família)</label></div>
+        </div>
+        <div class="panel"><div class="panel-title">Erro em t₀ + 2</div><div class="readout" id="err"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Ler uma EDO sem resolvê-la</h2>
+      <p>O campo mostra o comportamento qualitativo: onde $f = 0$ os tracinhos são horizontais (<b>isóclinas</b> de inclinação zero); numa equação <b>autônoma</b> $y' = g(y)$ os tracinhos não dependem de $t$, e os zeros de $g$ são <b>equilíbrios</b>, estáveis se as soluções vizinhas se aproximam (logística: $y = 1$) e instáveis se se afastam ($y = 0$).</p>
+      <h2>Existência e unicidade (Picard)</h2>
+      <p>Se $f$ e $\partial f / \partial y$ são contínuas perto de $(t_0, y_0)$, existe uma única solução passando por ali, <b>num intervalo</b> em torno de $t_0$. Duas consequências que as equações daqui ilustram: soluções podem <b>explodir em tempo finito</b> ($y' = y^2$) e, sem a hipótese sobre $\partial f/\partial y$, a <b>unicidade falha</b> ($y' = 3y^{2/3}$ a partir de $y = 0$). Com unicidade, duas soluções nunca se cruzam.</p>
+      <h2>Métodos numéricos</h2>
+      <ul>
+        <li><b>Euler</b>: $y_{n+1} = y_n + h\,f(t_n, y_n)$. Segue a tangente; o erro global é $O(h)$: dividir $h$ por 2 divide o erro por 2.</li>
+        <li><b>Heun</b> (Euler melhorado): faz um passo de Euler, olha a inclinação no ponto de chegada e usa a média das duas. Erro $O(h^2)$: metade do passo, um quarto do erro.</li>
+        <li><b>Runge-Kutta 4</b>: média ponderada de 4 inclinações (início, dois no meio, fim), como a regra de Simpson. Erro $O(h^4)$: metade do passo, 1/16 do erro.</li>
+      </ul>
+      <p>A tabela ao lado confere essas razões na prática. É por isso que, em simulações, RK4 (ou variantes com passo adaptativo, como o <code>ode45</code> do MATLAB e o <code>solve_ivp</code> do SciPy) é o padrão.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, renderMath } from '../../../engine/page.js';
+    import { EQUATIONS, METHODS, solve, convergence } from './edo.js';
+
+    const W = 760, H = 560;
+    const scene = new Scene($('#plot'), { width: W, height: H });
+    scene.setAnimated(false);
+    let eq = null, plot = null, method = 'euler', ic = null, clipped = false;
+
+    function load(key) {
+      eq = EQUATIONS[key];
+      plot = new Plot(scene, { x: eq.win.t, y: eq.win.y, box: [40, 16, W - 16, H - 30] });
+      if (!clipped) { plot.clip(['edges', 'nodes']); clipped = true; }
+      ic = { logistica: [0, 0.1], explosao: [0, 0.5], raiz: [0, 0], gaussiana: [-2, 0.3], linear: [0, 3], seno: [0, 2] }[key];
+      $('#nota').innerHTML = `<div>$${eq.tex}$</div><div class="c-muted">${eq.nota}</div>`;
+      renderMath($('#nota'));
+      draw();
+    }
+
+    function draw() {
+      const h = +$('#h').value;
+      $('#h-o').value = h;
+      $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === method));
+      const [t0, y0] = ic;
+      const [ta, tb] = eq.win.t;
+      scene.frame(s => {
+        plot.axes(s, { xLabel: 't', yLabel: 'y' });
+        // campo de direções
+        const nx = 26, ny = 20;
+        const sx = (W - 56) / nx, sy = (H - 46) / ny;
+        for (let i = 0; i <= nx; i++) for (let j = 0; j <= ny; j++) {
+          const px = 40 + i * sx, py = 16 + j * sy;
+          const t = plot.invX(px), y = plot.invY(py);
+          const m = eq.f(t, y);
+          if (!Number.isFinite(m)) continue;
+          // direção em pixels
+          let dx = plot.sx, dy = -m * plot.sy;
+          const L = Math.hypot(dx, dy), len = Math.min(sx, sy) * 0.38;
+          dx = (dx / L) * len; dy = (dy / L) * len;
+          const steep = Math.min(1, Math.abs(Math.atan(m)) / (Math.PI / 2));
+          s.line(`f${i}-${j}`, px - dx, py - dy, px + dx, py + dy, { stroke: `hsl(${200 - 160 * steep}, 55%, 62%)`, sw: 1.4, opacity: 0.55, layer: 'bg' });
+        }
+        // família de soluções
+        if ($('#many').checked) {
+          const ys = [];
+          for (let k = 0; k <= 12; k++) ys.push(eq.win.y[0] + (k / 12) * (eq.win.y[1] - eq.win.y[0]));
+          ys.forEach((yy, k) => {
+            const f = solve(eq.f, ta, yy, 0.01, tb, 'rk4');
+            s.path(`fam${k}`, 'M ' + f.map(([t, y]) => `${plot.X(t)} ${plot.Y(y)}`).join(' L '), { stroke: COLORS.teal, sw: 1.2, opacity: 0.5 });
+          });
+        }
+        // solução exata
+        if (eq.exact) {
+          const tStop = eq.blowup ? Math.min(tb, eq.blowup(t0, y0) - 1e-3) : tb;
+          const tStart = eq.blowup && y0 < 0 ? Math.max(ta, t0 + 1 / y0 + 1e-3) : ta;
+          s.path('exact', plot.fnPath(t => (t < tStop && t > tStart ? eq.exact(t, t0, y0) : NaN), ta, tb, 800), { stroke: COLORS.green, sw: 3 });
+        } else {
+          // y' = 3y^(2/3): mostra as duas soluções a partir de y(0) = 0
+          s.path('exact', plot.fnPath(t => (t >= t0 ? (t - t0) ** 3 : 0), ta, tb, 400), { stroke: COLORS.green, sw: 3 });
+          s.path('exact2', plot.fnPath(() => 0, ta, tb, 10), { stroke: COLORS.green, sw: 3, dash: '8 6' });
+        }
+        // numérica
+        if (method !== 'none') {
+          const fw = solve(eq.f, t0, y0, h, tb, method), bw = solve(eq.f, t0, y0, -h, ta, method);
+          const pts = [...bw.reverse(), ...fw.slice(1)];
+          s.path('num', 'M ' + pts.map(([t, y]) => `${plot.X(t)} ${plot.Y(y)}`).join(' L '), { stroke: COLORS.yellow, sw: 2.5 });
+          pts.forEach(([t, y], k) => s.circle(`np${k}`, { x: plot.X(t), y: plot.Y(y), r: 3.5, fill: COLORS.yellow, stroke: 'none', sw: 0 }));
+        }
+        s.circle('ic', { x: plot.X(t0), y: plot.Y(y0), r: 7, fill: COLORS.red, stroke: COLORS.text, sw: 2, layer: 'fx' });
+        s.text('icl', `(${t0.toFixed(2)}, ${y0.toFixed(2)})`, { x: plot.X(t0) + 10, y: plot.Y(y0) - 14, size: 13, anchor: 'start', mono: true, fill: COLORS.red, layer: 'fx' });
+      });
+      // tabela de convergência
+      if (eq.exact && method !== 'none' && !(eq.blowup && eq.blowup(t0, y0) <= t0 + 2)) {
+        const rows = convergence(eq, t0, y0, t0 + 2, h, method);
+        $('#err').innerHTML = `<table class="mini"><tr><th>h</th><th>y numérico</th><th>erro</th><th>razão</th></tr>${rows.map((r, k) => `<tr><td>${r.h.toFixed(4)}</td><td>${r.y.toFixed(6)}</td><td>${r.err.toExponential(2)}</td><td>${k ? (rows[k - 1].err / r.err).toFixed(2) : ''}</td></tr>`).join('')}</table>
+          <div class="c-muted">${METHODS[method].nome} tem ordem ${METHODS[method].ordem}: cada vez que h cai pela metade, o erro deve cair por ≈ 2<sup>${METHODS[method].ordem}</sup> = <b>${2 ** METHODS[method].ordem}</b>.</div>`;
+      } else if (eq.blowup && eq.blowup(t0, y0) <= t0 + 2) {
+        $('#err').innerHTML = `<div class="c-red">A solução exata explode em t = ${eq.blowup(t0, y0).toFixed(3)}, antes de t₀ + 2.</div>`;
+      } else {
+        $('#err').innerHTML = '<div class="c-muted">Sem solução exata única para comparar.</div>';
+      }
+    }
+
+    $('#eq').innerHTML = Object.entries(EQUATIONS).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#eq').addEventListener('change', () => load($('#eq').value));
+    $$('[data-m]').forEach(b => b.addEventListener('click', () => { method = b.dataset.m; draw(); }));
+    $('#h').addEventListener('input', draw);
+    $('#many').addEventListener('change', draw);
+    $('#plot').addEventListener('click', e => {
+      const pt = $('#plot').createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform($('#plot').getScreenCTM().inverse());
+      ic = [plot.invX(p.x), plot.invY(p.y)];
+      draw();
+    });
+    load('linear');
+
+    mountQuiz($('#quiz'), [
+      { q: "Com Euler e passo h = 0,1, o erro em t = 1 é 0,02. Qual o erro esperado com h = 0,025?", options: ['0,005', '0,01', '0,00125', '0,02'], answer: 0, explain: 'Ordem 1: o erro é proporcional a h. Passo 4 vezes menor, erro 4 vezes menor.' },
+      { q: 'E com RK4, se o erro com h = 0,1 é 10⁻⁴, quanto será com h = 0,05?', options: ['≈ 6×10⁻⁶', '5×10⁻⁵', '2,5×10⁻⁵', '10⁻⁸'], answer: 0, explain: 'Ordem 4: metade do passo, erro dividido por 16.' },
+      { q: "Em y' = y(1 − y), o que acontece com a solução que começa em y(0) = 0,1?", options: ['Cresce em forma de S e tende a 1', 'Tende a 0', 'Explode', 'Oscila'], answer: 0, explain: 'Entre os equilíbrios 0 e 1, $y\' > 0$; a solução sobe e se aproxima do equilíbrio estável $y = 1$ sem nunca cruzá-lo (unicidade).' },
+      { q: "Duas soluções de y' = f(t, y), com f suave, podem se cruzar?", options: ['Não: no ponto de cruzamento haveria duas soluções com a mesma condição inicial', 'Sim, sempre', 'Só em equilíbrios', 'Só se f for linear'], answer: 0, explain: 'É o teorema de unicidade. Por isso os equilíbrios funcionam como barreiras.' },
+    ]);
+  </script>
+</body>
+</html>

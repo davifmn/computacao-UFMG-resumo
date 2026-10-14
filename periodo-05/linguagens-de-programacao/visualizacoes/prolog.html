@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prolog · Linguagens de Programação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 300px; font-size: 13px; }
+    .toolbar input[type=text] { width: 340px; font-family: var(--mono); }
+    details.edit textarea { width: 100%; min-height: 160px; font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    details.edit { margin-bottom: 12px; }
+    #err { color: var(--red); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#lp">Linguagens de Programação</a>
+      <span class="sep">/</span><span>Prolog</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Linguagens de Programação</div>
+    <h1>Prolog: unificação e retrocesso</h1>
+    <p class="lead">Em programação lógica você descreve <b>relações</b> (fatos e regras) e faz perguntas. O interpretador responde procurando uma prova: troca o primeiro objetivo pelo corpo de uma cláusula cuja cabeça <b>unifica</b> com ele e, se ficar sem saída, <b>retrocede</b> e tenta a próxima. Veja a árvore de busca (árvore SLD) sendo construída.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Exemplos"></select>
+      <label>?- <input id="q" type="text"></label>
+      <button class="btn primary small" id="go">Consultar</button>
+      <span class="spacer"></span>
+      <span class="c-muted" id="ans"></span>
+    </div>
+    <details class="edit"><summary class="c-muted">Editar o programa</summary>
+      <textarea id="prog" spellcheck="false"></textarea>
+    </details>
+    <div id="err"></div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>nó atual</span><span><i style="background:#83c167"></i>sucesso (□: nenhum objetivo restante)</span><span><i style="background:#fc6255"></i>falha</span><span>rótulo da aresta = número da cláusula usada</span></div>
+
+    <section class="prose">
+      <h2>Termos e unificação</h2>
+      <p>Termos são constantes (<code>abraao</code>, <code>3</code>), variáveis (começam com maiúscula: <code>X</code>, <code>Lista</code>) e estruturas (<code>pai(X, isaque)</code>; listas <code>[H | T]</code> são estruturas também). Dois termos <b>unificam</b> se existe uma substituição das variáveis que os torna iguais: <code>pai(X, isaque)</code> e <code>pai(abraao, Y)</code> unificam com $\{X = abraao, Y = isaque\}$; <code>f(X)</code> e <code>g(X)</code>, não. A unificação é bidirecional, diferente do casamento de padrões de ML: por isso <code>append(X, Y, [1, 2, 3])</code> funciona "ao contrário" e enumera todas as divisões da lista.</p>
+      <h2>Resolução SLD</h2>
+      <ol class="step-list">
+        <li>Pegue o <b>primeiro</b> objetivo da lista.</li>
+        <li>Percorra as cláusulas <b>na ordem do programa</b>; renomeie as variáveis da cláusula (cada uso é uma cópia nova) e tente unificar a cabeça com o objetivo.</li>
+        <li>Se unificar, troque o objetivo pelo corpo da cláusula e aplique a substituição ao resto.</li>
+        <li>Lista vazia: <b>sucesso</b>, imprima as ligações. Nenhuma cláusula serve: <b>falha</b>, volte ao último ponto de escolha.</li>
+      </ol>
+      <p>É uma <b>busca em profundidade</b> na árvore: econômica em memória, mas <b>incompleta</b>. Com recursão à esquerda (<code>anc(X, Y) :- anc(X, Z), …</code>), o primeiro ramo é infinito e o Prolog nunca chega às respostas, mesmo que elas existam. Trocar a ordem dos objetivos resolve. Por isso, em Prolog, a ordem das cláusulas e dos objetivos faz parte do programa.</p>
+      <div class="callout warn"><p><b>Lógica com concessões.</b> Por eficiência, o Prolog padrão não faz o <i>occurs check</i> (<code>X = f(X)</code> "dá certo" e cria um termo cíclico), tem o <i>cut</i> <code>!</code> (corta pontos de escolha) e a negação por falha <code>\+</code> (não provável ≠ falso). Aritmética com <code>is</code> só funciona com o lado direito instanciado: <code>fat(N, 6)</code> dá erro.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { runText, EXAMPLES } from './prolog.js';
+
+    const W = 900, H = 520;
+    let layout = null;
+    const cut = (s, k) => (s.length > k ? s.slice(0, k - 1) + '…' : s);
+
+    function computeLayout(nodes) {
+      const kids = new Map(nodes.map(n => [n.id, []]));
+      nodes.forEach(n => { if (n.parent != null) kids.get(n.parent).push(n.id); });
+      const pos = new Map();
+      let leaf = 0, maxD = 0;
+      const go = (id, d) => {
+        maxD = Math.max(maxD, d);
+        const ch = kids.get(id);
+        if (!ch.length) pos.set(id, { x: leaf++, d });
+        else { ch.forEach(c => go(c, d + 1)); pos.set(id, { x: ch.reduce((s, c) => s + pos.get(c).x, 0) / ch.length, d }); }
+      };
+      go(0, 0);
+      const dx = Math.min(240, (W - 140) / Math.max(1, leaf - 1)), dy = Math.min(64, (H - 60) / Math.max(1, maxD));
+      const x0 = leaf === 1 ? W / 2 : (W - dx * (leaf - 1)) / 2;
+      for (const p of pos.values()) { p.px = x0 + p.x * dx; p.py = 30 + p.d * dy; }
+      return { pos, dx, dy, nodes };
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa', lang: 'prolog',
+      render(step, s) {
+        const { pos, dx, dy, nodes } = layout;
+        const fs = dy < 34 ? 10 : 12;
+        const chars = Math.max(8, Math.floor((Math.min(dx, 300) - 24) / (fs * 0.62)));
+        for (const n of nodes) {
+          if (n.id >= step.upto) continue;
+          const p = pos.get(n.id);
+          if (n.parent != null) {
+            const q = pos.get(n.parent);
+            s.line(`e${n.id}`, q.px, q.py + 10, p.px, p.py - 10, { stroke: COLORS.faint, sw: 1.5 });
+            s.text(`el${n.id}`, n.clause == null ? '·' : n.clause + 1, { x: (p.px + q.px) / 2 + 8, y: (p.py + q.py) / 2, size: 11, mono: true, fill: COLORS.purple });
+          }
+          const st = step.status[n.id], cur = n.id === step.node;
+          const col = cur ? COLORS.yellow : st === 'sucesso' ? COLORS.green : st === 'falha' ? COLORS.red : COLORS.text;
+          const txt = n.label === '□' ? '□' : cut(n.label, chars) + (st === 'falha' ? '  ✗' : '');
+          const w = Math.max(28, txt.length * fs * 0.62 + 14);
+          s.rect(`n${n.id}`, { x: p.px - w / 2, y: p.py - 11, w, h: 22, rx: 6, fill: cur ? '#3d3a22' : st === 'sucesso' ? '#1f3319' : st === 'falha' ? '#3a1d1d' : COLORS.surface2, stroke: col, sw: cur ? 2.5 : 1 });
+          s.text(`nt${n.id}`, txt, { x: p.px, y: p.py, size: fs, mono: true, fill: col });
+        }
+      },
+    });
+
+    function go() {
+      $('#err').textContent = '';
+      let r;
+      try { r = runText($('#prog').value, $('#q').value); }
+      catch (e) { $('#err').textContent = e.message; return; }
+      layout = computeLayout(r.nodes);
+      player.setCode($('#prog').value, 'prolog');
+      player.load(r.steps);
+      $('#ans').textContent = r.answers.length ? `respostas: ${r.answers.map(a => Object.entries(a).map(([k, v]) => `${k} = ${v}`).join(', ') || 'yes').join(' ; ')}` : 'resposta: no';
+    }
+    $('#ex').innerHTML = Object.entries(EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    const load = k => { $('#prog').value = EXAMPLES[k].prog; $('#q').value = EXAMPLES[k].query; go(); };
+    $('#ex').addEventListener('change', () => load($('#ex').value));
+    $('#go').addEventListener('click', go);
+    $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    $('#prog').addEventListener('change', go);
+    load('familia');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o resultado de unificar <code>f(X, b)</code> com <code>f(a, Y)</code>?', options: ['X = a, Y = b', 'Falha', 'X = Y', 'X = b, Y = a'], answer: 0, explain: 'Mesmo functor e mesma aridade; unifica argumento a argumento.' },
+      { q: '<code>[H | T]</code> unifica com <code>[1, 2, 3]</code> dando…', options: ['H = 1, T = [2, 3]', 'H = [1], T = [2, 3]', 'H = 1, T = 3', 'falha'], answer: 0, explain: 'A lista é ".(1, .(2, .(3, [])))": a cabeça é o primeiro elemento, a cauda é o resto (uma lista).' },
+      { q: 'Por que <code>anc(X, Y) :- anc(X, Z), pai(Z, Y).</code> não termina?', options: ['O primeiro objetivo chama anc de novo sem consumir nada: ramo infinito à esquerda', 'Porque falta o cut', 'Porque pai não está definido', 'Porque X e Y são iguais'], answer: 0, explain: 'A busca em profundidade desce para sempre no primeiro ramo. Colocando pai(X, Z) antes, cada passo consome um fato.' },
+      { q: 'Quantas respostas <code>?- append(X, Y, [a, b]).</code> dá?', options: ['3', '1', '2', '4'], answer: 0, explain: '[] + [a, b], [a] + [b] e [a, b] + [].' },
+    ]);
+  </script>
+</body>
+</html>

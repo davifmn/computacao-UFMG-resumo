@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Branch and bound · Pesquisa Operacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#po">Pesquisa Operacional</a>
+      <span class="sep">/</span><span>Branch and bound</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Pesquisa Operacional</div>
+    <h1>Programação inteira: branch and bound</h1>
+    <p class="lead">Quando as variáveis têm que ser inteiras (caminhões, pessoas, sim/não), o ótimo da PL pode cair entre os pontos inteiros, e arredondar não funciona. O <b>branch and bound</b> resolve a relaxação linear, divide o problema numa variável fracionária e <b>poda</b> os ramos que não podem superar a melhor solução já encontrada.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Problema"></select>
+      <span class="c-muted" id="story"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#83c167"></i>região do problema original</span><span><i style="background:#58c4dd"></i>região do nó atual</span><span><i style="background:#f4d35e"></i>ótimo da relaxação</span><span><i style="background:#b189f5"></i>incumbente (melhor inteira)</span><span><i style="background:#fc6255"></i>podado / inviável</span></div>
+
+    <section class="prose">
+      <h2>As três podas</h2>
+      <ol class="step-list">
+        <li><b>Inviabilidade:</b> a relaxação do nó não tem solução; nenhuma solução inteira também.</li>
+        <li><b>Limite (bound):</b> a relaxação é um limite superior (num max) para tudo que está abaixo do nó. Se ela não supera a incumbente, o ramo inteiro é descartado sem ser explorado.</li>
+        <li><b>Integralidade:</b> a relaxação já é inteira: vira candidata a incumbente, e não há o que ramificar.</li>
+      </ol>
+      <p>Senão, escolhe-se uma variável fracionária $x_j = v$ e cria-se dois filhos, $x_j \le \lfloor v \rfloor$ e $x_j \ge \lceil v \rceil$: a faixa $\lfloor v \rfloor < x_j < \lceil v \rceil$ some, e nenhuma solução inteira é perdida.</p>
+      <h2>Por que não arredondar</h2>
+      <p>No exemplo "Arredondar não funciona", a relaxação dá (2; 1,8). Arredondar para (2, 2) é <b>inviável</b>; para baixo, (2, 1) dá z = 7, mas o ótimo inteiro é (0, 2) com z = 10, longe do ótimo linear. Em problemas com variáveis 0/1, arredondar costuma ser ainda pior.</p>
+      <div class="callout tip"><p><b>Na prática.</b> Programação inteira é NP-difícil (a mochila e o caixeiro são casos particulares), mas resolvedores como CPLEX, Gurobi e o livre HiGHS combinam branch and bound com <b>planos de corte</b> (cortes de Gomory que apertam a relaxação), heurísticas e boas regras de escolha de nó, e resolvem problemas com milhões de variáveis. A ordem de exploração importa: em profundidade acha incumbentes cedo; "melhor limite primeiro" prova o ótimo com menos nós.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { IP_EXAMPLES, BB_CODE, branchAndBound, feasiblePolygon, fmtNum } from './po.js';
+
+    const W = 900, H = 520;
+    let ex = null, all = null, tree = null, view = null;
+
+    function treeLayout(nodes) {
+      const kids = new Map(nodes.map(n => [n.id, []]));
+      nodes.forEach(n => { if (n.parent != null) kids.get(n.parent).push(n.id); });
+      const pos = new Map();
+      let leaf = 0, maxD = 0;
+      const go = (id, d) => {
+        maxD = Math.max(maxD, d);
+        const ch = kids.get(id);
+        if (!ch.length) pos.set(id, { x: leaf++, d });
+        else { ch.forEach(c => go(c, d + 1)); pos.set(id, { x: (pos.get(ch[0]).x + pos.get(ch.at(-1)).x) / 2, d }); }
+      };
+      go(0, 0);
+      const x0 = 480, x1 = 880, dx = leaf > 1 ? (x1 - x0) / (leaf - 1) : 0, dy = Math.min(78, 440 / Math.max(1, maxD));
+      for (const p of pos.values()) { p.px = leaf > 1 ? x0 + p.x * dx : (x0 + x1) / 2; p.py = 40 + p.d * dy; }
+      pos.bw = Math.min(72, Math.max(42, (leaf > 1 ? dx : 80) - 6));
+      return pos;
+    }
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'branch and bound', lang: 'python',
+      render(step, s) {
+        // ----- plano -----
+        const [mx, my] = view;
+        const bx = [40, 30, 440, 490];
+        const sc = Math.min((bx[2] - bx[0]) / mx, (bx[3] - bx[1]) / my);
+        const X = v => bx[0] + v * sc, Y = v => bx[3] - v * sc;
+        s.line('ax', X(0), Y(0), X(mx), Y(0), { stroke: COLORS.muted, sw: 1 });
+        s.line('ay', X(0), Y(0), X(0), Y(my), { stroke: COLORS.muted, sw: 1 });
+        for (let x = 0; x <= Math.floor(mx); x++) s.text(`lx${x}`, x, { x: X(x), y: Y(0) + 14, size: 10, mono: true, fill: COLORS.faint });
+        for (let y = 1; y <= Math.floor(my); y++) s.text(`ly${y}`, y, { x: X(0) - 10, y: Y(y), size: 10, mono: true, fill: COLORS.faint });
+        const poly0 = feasiblePolygon(ex.cons, 50);
+        s.path('poly0', poly0.map((p, k) => `${k ? 'L' : 'M'} ${X(p[0])} ${Y(p[1])}`).join(' ') + ' Z', { stroke: COLORS.green, sw: 1.5, fill: 'rgba(131,193,103,0.10)', layer: 'bg' });
+        for (let x = 0; x <= Math.floor(mx); x++) for (let y = 0; y <= Math.floor(my); y++) {
+          const ok = ex.cons.every(k => k.a[0] * x + k.a[1] * y <= k.b + 1e-9);
+          s.circle(`g${x}-${y}`, { x: X(x), y: Y(y), r: ok ? 3.5 : 2, fill: ok ? COLORS.green : COLORS.faint, stroke: 'none', sw: 0, layer: 'bg' });
+        }
+        const cur = step.node != null ? step.nodes[step.node] : null;
+        if (cur) {
+          const poly = feasiblePolygon([...ex.cons, ...cur.extra], 50);
+          if (poly.length) s.path('polyc', poly.map((p, k) => `${k ? 'L' : 'M'} ${X(p[0])} ${Y(p[1])}`).join(' ') + (poly.length > 2 ? ' Z' : ''), { stroke: COLORS.blue, sw: 2.5, fill: 'rgba(88,196,221,0.22)' });
+          else s.path('polyc', `M ${X(0)} ${Y(0)}`, { stroke: COLORS.blue, sw: 0, opacity: 0 });
+          if (cur.x) s.circle('lp', { x: X(cur.x[0]), y: Y(cur.x[1]), r: 7, fill: COLORS.yellow, stroke: COLORS.text, sw: 1.5, layer: 'fx' });
+          if (step.branch) {
+            const { j, lo, hi } = step.branch;
+            for (const [k, v] of [['lo', lo], ['hi', hi]]) {
+              if (j === 0) s.line(`cut${k}`, X(v), Y(0), X(v), Y(my), { stroke: COLORS.orange, sw: 2, dash: '6 5', layer: 'fx' });
+              else s.line(`cut${k}`, X(0), Y(v), X(mx), Y(v), { stroke: COLORS.orange, sw: 2, dash: '6 5', layer: 'fx' });
+            }
+          }
+        }
+        if (step.best) s.text('star', '★', { x: X(step.best.x[0]), y: Y(step.best.x[1]), size: 26, fill: COLORS.purple, layer: 'fx' });
+        // ----- árvore -----
+        for (const n of step.nodes) {
+          const p = tree.get(n.id);
+          if (n.parent != null) {
+            const q = tree.get(n.parent);
+            s.line(`te${n.id}`, q.px, q.py + 16, p.px, p.py - 16, { stroke: COLORS.faint, sw: 1.5 });
+            s.text(`tel${n.id}`, n.label, { x: (p.px + q.px) / 2 + (p.px < q.px ? -6 : 6), y: (p.py + q.py) / 2, size: 11, mono: true, anchor: p.px < q.px ? 'end' : 'start', fill: COLORS.orange });
+          }
+          const isCur = n.id === step.node;
+          const col = { inteiro: COLORS.purple, podado: COLORS.red, inviavel: COLORS.red, ramificado: COLORS.blue, aberto: COLORS.muted }[n.status];
+          const bw = tree.bw;
+          s.rect(`tn${n.id}`, { x: p.px - bw / 2, y: p.py - 16, w: bw, h: 32, rx: 7, fill: isCur ? '#3d3a22' : COLORS.surface2, stroke: isCur ? COLORS.yellow : col, sw: isCur ? 2.5 : 1.5 });
+          s.text(`tnt${n.id}`, n.status === 'inviavel' ? 'inviável' : `z=${fmtNum(n.z)}`, { x: p.px, y: p.py, size: bw < 60 ? 10 : 12, mono: true, weight: 700, fill: isCur ? COLORS.yellow : col });
+        }
+      },
+    });
+
+    function run() {
+      ex = IP_EXAMPLES[$('#ex').value];
+      $('#story').textContent = `max ${ex.c[0]}x + ${ex.c[1]}y, x e y inteiros ≥ 0, com ${ex.cons.map(k => `${k.a[0]}x ${k.a[1] < 0 ? '−' : '+'} ${Math.abs(k.a[1])}y ≤ ${k.b}`).join(', ')}`;
+      all = branchAndBound(ex.c, ex.cons);
+      tree = treeLayout(all.nodes);
+      const poly = feasiblePolygon(ex.cons, 50);
+      view = [Math.max(...poly.map(p => p[0])) + 1.2, Math.max(...poly.map(p => p[1])) + 1.2];
+      player.load(all.steps);
+    }
+    $('#ex').innerHTML = Object.entries(IP_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', run);
+    player.setCode(BB_CODE, 'python');
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Num problema de maximização, a relaxação linear de um nó dá…', options: ['um limite superior para as soluções inteiras daquele ramo', 'um limite inferior', 'a solução inteira', 'nada sobre o ramo'], answer: 0, explain: 'A relaxação tem mais pontos viáveis que o problema inteiro, então seu ótimo é pelo menos tão bom.' },
+      { q: 'A relaxação de um nó dá z = 18,5 e a incumbente tem z = 19. O que fazer?', options: ['Podar: nada abaixo do nó passa de 18,5', 'Ramificar', 'Trocar a incumbente', 'Resolver de novo com o simplex dual'], answer: 0, explain: 'Poda por limite.' },
+      { q: 'Se os coeficientes do objetivo são inteiros e a relaxação dá z = 20,7, qual o maior z inteiro possível naquele ramo?', options: ['20', '21', '20,7', '19'], answer: 0, explain: 'Com x e c inteiros, z é inteiro, então z ≤ ⌊20,7⌋ = 20. Esse arredondamento do limite poda mais cedo.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Método gráfico · Pesquisa Operacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 9.5em 1fr 3.2em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+    .story { padding: 4px 14px 12px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#po">Pesquisa Operacional</a>
+      <span class="sep">/</span><span>Método gráfico</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Pesquisa Operacional</div>
+    <h1>Programação linear no plano: o ótimo está num vértice</h1>
+    <p class="lead">Com duas variáveis, cada restrição é um semiplano e a região viável é um <b>polígono convexo</b>. A função objetivo é uma família de retas paralelas (as <b>curvas de nível</b>); empurre a reta na direção do gradiente até ela tocar o polígono pela última vez. Gire o objetivo e mexa nos recursos para ver o ótimo pular de vértice em vértice.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="plot" aria-label="Região viável"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Problema</div>
+          <div class="ctl" style="grid-template-columns:1fr">
+            <select id="ex"></select>
+          </div>
+          <div class="story" id="story"></div>
+          <div class="ctl" id="ctl"></div>
+        </div>
+        <div class="panel"><div class="panel-title">Solução</div><div class="readout" id="sol"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Modelagem</h2>
+      <p>Um problema de programação linear tem <b>variáveis de decisão</b> (quanto produzir de cada coisa), uma <b>função objetivo</b> linear (lucro, custo) e <b>restrições</b> lineares (recursos, demandas). Na forma canônica: $\max\ c^\top x$ s.a. $Ax \le b$, $x \ge 0$. A hipótese forte é a <b>linearidade</b>: o dobro de produção usa o dobro de recurso e dá o dobro de lucro, sem economia de escala.</p>
+      <h2>Por que vértices</h2>
+      <p>A região viável é a interseção de semiplanos: um poliedro convexo. Uma função linear sobre um poliedro atinge o máximo (se ele existir) num <b>vértice</b>, pois de qualquer ponto interior dá para andar na direção do gradiente e melhorar. Por isso o simplex só visita vértices. Casos especiais: <b>múltiplos ótimos</b> (a reta de nível fica paralela a uma aresta: gire o objetivo até isso acontecer), <b>ilimitado</b> e <b>inviável</b>.</p>
+      <h2>Preço-sombra (análise de sensibilidade)</h2>
+      <p>Aumente em 1 o lado direito de uma restrição ativa: o vértice ótimo se move e $z$ muda em $y_i$, o <b>preço-sombra</b> daquele recurso. É quanto vale a pena pagar por uma unidade a mais. Restrições folgadas têm preço-sombra zero: sobra recurso, e mais dele não ajuda. Enquanto a base ótima não muda, $z$ varia linearmente com $b_i$; os preços-sombra são exatamente a solução do <b>problema dual</b>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { LP_EXAMPLES, solve2D, feasiblePolygon, fmtNum } from './po.js';
+
+    const W = 700, H = 600;
+    const scene = new Scene($('#plot'), { width: W, height: H });
+    $('#plot').style.setProperty('--dur', '120ms');
+    const CCOL = [COLORS.blue, COLORS.purple, COLORS.teal, COLORS.orange, COLORS.pink];
+    let ex = null, b = null, c = null, view = null, plot = null;
+
+    function load(key) {
+      ex = LP_EXAMPLES[key];
+      b = [...ex.b]; c = [...ex.c];
+      $('#story').textContent = ex.texto;
+      const g = solve2D(ex.c, ex.A.map((a, i) => ({ a, op: '<=', b: ex.b[i] })));
+      const mx = Math.max(...g.vertices.map(p => p[0])) * 1.35 + 1, my = Math.max(...g.vertices.map(p => p[1])) * 1.35 + 1;
+      view = [mx, my];
+      plot = new Plot(scene, { x: [-mx * 0.06, mx], y: [-my * 0.06, my], box: [50, 20, W - 20, H - 40] });
+      if (!scene._clipped) { plot.clip(['edges', 'nodes']); scene._clipped = true; }
+      $('#ctl').innerHTML = [
+        ...c.map((v, j) => `<span>lucro de x${j + 1}</span><input type="range" id="c${j}" min="-2" max="${Math.max(10, 2 * v)}" step="0.5" value="${v}"><output id="c${j}-o"></output>`),
+        ...b.map((v, i) => `<span class="c-${['blue', 'purple', 'teal', 'orange'][i]}">recurso ${i + 1} (b${i + 1})</span><input type="range" id="b${i}" min="0" max="${2 * v}" step="${v >= 50 ? 5 : 0.5}" value="${v}"><output id="b${i}-o"></output>`),
+      ].join('');
+      for (const el of $('#ctl').querySelectorAll('input')) el.addEventListener('input', () => {
+        const k = el.id[0], i = +el.id.slice(1);
+        (k === 'c' ? c : b)[i] = +el.value;
+        draw();
+      });
+      draw();
+    }
+
+    function draw() {
+      c.forEach((v, j) => { $(`#c${j}-o`).value = v; });
+      b.forEach((v, i) => { $(`#b${i}-o`).value = v; });
+      const cons = ex.A.map((a, i) => ({ a, op: '<=', b: b[i] }));
+      const g = solve2D(c, cons);
+      const poly = feasiblePolygon(cons, Math.max(...view) * 4);
+      const [mx, my] = view;
+      scene.frame(s => {
+        plot.axes(s, { xLabel: 'x₁', yLabel: 'x₂' });
+        if (poly.length) s.path('region', poly.map((p, k) => `${k ? 'L' : 'M'} ${plot.X(p[0])} ${plot.Y(p[1])}`).join(' ') + ' Z', { stroke: COLORS.green, sw: 2, fill: 'rgba(131,193,103,0.16)' });
+        // retas das restrições
+        ex.A.forEach((a, i) => {
+          const pts = [];
+          if (Math.abs(a[1]) > 1e-9) { pts.push([0, b[i] / a[1]]); pts.push([mx, (b[i] - a[0] * mx) / a[1]]); }
+          else pts.push([b[i] / a[0], 0], [b[i] / a[0], my]);
+          s.line(`r${i}`, plot.X(pts[0][0]), plot.Y(pts[0][1]), plot.X(pts[1][0]), plot.Y(pts[1][1]), { stroke: CCOL[i], sw: 2 });
+          const lbl = `${a.map((v, j) => (v ? `${v === 1 ? '' : v}x${j + 1}` : '')).filter(Boolean).join(' + ')} ≤ ${fmt(b[i], 1)}`;
+          const lx = Math.abs(a[1]) > 1e-9 ? Math.min(mx * 0.75, a[0] > 0 ? b[i] / a[0] * 0.5 : mx * 0.6) : b[i] / a[0];
+          const ly = Math.abs(a[1]) > 1e-9 ? (b[i] - a[0] * lx) / a[1] : my * 0.85;
+          s.text(`rl${i}`, lbl, { x: plot.X(lx) + 8, y: plot.Y(ly) - 12, size: 13, anchor: 'start', mono: true, fill: CCOL[i], layer: 'fx' });
+        });
+        // curva de nível pelo ótimo e gradiente
+        if (g.status !== 'inviavel' && g.status !== 'ilimitado') {
+          const [x0, y0] = g.x, z = g.z;
+          const dir = [-c[1], c[0]], L = Math.hypot(...dir) || 1;
+          const big = Math.max(mx, my) * 2;
+          s.line('iso', plot.X(x0 - dir[0] / L * big), plot.Y(y0 - dir[1] / L * big), plot.X(x0 + dir[0] / L * big), plot.Y(y0 + dir[1] / L * big), { stroke: COLORS.yellow, sw: 2.5, dash: '8 6' });
+          for (const f of [0.33, 0.66]) {
+            const zx = z * f, pc = c[0] * c[0] + c[1] * c[1] || 1, p0 = [c[0] * zx / pc, c[1] * zx / pc];
+            s.line(`iso${f}`, plot.X(p0[0] - dir[0] / L * big), plot.Y(p0[1] - dir[1] / L * big), plot.X(p0[0] + dir[0] / L * big), plot.Y(p0[1] + dir[1] / L * big), { stroke: COLORS.yellow, sw: 1, dash: '3 6', opacity: 0.45 });
+          }
+          const sc = Math.max(mx, my) * 0.12 / (Math.hypot(...c) || 1);
+          s.line('grad', plot.X(x0), plot.Y(y0), plot.X(x0 + c[0] * sc), plot.Y(y0 + c[1] * sc), { stroke: COLORS.red, sw: 3, arrow: true, layer: 'fx' });
+        }
+        poly.forEach((p, k) => {
+          const opt = g.ties?.some(q => Math.abs(q[0] - p[0]) < 1e-7 && Math.abs(q[1] - p[1]) < 1e-7);
+          s.circle(`v${k}`, { x: plot.X(p[0]), y: plot.Y(p[1]), r: opt ? 9 : 6, fill: opt ? COLORS.yellow : COLORS.surface3, stroke: COLORS.text, sw: 1.5, layer: 'fx' });
+          s.text(`vl${k}`, `(${fmtNum(p[0])}, ${fmtNum(p[1])})  z=${fmtNum(c[0] * p[0] + c[1] * p[1])}`, { x: plot.X(p[0]) + 10, y: plot.Y(p[1]) + 16, size: 12, anchor: 'start', mono: true, fill: opt ? COLORS.yellow : COLORS.muted, layer: 'fx' });
+        });
+      });
+      // leitura
+      let html;
+      if (g.status === 'inviavel') html = '<div class="c-red">Região vazia: nenhum ponto satisfaz todas as restrições.</div>';
+      else if (g.status === 'ilimitado') html = '<div class="c-red">Ilimitado: dá para aumentar z sem parar dentro da região.</div>';
+      else {
+        const shadow = b.map((_, i) => {
+          const b2 = [...b]; b2[i] += 1;
+          const g2 = solve2D(c, ex.A.map((a, k) => ({ a, op: '<=', b: b2[k] })));
+          return g2.z - g.z;
+        });
+        const slack = ex.A.map((a, i) => b[i] - a[0] * g.x[0] - a[1] * g.x[1]);
+        html = `<div>Ótimo: x = (<b>${fmtNum(g.x[0])}</b>, <b>${fmtNum(g.x[1])}</b>), z = <b>${fmtNum(g.z)}</b>${g.status === 'multiplas' ? ' <span class="c-teal">(múltiplos ótimos: toda a aresta empata)</span>' : ''}</div>`
+          + ex.A.map((_, i) => `<div class="c-${['blue', 'purple', 'teal', 'orange'][i]}">recurso ${i + 1}: folga ${fmtNum(slack[i])} · ${Math.abs(slack[i]) < 1e-7 ? `<b>ativa</b>, +1 unidade → z ${shadow[i] >= 0 ? '+' : ''}${fmtNum(shadow[i])}` : 'folgada, preço-sombra 0'}</div>`).join('');
+      }
+      $('#sol').innerHTML = html;
+    }
+
+    $('#ex').innerHTML = Object.entries(LP_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', () => load($('#ex').value));
+    load('wyndor');
+
+    mountQuiz($('#quiz'), [
+      { q: 'Se a reta de nível ficar paralela a uma aresta do polígono no ótimo…', options: ['Há infinitas soluções ótimas (toda a aresta)', 'O problema é inviável', 'O problema é ilimitado', 'O simplex não funciona'], answer: 0, explain: 'Os dois vértices da aresta e todos os pontos entre eles dão o mesmo z.' },
+      { q: 'Uma restrição com folga positiva no ótimo tem preço-sombra…', options: ['zero', 'positivo', 'negativo', 'infinito'], answer: 0, explain: 'Sobra recurso: mais uma unidade dele não muda o ótimo. É a <b>folga complementar</b>: $y_i \\cdot s_i = 0$.' },
+      { q: 'Por que a região viável de uma PL é sempre convexa?', options: ['É interseção de semiplanos, e interseção de convexos é convexa', 'Porque as variáveis são não negativas', 'Porque o objetivo é linear', 'Nem sempre é'], answer: 0, explain: 'Cada restrição linear define um semiplano (convexo).' },
+    ]);
+  </script>
+</body>
+</html>

@@ -9,6 +9,9 @@ const KEYWORDS = {
     + 'pass continue break lambda yield with as').split(' ')),
   bash: new Set('if then else fi for do done while in echo cd mkdir make git g++ export'.split(' ')),
   make: new Set('all clean test PHONY'.split(' ')),
+  ml: new Set('fn let rec in if then else true false val fun end'.split(' ')),
+  prolog: new Set('is'.split(' ')),
+  mini: new Set('var proc print'.split(' ')),
 };
 
 // Linguagens em que '#' inicia um comentário.

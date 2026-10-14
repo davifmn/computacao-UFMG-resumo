@@ -90,6 +90,15 @@ python3 -m http.server 8000     # ou: npx serve
 | [Álgebra A](periodo-04/algebra-a/) · MAT034 | Grupos e simetrias · Permutações · Teorema Chinês do Resto | Python |
 | [Introdução à Ciência dos Dados](periodo-04/introducao-a-ciencia-dos-dados/) · DCC212 | Bootstrap · Teste A/B · Simpson e Anscombe · k-NN e sobreajuste | Python |
 
+### 5º período
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Algoritmos II](periodo-05/algoritmos-2/) · DCC207 | Casamento de padrões (KMP, Horspool) · Huffman e LZW · Envoltória convexa · NP-completude e aproximação | C++ |
+| [Linguagens de Programação](periodo-05/linguagens-de-programacao/) · DCC024 | Cálculo lambda · Inferência de tipos (Hindley-Milner) · Escopo e passagem de parâmetros · Prolog | Python (redutor λ, algoritmo W, mini-Prolog) |
+| [Pesquisa Operacional](periodo-05/pesquisa-operacional/) · DCC035 | Método gráfico · Simplex · Branch and bound · Fluxo máximo | Python |
+| [Equações Diferenciais C](periodo-05/equacoes-diferenciais-c/) · MAT040 | Campo de direções e RK4 · Oscilador massa-mola · Plano de fase | Python |
+
 ### 7º período
 
 | Disciplina | Páginas interativas | Código |
@@ -98,8 +107,8 @@ python3 -m http.server 8000     # ou: npx serve
 
 ### Próximos períodos
 
-Os períodos 5 e 6, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
-"em construção" no site. Ideias já planejadas: fluxo em redes e NP-completude (Algoritmos II), escalonamento de processos (SO), análise sintática (Compiladores)...
+O 6º período, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+"em construção" no site. Ideias já planejadas: escalonamento de processos e memória virtual (SO), análise sintática (Compiladores)...
 
 ## Estrutura do repositório
 
@@ -111,7 +120,7 @@ Os períodos 5 e 6, o restante do 7º e os períodos 8 a 10 estão listados em [
 │   ├── player.js               #   player passo a passo (código + animação + variáveis)
 │   ├── scene.js                #   cena SVG com animação automática entre estados
 │   ├── plot.js                 #   plano cartesiano e gráficos de funções
-│   ├── highlight.js            #   realce de sintaxe C++/Python
+│   ├── highlight.js            #   realce de sintaxe (C++, Python, ML, Prolog...)
 │   ├── quiz.js                 #   exercícios e geradores de exercícios
 │   ├── page.js                 #   utilitários (KaTeX, DOM, formatação)
 │   └── theme.css               #   identidade visual

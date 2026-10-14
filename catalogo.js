@@ -233,7 +233,55 @@ export const PERIODOS = [
       },
     ],
   },
-  { numero: 5, id: 'periodo-05', planejadas: ['Algoritmos II', 'Linguagens de Programação', 'Pesquisa Operacional', 'Equações Diferenciais C'] },
+  {
+    numero: 5,
+    id: 'periodo-05',
+    disciplinas: [
+      {
+        id: 'alg2', codigo: 'DCC207', nome: 'Algoritmos II', cor: 'blue',
+        pasta: 'periodo-05/algoritmos-2',
+        resumo: 'Processamento de cadeias (casamento de padrões e compressão), geometria computacional, NP-completude e algoritmos aproximativos.',
+        visualizacoes: [
+          { titulo: 'Casamento de padrões', arquivo: 'casamento-de-padroes.html', descricao: 'Força bruta, KMP com a função de falha e Horspool com a tabela de saltos, contando comparações.' },
+          { titulo: 'Compressão', arquivo: 'compressao.html', descricao: 'A floresta de Huffman se fundindo em árvore de códigos e o dicionário do LZW crescendo.' },
+          { titulo: 'Envoltória convexa', arquivo: 'envoltoria-convexa.html', descricao: 'Cadeia monótona de Andrew e embrulho de Jarvis, com o teste de orientação; clique para pôr pontos.' },
+          { titulo: 'NP-completude e aproximação', arquivo: 'aproximacao.html', descricao: '2-aproximações para cobertura por vértices e caixeiro métrico, comparadas com o ótimo.' },
+        ],
+      },
+      {
+        id: 'lp', codigo: 'DCC024', nome: 'Linguagens de Programação', cor: 'purple',
+        pasta: 'periodo-05/linguagens-de-programacao',
+        resumo: 'Sintaxe e semântica, escopo e registros de ativação, tipos e inferência, programação funcional (cálculo lambda, ML) e lógica (Prolog).',
+        visualizacoes: [
+          { titulo: 'Cálculo lambda', arquivo: 'calculo-lambda.html', descricao: 'Reduções β passo a passo em ordem normal e aplicativa, numerais de Church e o combinador Y.' },
+          { titulo: 'Inferência de tipos', arquivo: 'inferencia-de-tipos.html', descricao: 'Hindley-Milner na árvore do programa: variáveis de tipo, unificação e let polimórfico.' },
+          { titulo: 'Escopo e parâmetros', arquivo: 'escopo-e-parametros.html', descricao: 'Pilha de registros com elos estático e dinâmico; passagem por valor, referência, valor-resultado e nome.' },
+          { titulo: 'Prolog', arquivo: 'prolog.html', descricao: 'A árvore de busca SLD com unificação, retrocesso, append ao contrário e recursão à esquerda.' },
+        ],
+      },
+      {
+        id: 'po', codigo: 'DCC035', nome: 'Pesquisa Operacional', cor: 'green',
+        pasta: 'periodo-05/pesquisa-operacional',
+        resumo: 'Modelagem e programação linear, método simplex, dualidade e sensibilidade, programação inteira e fluxos em redes.',
+        visualizacoes: [
+          { titulo: 'Método gráfico', arquivo: 'metodo-grafico.html', descricao: 'Região viável, curvas de nível e preços-sombra: mexa nos lucros e recursos e veja o ótimo pular.' },
+          { titulo: 'Simplex', arquivo: 'simplex.html', descricao: 'O tableau pivô a pivô ao lado do caminho de vértice em vértice.' },
+          { titulo: 'Branch and bound', arquivo: 'branch-and-bound.html', descricao: 'A árvore de ramificação e a região fatiada, com as três podas.' },
+          { titulo: 'Fluxo máximo', arquivo: 'fluxo-maximo.html', descricao: 'Edmonds-Karp com caminhos aumentantes, arestas ao contrário e o corte mínimo.' },
+        ],
+      },
+      {
+        id: 'edc', codigo: 'MAT040', nome: 'Equações Diferenciais C', cor: 'yellow',
+        pasta: 'periodo-05/equacoes-diferenciais-c',
+        resumo: 'EDOs de 1ª ordem, lineares de 2ª ordem, vibrações, sistemas lineares, transformada de Laplace e métodos numéricos.',
+        visualizacoes: [
+          { titulo: 'Campo de direções', arquivo: 'campo-de-direcoes.html', descricao: 'Inclinações, existência e unicidade, e Euler × Heun × RK4 com a ordem de convergência medida.' },
+          { titulo: 'Oscilador massa-mola', arquivo: 'oscilador.html', descricao: 'Amortecimento sub, crítico e super, batimentos, ressonância e a curva de resposta A(ω).' },
+          { titulo: 'Plano de fase', arquivo: 'plano-de-fase.html', descricao: 'Partículas seguindo x\' = Ax, autovetores e o diagrama traço-determinante.' },
+        ],
+      },
+    ],
+  },
   { numero: 6, id: 'periodo-06', planejadas: ['Engenharia de Software', 'Sistemas Operacionais', 'Compiladores I'] },
   {
     numero: 7,
