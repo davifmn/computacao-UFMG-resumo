@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inferência de tipos · Linguagens de Programação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 300px; font-size: 13px; }
+    .editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+    .editor textarea { font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 96px; resize: vertical; }
+    .editor .side { display: flex; flex-direction: column; gap: 8px; }
+    #err { color: var(--red); font-size: 14px; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#lp">Linguagens de Programação</a>
+      <span class="sep">/</span><span>Inferência de tipos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Linguagens de Programação</div>
+    <h1>Inferência de tipos: o compilador adivinha (e prova)</h1>
+    <p class="lead">Em ML e Haskell você quase nunca escreve tipos, e mesmo assim o compilador recusa <code>1 + true</code> antes de rodar. O <b>algoritmo de Hindley-Milner</b> dá a cada subexpressão uma variável de tipo, gera <b>equações</b> a partir do formato do código e as resolve por <b>unificação</b>. O resultado é o tipo <b>mais geral</b> possível.</p>
+
+    <div class="editor">
+      <textarea id="src" spellcheck="false" aria-label="Programa"></textarea>
+      <div class="side">
+        <select id="ex" aria-label="Exemplos">
+          <option value="identidade">let polimórfico (id)</option>
+          <option value="compose">composição</option>
+          <option value="map" selected>map recursivo</option>
+          <option value="soma">soma de lista</option>
+          <option value="twice">twice</option>
+          <option value="erro">fn x => x x (occurs check)</option>
+          <option value="ramos">if com ramos diferentes</option>
+          <option value="lambdaMono">parâmetro não é polimórfico</option>
+        </select>
+        <button class="btn primary" id="go">Inferir</button>
+        <span class="c-muted" style="font-size:13px;max-width:220px">Sintaxe: <code>fn x =&gt; e</code>, <code>let x = e in e</code>, <code>let rec</code>, <code>if</code>, <code>+ - * &lt; =</code>, <code>(a, b)</code>, <code>[]</code>, <code>::</code>, <code>hd tl null fst snd</code>.</span>
+      </div>
+    </div>
+    <div id="err"></div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>nó sendo analisado</span><span><i style="background:#83c167"></i>tipo já conhecido</span><span>painel "Variáveis" = a substituição atual</span></div>
+
+    <section class="prose">
+      <h2>As regras, nó por nó</h2>
+      <ul>
+        <li><b>Constante</b>: <code>3 : int</code>, <code>true : bool</code>.</li>
+        <li><b>Função</b> <code>fn x =&gt; e</code>: $x$ recebe uma variável nova $\alpha$; se o corpo tem tipo $\tau$, a função tem $\alpha \to \tau$.</li>
+        <li><b>Aplicação</b> <code>f a</code>: se $f : \tau_f$ e $a : \tau_a$, cria $\beta$ nova e exige $\tau_f = \tau_a \to \beta$.</li>
+        <li><b>if</b>: condição $= $ bool e os dois ramos com o mesmo tipo. <b>Operadores</b>: <code>+</code> exige int dos dois lados.</li>
+        <li><b>let</b> <code>x = e1 in e2</code>: infere $e_1$ e <b>generaliza</b> as variáveis que não aparecem no ambiente: $\forall\alpha.\,\alpha \to \alpha$. Cada uso de $x$ em $e_2$ ganha uma cópia nova (<b>instanciação</b>).</li>
+      </ul>
+      <h2>Unificação</h2>
+      <p>Para resolver $\tau_1 = \tau_2$: se um lado é variável $\alpha$, faça $\alpha := $ o outro (se $\alpha$ não aparecer dentro dele: o <i>occurs check</i>, que rejeita <code>fn x =&gt; x x</code>, cujo tipo teria que ser $\alpha = \alpha \to \beta$); se os dois são construtores, os nomes têm que ser iguais (int ≠ bool) e os argumentos são unificados um a um. É o mesmo algoritmo da unificação do Prolog (veja a outra página).</p>
+      <h2>Polimorfismo do let × parâmetros</h2>
+      <p><code>let id = fn x =&gt; x in (id 3, id true)</code> tipa: <code>id</code> é generalizado. Mas <code>(fn id =&gt; (id 3, id true)) (fn x =&gt; x)</code> <b>não</b>: parâmetros de <code>fn</code> são monomórficos (um tipo só dentro do corpo). Permitir isso (polimorfismo de posto superior) torna a inferência indecidível; essa restrição é exatamente o que mantém Hindley-Milner completo e eficiente na prática.</p>
+      <div class="callout tip"><p><b>Tipagem forte, estática, inferida.</b> C é estática mas fraca (casts livres), Python é forte mas dinâmica (erros só em tempo de execução), ML é forte, estática e inferida. Java e C++ inferem tipos localmente (<code>var</code>, <code>auto</code>); Rust, Swift, Kotlin, TypeScript e Scala usam variações desta ideia.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { infer, children, label, EXAMPLES } from './tipos.js';
+
+    const W = 900, H = 500;
+    let layout = null;
+
+    function computeLayout(ast) {
+      const pos = new Map();
+      let leaf = 0, maxD = 0;
+      const go = (n, d) => {
+        maxD = Math.max(maxD, d);
+        const ch = children(n);
+        if (!ch.length) pos.set(n.id, { x: leaf++, d, n });
+        else {
+          ch.forEach(c => go(c, d + 1));
+          pos.set(n.id, { x: ch.reduce((s, c) => s + pos.get(c.id).x, 0) / ch.length, d, n });
+        }
+      };
+      go(ast, 0);
+      const dx = Math.min(110, (W - 80) / Math.max(1, leaf - 1)), dy = Math.min(70, (H - 110) / Math.max(1, maxD));
+      const x0 = (W - dx * (leaf - 1)) / 2;
+      for (const p of pos.values()) { p.px = x0 + p.x * dx; p.py = 70 + p.d * dy; }
+      return { pos, dx };
+    }
+
+    const cut = (s, k) => (s.length > k ? s.slice(0, k - 1) + '…' : s);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa (mini-ML)', lang: 'ml',
+      render(step, s) {
+        const { pos, dx } = layout;
+        for (const p of pos.values()) for (const c of children(p.n)) {
+          const q = pos.get(c.id);
+          s.line(`e${c.id}`, p.px, p.py + 14, q.px, q.py - 14, { stroke: COLORS.faint, sw: 1.5 });
+        }
+        for (const [id, p] of pos) {
+          const cur = step.node === id;
+          const ty = step.types[id];
+          const w = Math.max(34, label(p.n).length * 8 + 14);
+          s.rect(`n${id}`, { x: p.px - w / 2, y: p.py - 14, w, h: 28, rx: 8, fill: cur ? '#3d3a22' : ty ? '#1f3319' : COLORS.surface2, stroke: cur ? COLORS.yellow : ty ? COLORS.green : COLORS.border, sw: cur ? 2.5 : 1.2 });
+          s.text(`nl${id}`, label(p.n), { x: p.px, y: p.py, size: 13, mono: true, weight: 700, fill: cur ? COLORS.yellow : COLORS.text });
+          s.text(`nt${id}`, ty ? cut(ty, Math.max(8, Math.floor(dx / 6.5))) : '', { x: p.px, y: p.py + 26, size: 11, mono: true, fill: cur ? COLORS.yellow : COLORS.green });
+        }
+        if (step.eq) s.text('eq', `${step.eq[0]}  =  ${step.eq[1]}`, { x: W / 2, y: 26, size: 16, mono: true, weight: 700, fill: COLORS.blue });
+        else if (step.done) s.text('eq', step.error ? 'erro de tipo' : `: ${step.msg.match(/<b>(.*?)<\/b>/)?.[1] ?? ''}`, { x: W / 2, y: 26, size: 17, mono: true, weight: 800, fill: step.error ? COLORS.red : COLORS.green });
+        else s.text('eq', '', { x: W / 2, y: 26 });
+      },
+    });
+
+    function run() {
+      $('#err').textContent = '';
+      let r;
+      try { r = infer($('#src').value); }
+      catch (e) { $('#err').textContent = e.message; return; }
+      layout = computeLayout(r.ast);
+      player.setCode($('#src').value, 'ml');
+      player.load(r.steps);
+    }
+    $('#ex').addEventListener('change', () => { $('#src').value = EXAMPLES[$('#ex').value]; run(); });
+    $('#go').addEventListener('click', run);
+    $('#src').value = EXAMPLES.map;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o tipo de <code>fn f =&gt; fn x =&gt; f (f x)</code>?', options: ["('a -> 'a) -> 'a -> 'a", "('a -> 'b) -> 'a -> 'b", "'a -> 'a", "('a -> 'b) -> 'b"], answer: 0, explain: 'O resultado de f volta a ser argumento de f, então entrada e saída de f têm o mesmo tipo.' },
+      { q: 'Por que <code>fn x =&gt; x x</code> é rejeitado?', options: ["Exigiria 'a = 'a -> 'b, um tipo infinito", 'x não está definido', 'Funções não podem ser argumentos', 'Falta um let'], answer: 0, explain: 'É o occurs check. (No cálculo lambda não tipado esse termo existe, e é a semente do Ω e do Y.)' },
+      { q: 'Qual o tipo de <code>fn l =&gt; hd l + 1</code>?', options: ['int list -> int', "'a list -> 'a", "'a list -> int", 'int -> int'], answer: 0, explain: "hd l : 'a, e o + força 'a = int." },
+      { q: 'O que significa dizer que o tipo inferido é "principal"?', options: ['Todo outro tipo válido da expressão é uma instância dele', 'É o tipo mais curto', 'É o tipo do let mais externo', 'É sempre monomórfico'], answer: 0, explain: "Por exemplo, a identidade tem tipo principal 'a -> 'a; int -> int e bool -> bool são instâncias." },
+    ]);
+  </script>
+</body>
+</html>

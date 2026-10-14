@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escopo e parâmetros · Linguagens de Programação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 13px; }
+    details.edit { margin-bottom: 12px; }
+    details.edit textarea { width: 100%; min-height: 220px; font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    #err { color: var(--red); font-size: 14px; }
+    table.cmp { border-collapse: collapse; font-size: 15px; }
+    table.cmp td, table.cmp th { padding: 6px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+    table.cmp td.o { font-family: var(--mono); color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#lp">Linguagens de Programação</a>
+      <span class="sep">/</span><span>Escopo e parâmetros</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Linguagens de Programação</div>
+    <h1>Escopo, registros de ativação e passagem de parâmetros</h1>
+    <p class="lead">Quando um procedimento usa <code>x</code>, <b>qual</b> <code>x</code>? Cada chamada empilha um <b>registro de ativação</b> com dois ponteiros: o <b>elo dinâmico</b> (quem me chamou) e o <b>elo estático</b> (onde fui definido). O escopo estático procura nomes pelo segundo; o dinâmico, pelo primeiro. E o argumento pode chegar como cópia, apelido, cópia-que-volta ou expressão reavaliada.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Exemplos"></select>
+      <div class="chips" role="group" aria-label="Escopo">
+        <button class="btn" data-s="estatico">Escopo estático</button>
+        <button class="btn" data-s="dinamico">Escopo dinâmico</button>
+      </div>
+      <label>passagem
+        <select id="mode">
+          <option value="valor">por valor</option>
+          <option value="referencia">por referência</option>
+          <option value="valor-resultado">por valor-resultado</option>
+          <option value="nome">por nome</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <span class="c-muted" id="outs"></span>
+    </div>
+    <details class="edit"><summary class="c-muted">Editar o programa</summary>
+      <textarea id="src" spellcheck="false"></textarea>
+      <button class="btn primary small" id="go">Rodar</button> <span id="err"></span>
+    </details>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#b189f5"></i>elo estático (à esquerda)</span><span><i style="background:#ff9f43"></i>elo dinâmico (à direita)</span><span><i style="background:#58c4dd"></i>registros percorridos na busca do nome</span><span><i style="background:#f4d35e"></i>topo da pilha</span></div>
+
+    <section class="prose">
+      <h2>Escopo estático × dinâmico</h2>
+      <p>No <b>estático</b> (léxico), o significado de um nome depende só do <i>texto</i> do programa: procure no bloco atual, depois no bloco que o envolve, e assim por diante. É o que quase todas as linguagens usam (C, Java, Python, ML, JavaScript com <code>let</code>), porque dá para entender uma função lendo só onde ela está. No <b>dinâmico</b>, depende de <i>quem chamou</i>: procura-se na pilha de execução, do topo para baixo (Lisp antigo, Bash, variáveis especiais do Common Lisp). No primeiro exemplo, <code>f</code> imprime o <code>x</code> global (1) no estático, mas o <code>x</code> de <code>g</code> (2) no dinâmico.</p>
+      <p>Para implementar o estático com procedimentos aninhados, cada registro guarda o <b>elo estático</b>: um ponteiro para o registro do procedimento que o contém textualmente. Uma variável a $k$ níveis de aninhamento de distância é achada seguindo $k$ elos (ou com um <b>display</b>, um vetor com um ponteiro por nível).</p>
+      <h2>Os quatro modos de passagem</h2>
+      <table class="cmp">
+        <tr><th>Modo</th><th>O parâmetro é…</th><th>Exemplo "passagem" (saída)</th><th>Onde aparece</th></tr>
+        <tr><td>valor</td><td>uma cópia do valor</td><td class="o">2 10</td><td>C, Java (inclusive referências a objetos são copiadas), ML</td></tr>
+        <tr><td>referência</td><td>um apelido da variável do chamador</td><td class="o">20 20</td><td><code>&amp;</code> em C++, <code>var</code> em Pascal, <code>ref</code> em C#</td></tr>
+        <tr><td>valor-resultado</td><td>uma cópia que é escrita de volta no fim</td><td class="o">2 2</td><td><code>in out</code> em Ada (para escalares)</td></tr>
+        <tr><td>nome</td><td>a expressão, reavaliada a cada uso no ambiente do chamador</td><td class="o">20 20</td><td>Algol 60; a ideia vive nos <i>thunks</i> e na avaliação preguiçosa</td></tr>
+      </table>
+      <p>Referência e valor-resultado diferem quando há <b>apelidos</b> (no exemplo, <code>a</code> é acessada pelo nome global e pelo parâmetro): na referência, as duas escritas atingem a mesma célula; no valor-resultado, a cópia de volta sobrescreve o <code>a = a * 10</code>. Por nome e por referência só diferem quando a expressão do argumento muda de significado no meio da chamada: o clássico <code>troca(i, v[i])</code> do Algol, em que <code>v[i]</code> é recalculado depois que <code>i</code> mudou e a troca falha.</p>
+      <div class="callout warn"><p><b>Pegadinha de prova.</b> "Java passa objetos por referência" é falso: passa <b>a referência por valor</b>. Dentro do método, <code>obj.campo = 1</code> é visto pelo chamador, mas <code>obj = new X()</code> não.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { run, EXAMPLES } from './escopo.js';
+
+    const W = 900, H = 520;
+    let scope = 'estatico';
+    const FX = 250, FW = 330, ROW = 24;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa', lang: 'mini', showVars: false,
+      render(step, s) {
+        // pilha cresce para cima
+        const geo = new Map();
+        let y = H - 16;
+        for (const fr of step.frames) {
+          const h = 34 + ROW * Math.max(1, fr.vars.length);
+          y -= h;
+          geo.set(fr.id, { y, h });
+          y -= 14;
+        }
+        s.text('stk', 'pilha de execução', { x: FX + FW / 2, y: 20, size: 13, fill: COLORS.muted });
+        for (const fr of step.frames) {
+          const g = geo.get(fr.id);
+          const top = fr.id === step.top, onPath = step.path?.includes(fr.id), leaving = step.leaving === fr.id;
+          s.rect(`f${fr.id}`, { x: FX, y: g.y, w: FW, h: g.h, rx: 8, fill: top ? '#26261a' : COLORS.surface2, stroke: onPath ? COLORS.blue : top ? COLORS.yellow : COLORS.border, sw: onPath || top ? 2.5 : 1.2, opacity: leaving ? 0.5 : 1 });
+          s.text(`fn${fr.id}`, fr.name, { x: FX + 12, y: g.y + 16, size: 14, anchor: 'start', weight: 800, fill: top ? COLORS.yellow : COLORS.text });
+          fr.vars.forEach((v, k) => {
+            const vy = g.y + 40 + k * ROW;
+            const col = v.kind === 'proc' ? COLORS.faint : v.kind === 'ref' ? COLORS.teal : v.kind === 'nome' ? COLORS.pink : COLORS.text;
+            s.text(`vn${fr.id}-${v.n}`, v.n, { x: FX + 22, y: vy, size: 13, anchor: 'start', mono: true, weight: 700, fill: COLORS.blue });
+            s.text(`vv${fr.id}-${v.n}`, v.show + (v.extra ? `  (${v.extra})` : ''), { x: FX + 90, y: vy, size: 12.5, anchor: 'start', mono: true, fill: col });
+          });
+          if (!fr.vars.length) s.text(`fe${fr.id}`, '(vazio)', { x: FX + 22, y: g.y + 40, size: 12, anchor: 'start', fill: COLORS.faint });
+          // elos
+          if (fr.staticLink != null) {
+            const t = geo.get(fr.staticLink);
+            const y1 = g.y + 16, y2 = t.y + 16, bend = 30 + 18 * ((fr.id - fr.staticLink) % 4);
+            s.path(`sl${fr.id}`, `M ${FX} ${y1} C ${FX - bend} ${y1}, ${FX - bend} ${y2}, ${FX - 2} ${y2}`, { stroke: COLORS.purple, sw: 2, arrow: true, opacity: scope === 'estatico' ? 1 : 0.35 });
+          }
+          if (fr.dynLink != null) {
+            const t = geo.get(fr.dynLink);
+            const y1 = g.y + 16, y2 = t.y + 16, bend = 30 + 18 * ((fr.id - fr.dynLink) % 4);
+            s.path(`dl${fr.id}`, `M ${FX + FW} ${y1} C ${FX + FW + bend} ${y1}, ${FX + FW + bend} ${y2}, ${FX + FW + 2} ${y2}`, { stroke: COLORS.orange, sw: 2, arrow: true, opacity: scope === 'dinamico' ? 1 : 0.35 });
+          }
+        }
+        // saída
+        s.text('outl', 'saída', { x: 690, y: 20, size: 13, anchor: 'start', fill: COLORS.muted });
+        s.rect('outb', { x: 690, y: 32, w: 190, h: 30 + 26 * Math.max(1, step.output.length), fill: COLORS.bg, stroke: COLORS.border });
+        step.output.forEach((v, k) => s.text(`o${k}`, v, { x: 706, y: 52 + k * 26, size: 16, anchor: 'start', mono: true, weight: 700, fill: k === step.output.length - 1 ? COLORS.yellow : COLORS.green }));
+        s.text('legs', scope === 'estatico' ? 'busca: elo estático' : 'busca: elo dinâmico', { x: 20, y: 20, size: 13, anchor: 'start', fill: scope === 'estatico' ? COLORS.purple : COLORS.orange });
+      },
+    });
+
+    function go() {
+      $$('[data-s]').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === scope));
+      $('#err').textContent = '';
+      const src = $('#src').value;
+      const r = run(src, { scope, mode: $('#mode').value });
+      if (r.error) $('#err').textContent = r.error;
+      player.setCode(src, 'mini');
+      player.load(r.steps);
+      $('#outs').textContent = `saída: ${r.output.join(' ') || '—'}`;
+    }
+
+    $('#ex').innerHTML = Object.entries(EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', () => {
+      $('#src').value = EXAMPLES[$('#ex').value].src;
+      if ($('#ex').value === 'troca') $('#mode').value = 'nome';
+      if ($('#ex').value === 'passagem') $('#mode').value = 'referencia';
+      go();
+    });
+    $$('[data-s]').forEach(b => b.addEventListener('click', () => { scope = b.dataset.s; go(); }));
+    $('#mode').addEventListener('change', go);
+    $('#go').addEventListener('click', go);
+    $('#src').value = EXAMPLES.escopo.src;
+    go();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Em escopo dinâmico, o que decide qual declaração um nome usa?', options: ['A sequência de chamadas em tempo de execução', 'O aninhamento do texto', 'O tipo da variável', 'A ordem alfabética'], answer: 0, explain: 'A busca segue o elo dinâmico (quem chamou quem), então a mesma função pode ver variáveis diferentes a cada chamada.' },
+      { q: 'Para que serve o elo estático num registro de ativação?', options: ['Achar variáveis de procedimentos que envolvem o atual no texto', 'Voltar para quem chamou', 'Guardar o endereço de retorno', 'Liberar memória do heap'], answer: 0, explain: 'O retorno usa o elo dinâmico; o estático só é necessário com procedimentos aninhados (Pascal, ML, closures).' },
+      { q: 'Com <code>proc f(x) { x = 5 }</code> e a chamada <code>f(a)</code>, em quais modos <code>a</code> vale 5 depois?', options: ['referência, valor-resultado e nome', 'só referência', 'todos', 'só valor'], answer: 0, explain: 'Só a passagem por valor isola completamente o chamador.' },
+      { q: 'Por que C não precisa de elo estático?', options: ['Não tem funções aninhadas: ou a variável é local, ou é global (endereço fixo)', 'Porque usa escopo dinâmico', 'Porque passa tudo por valor', 'Porque tem coletor de lixo'], answer: 0, explain: 'Sem aninhamento, só há dois níveis, e o global tem endereço conhecido em tempo de ligação.' },
+    ]);
+  </script>
+</body>
+</html>

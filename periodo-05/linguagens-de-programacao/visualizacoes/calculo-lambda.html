@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cálculo lambda · Linguagens de Programação</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .toolbar input[type=text] { width: 380px; font-family: var(--mono); }
+    .deriv { max-height: 560px; overflow: auto; padding: 8px 0; font-family: var(--mono); font-size: 14px; }
+    .deriv .ln { display: grid; grid-template-columns: 3.2em 2.4em minmax(0, 1fr); gap: 6px; padding: 5px 14px; border-left: 3px solid transparent; }
+    .deriv .ln.cur { background: rgba(88, 196, 221, .08); border-left-color: var(--blue); }
+    .deriv .n { color: var(--faint); text-align: right; }
+    .deriv .r { color: var(--purple); }
+    .deriv .t { word-break: break-all; color: #d4d8de; }
+    .deriv .note { grid-column: 3; color: var(--muted); font-family: var(--font); font-size: 13px; }
+    .fn { color: var(--yellow); background: rgba(244, 211, 94, .10); border-radius: 3px; }
+    .ar { color: var(--blue); background: rgba(88, 196, 221, .10); border-radius: 3px; }
+    .mc { color: var(--pink); }
+    .defs { font-family: var(--mono); font-size: 12.5px; padding: 6px 14px 12px; display: grid; gap: 3px; max-height: 420px; overflow: auto; }
+    .defs b { color: var(--pink); font-weight: 600; }
+    .defs div { cursor: pointer; } .defs div:hover { color: var(--text); }
+    .status { padding: 8px 14px 14px; font-size: 15px; }
+    .status b { color: var(--green); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#lp">Linguagens de Programação</a>
+      <span class="sep">/</span><span>Cálculo lambda</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Linguagens de Programação</div>
+    <h1>Cálculo lambda: uma linguagem com uma regra só</h1>
+    <p class="lead">Variáveis, funções $\lambda x.e$ e aplicação. Nada de números, booleanos ou laços, e mesmo assim dá para computar qualquer coisa computável. A única regra é a <b>redução β</b>: $(\lambda x.e)\,a \to e[x := a]$. Digite um termo (use <code>\</code> ou <code>λ</code>), escolha a estratégia e veja cada passo, com a <span class="fn">função</span> e o <span class="ar">argumento</span> do redex destacados.</p>
+
+    <div class="toolbar">
+      <label>termo <input id="src" type="text" value="PLUS 2 3"></label>
+      <select id="ex" aria-label="Exemplos">
+        <option value="">exemplos…</option>
+        <option>PLUS 2 3</option>
+        <option>MULT 2 3</option>
+        <option>(λx.λy.x y) y</option>
+        <option>K I OMEGA</option>
+        <option>IF (ISZERO 0) 7 9</option>
+        <option>AND TRUE (NOT FALSE)</option>
+        <option>PRED 3</option>
+        <option>FST (PAIR 1 2)</option>
+        <option>FACT 3</option>
+        <option>S K K</option>
+      </select>
+      <div class="chips" role="group" aria-label="Estratégia">
+        <button class="btn" data-o="normal">Ordem normal</button>
+        <button class="btn" data-o="aplicativa">Ordem aplicativa</button>
+      </div>
+      <label><input type="checkbox" id="hide" checked> esconder expansões δ</label>
+    </div>
+
+    <div class="lab">
+      <div class="panel">
+        <div class="panel-title">Derivação <span id="count" class="c-muted"></span></div>
+        <div class="deriv" id="deriv"></div>
+        <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+          <button class="btn primary" id="next">Próximo passo (→)</button>
+          <button class="btn" id="all">Até a forma normal</button>
+          <button class="btn" id="reset">Recomeçar</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Resultado</div><div class="status" id="status"></div></div>
+        <div class="panel"><div class="panel-title">Definições (clique para usar)</div><div class="defs" id="defs"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Sintaxe e as três regras</h2>
+      <p>$e ::= x \mid \lambda x.e \mid e\ e$. A aplicação associa à esquerda ($f\,a\,b = (f\,a)\,b$) e o corpo de um $\lambda$ vai o mais longe possível ($\lambda x.x\,y = \lambda x.(x\,y)$).</p>
+      <ul>
+        <li><b>α (renomear):</b> $\lambda x.x \equiv \lambda y.y$. Nomes de parâmetros não importam.</li>
+        <li><b>β (aplicar):</b> $(\lambda x.e)\,a \to e[x := a]$, <b>sem capturar</b> variáveis livres de $a$: em $(\lambda x.\lambda y.x\,y)\,y$ o $y$ de fora é livre, então o $\lambda y$ de dentro é renomeado para $y'$ antes (exemplo na lista).</li>
+        <li><b>η:</b> $\lambda x.f\,x \equiv f$ se $x$ não é livre em $f$.</li>
+      </ul>
+      <p>As "definições" em maiúsculas não fazem parte do cálculo: são abreviações (passo δ), expandidas quando precisam ser aplicadas.</p>
+      <h2>Estratégias de redução</h2>
+      <p><b>Ordem normal</b> reduz o redex mais à esquerda e mais externo: passa argumentos sem avaliá-los (como a <b>passagem por nome</b>, e o Haskell, que é preguiçoso). <b>Ordem aplicativa</b> avalia os argumentos antes (como C, Java, Python e ML). Pelo <b>teorema de Church-Rosser</b>, se duas ordens chegam a uma forma normal, chegam à mesma; e a ordem normal sempre chega se ela existe. Teste <code>K I OMEGA</code>: o argumento $\Omega = (\lambda x.x\,x)(\lambda x.x\,x)$ reduz para si mesmo, então a ordem aplicativa nunca termina, enquanto a normal o descarta.</p>
+      <h2>Codificações de Church</h2>
+      <ul>
+        <li><b>Booleanos</b> são escolhas: $\text{TRUE} = \lambda t.\lambda f.t$, $\text{FALSE} = \lambda t.\lambda f.f$, e $\text{IF}\,b\,x\,y = b\,x\,y$.</li>
+        <li><b>Números</b> são iterações: $n = \lambda f.\lambda x.f^n(x)$. $\text{PLUS}\,m\,n$ aplica $f$ $n$ vezes e depois mais $m$; $\text{MULT}\,m\,n$ itera "$n$ vezes $f$" $m$ vezes.</li>
+        <li><b>Recursão</b> sem nomes: $Y = \lambda f.(\lambda x.f\,(x\,x))(\lambda x.f\,(x\,x))$ satisfaz $Y\,g = g\,(Y\,g)$, um ponto fixo. Assim $\text{FACT}$ chama a si mesma. (Em ordem aplicativa $Y$ diverge; linguagens estritas usam a variante $Z$.)</li>
+      </ul>
+      <div class="callout tip"><p><b>Por que isso importa em LP.</b> O cálculo lambda é o núcleo de toda linguagem funcional: ML e Haskell são ele + tipos + açúcar sintático. Closures, currying, funções de alta ordem e a diferença entre avaliação estrita e preguiçosa nascem aqui. E a <b>tese de Church-Turing</b> diz que ele computa exatamente o mesmo que as máquinas de Turing de FTC.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { DEFS, parse, reduce, show, interpret, size } from './lambda.js';
+
+    let order = 'normal', result = null, shown = 0, lines = [];
+    const MAXCH = 600;
+
+    function lineHtml(entry) {
+      const r = entry.redex;
+      const mark = node => {
+        if (!r) return null;
+        if (entry.rule === 'δ' && node === r) return ['<span class="mc">', '</span>'];
+        if (entry.rule === 'β' && node === r.f) return ['<span class="fn">', '</span>'];
+        if (entry.rule === 'β' && node === r.a) return ['<span class="ar">', '</span>'];
+        return null;
+      };
+      const txt = show(entry.term, mark);
+      if (txt.replace(/<[^>]+>/g, '').length <= MAXCH) return txt;
+      return show(entry.term).slice(0, MAXCH) + ` … (${size(entry.term)} nós)`;
+    }
+
+    function build() {
+      $$('[data-o]').forEach(b => b.setAttribute('aria-pressed', b.dataset.o === order));
+      try {
+        const t = parse($('#src').value);
+        result = reduce(t, { order, max: 1500 });
+      } catch (e) {
+        result = null;
+        $('#deriv').innerHTML = `<div class="ln"><span></span><span></span><span class="t c-red">${e.message}</span></div>`;
+        $('#status').textContent = '';
+        $('#count').textContent = '';
+        return;
+      }
+      // linhas visíveis: cada termo da derivação (opcionalmente pulando os passos δ)
+      const tr = result.trace;
+      lines = [];
+      let prevK = null;
+      tr.forEach((e, k) => {
+        if (k > 0 && $('#hide').checked && e.rule === 'δ') return;
+        const rules = prevK == null ? [] : tr.slice(prevK, k).map(x => x.rule);
+        lines.push({ k, e, tag: [...new Set(rules)].sort().join('+') });
+        prevK = k;
+      });
+      shown = 1;
+      render();
+    }
+
+    function render() {
+      const tr = result.trace;
+      const vis = lines.slice(0, shown);
+      $('#deriv').innerHTML = vis.map(({ k, e, tag }, i) => {
+        const cur = i === vis.length - 1;
+        const note = cur && e.rule ? (e.rule === 'β' ? `próximo: β${e.alpha?.length ? `, com renomeação α ${e.alpha.join(', ')} para evitar captura` : ''}` : `próximo: expande ${e.name}`) : '';
+        return `<div class="ln ${cur ? 'cur' : ''}"><span class="n">${k}</span><span class="r">${tag}</span><span class="t">${cur ? lineHtml(e) : lineHtml({ term: e.term })}</span>${note ? `<span class="note">${note}</span>` : ''}</div>`;
+      }).join('');
+      const box = $('#deriv');
+      box.scrollTop = box.scrollHeight;
+      const betas = tr.slice(0, vis.at(-1).k).filter(e => e.rule === 'β').length;
+      $('#count').textContent = `· ${betas} passo(s) β até aqui`;
+      const atEnd = shown >= lines.length;
+      $('#next').disabled = atEnd; $('#all').disabled = atEnd;
+      if (!atEnd) { $('#status').innerHTML = '<span class="c-muted">Reduzindo…</span>'; return; }
+      const totalB = tr.filter(e => e.rule === 'β').length;
+      if (result.status === 'normal') {
+        const meaning = interpret(result.normal);
+        $('#status').innerHTML = `Forma normal em <b>${totalB}</b> passos β (${tr.length - 1 - totalB} expansões δ).<br><span class="c-muted">${meaning ? `Isso é o numeral/booleano de Church <b>${meaning}</b>.` : 'Nenhum redex sobrou.'}</span>`;
+      } else {
+        $('#status').innerHTML = `<span class="c-red">Parou depois de ${tr.length - 1} passos ${result.status === 'grande' ? '(o termo não para de crescer)' : ''}: com esta estratégia, a redução <b>não termina</b>.</span>${order === 'aplicativa' ? ' <span class="c-muted">Tente a ordem normal.</span>' : ''}`;
+      }
+    }
+
+    $('#next').addEventListener('click', () => { if (result && shown < lines.length) { shown++; render(); } });
+    $('#all').addEventListener('click', () => { if (result) { shown = lines.length; render(); } });
+    $('#reset').addEventListener('click', build);
+    $('#src').addEventListener('keydown', e => { if (e.key === 'Enter') build(); });
+    $('#hide').addEventListener('change', build);
+    $$('[data-o]').forEach(b => b.addEventListener('click', () => { order = b.dataset.o; build(); }));
+    $('#ex').addEventListener('change', e => { if (!e.target.value) return; $('#src').value = e.target.value; e.target.value = ''; build(); });
+    document.addEventListener('keydown', e => {
+      if (e.target.closest('input, select, textarea')) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); $('#next').click(); }
+    });
+    $('#defs').innerHTML = Object.entries(DEFS).map(([k, v]) => `<div data-k="${k}"><b>${k}</b> = ${v}</div>`).join('');
+    $('#defs').addEventListener('click', e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k) { $('#src').value += ` ${k}`; $('#src').focus(); } });
+    build();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quais variáveis são livres em $\\lambda x.\\,x\\,y\\,(\\lambda y.\\,y\\,z)$?', options: ['y e z', 'só z', 'x, y e z', 'nenhuma'], answer: 0, explain: 'O $y$ do meio não está sob nenhum $\\lambda y$; o de dentro está. $z$ nunca é ligado.' },
+      { q: '$(\\lambda x.\\lambda y.\\,x)\\,y$ reduz para…', options: ["$\\lambda y'.\\,y$", '$\\lambda y.\\,y$', '$y$', '$\\lambda x.\\,y$'], answer: 0, explain: 'Sem renomear, o $y$ livre seria capturado e o termo viraria a identidade, mudando o significado.' },
+      { q: 'Quanto é $\\text{SUCC}\\,(\\text{SUCC}\\,0)$ em numeral de Church?', options: ['$\\lambda f.\\lambda x.\\,f\\,(f\\,x)$', '$\\lambda f.\\lambda x.\\,f\\,x$', '$\\lambda x.\\,x$', '$\\lambda f.\\,f\\,f$'], answer: 0, explain: 'O numeral 2 aplica $f$ duas vezes.' },
+      { q: 'Por que $\\text{K}\\,\\text{I}\\,\\Omega$ termina em ordem normal e não em ordem aplicativa?', options: ['A ordem normal descarta Ω sem avaliá-lo; a aplicativa tenta avaliá-lo primeiro', 'Ω tem tipo infinito', 'A ordem aplicativa não sabe expandir K', 'Por causa do η'], answer: 0, explain: 'É a diferença entre avaliação preguiçosa e estrita: argumentos não usados nunca são avaliados na primeira.' },
+    ]);
+  </script>
+</body>
+</html>

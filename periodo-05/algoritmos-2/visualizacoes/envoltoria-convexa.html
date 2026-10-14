@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Envoltória convexa · Algoritmos II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; } .stage svg { cursor: crosshair; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg2">Algoritmos II</a>
+      <span class="sep">/</span><span>Envoltória convexa</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos II</div>
+    <h1>Envoltória convexa: o elástico em volta dos pregos</h1>
+    <p class="lead">Prenda pregos numa tábua e solte um elástico em volta deles: a forma que ele toma é a <b>envoltória convexa</b>, o menor polígono convexo que contém todos os pontos. Tudo se resolve com um único teste, o <b>produto vetorial</b>, que diz se três pontos viram à esquerda ou à direita. <b>Clique na figura</b> para acrescentar pontos.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-a="andrew">Cadeia monótona (Andrew)</button>
+        <button class="btn" data-a="jarvis">Embrulho para presente (Jarvis)</button>
+      </div>
+      <label>pontos <input id="n" type="range" min="4" max="24" value="12"><output id="n-o"></output></label>
+      <button class="btn small" id="new">Novos pontos</button>
+      <button class="btn small" id="circle">Pontos num círculo</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>pilha / envoltória parcial</span><span><i style="background:#83c167"></i>vira à esquerda (cruz &gt; 0)</span><span><i style="background:#fc6255"></i>vira à direita (cruz &lt; 0)</span><span><i style="background:#58c4dd"></i>candidato a→b (Jarvis)</span></div>
+
+    <section class="prose">
+      <h2>O teste de orientação</h2>
+      <p>$$\text{cruz}(o, a, b) = (a_x - o_x)(b_y - o_y) - (a_y - o_y)(b_x - o_x)$$</p>
+      <p>É o dobro da área com sinal do triângulo $oab$: positiva se $o \to a \to b$ gira no sentido <b>anti-horário</b> (vira à esquerda), negativa se horário, zero se colineares. Só usa somas e multiplicações de inteiros, sem divisões nem ângulos, e por isso é exato. O mesmo teste decide se dois segmentos se cruzam: $c$ e $d$ estão em lados opostos de $ab$ <i>e</i> $a$ e $b$ em lados opostos de $cd$.</p>
+      <h2>Andrew: $O(n \log n)$</h2>
+      <p>Ordenados por $x$, os pontos são varridos da esquerda para a direita com uma pilha. Na cadeia de baixo, o contorno só pode virar à esquerda; se o novo ponto faz o topo virar à direita, o topo está dentro do polígono e sai. Depois, a mesma coisa da direita para a esquerda dá a cadeia de cima. É a variante mais simples do <b>Graham scan</b> (que ordena por ângulo em torno do ponto mais baixo).</p>
+      <h2>Jarvis: $O(nh)$, sensível à saída</h2>
+      <p>A partir de um vértice $a$ da envoltória, o próximo é o ponto $b$ tal que todos os outros estão à esquerda de $a \to b$: basta uma passada para achar. Repete $h$ vezes, onde $h$ é o número de vértices. Bom para $h$ pequeno; com pontos num círculo (aperte o botão) vira $O(n^2)$.</p>
+      <div class="callout warn"><p><b>Limite inferior.</b> Envoltória convexa custa $\Omega(n \log n)$ no modelo de comparações: com os pontos $(x_i, x_i^2)$ na parábola, a envoltória devolve os $x_i$ ordenados, então um algoritmo mais rápido ordenaria mais rápido que $n \log n$. O algoritmo de Chan combina os dois acima e atinge $O(n \log h)$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, andrewSteps, jarvisSteps, randomPoints, cross } from './geometria.js';
+
+    const W = 900, H = 520, GX = 20, GY = 12;
+    const X = x => 50 + x * ((W - 100) / GX), Y = y => H - 40 - y * ((H - 80) / GY);
+    let alg = 'andrew', pts = [];
+    const sortPts = () => pts.sort((a, b) => a.x - b.x || a.y - b.y);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'geometria.cpp',
+      render(step, s) {
+        for (let x = 0; x <= GX; x++) s.line(`gx${x}`, X(x), Y(0), X(x), Y(GY), { stroke: COLORS.border, sw: 1, opacity: 0.4, layer: 'bg' });
+        for (let y = 0; y <= GY; y++) s.line(`gy${y}`, X(0), Y(y), X(GX), Y(y), { stroke: COLORS.border, sw: 1, opacity: 0.4, layer: 'bg' });
+        const P = id => [X(pts[id].x), Y(pts[id].y)];
+        const hull = step.hull;
+        if (step.done) {
+          s.path('poly', hull.map((id, k) => `${k ? 'L' : 'M'} ${P(id).join(' ')}`).join(' ') + ' Z', { stroke: COLORS.yellow, sw: 3, fill: 'rgba(244,211,94,0.08)' });
+        } else {
+          for (let k = 0; k + 1 < hull.length; k++) s.line(`h${hull[k]}-${hull[k + 1]}`, ...P(hull[k]), ...P(hull[k + 1]), { stroke: COLORS.yellow, sw: 3 });
+        }
+        if (step.test) {
+          const [o, a, b] = step.test;
+          const col = step.cross > 0 ? COLORS.green : COLORS.red;
+          if (alg === 'andrew') {
+            s.path('tri', `M ${P(o).join(' ')} L ${P(a).join(' ')} L ${P(b).join(' ')}`, { stroke: col, sw: 2.5, dash: '6 4', arrow: true, layer: 'fx' });
+          } else {
+            s.line('cand', ...P(o), ...P(a), { stroke: COLORS.blue, sw: 2.5, arrow: true, layer: 'fx' });
+            s.line('probe', ...P(o), ...P(b), { stroke: col, sw: 1.5, dash: '5 4', layer: 'fx' });
+          }
+        } else if (alg === 'jarvis' && step.b != null && step.b !== '—' && step.a !== step.b && !step.done) {
+          s.line('cand', ...P(step.a), ...P(step.b), { stroke: COLORS.blue, sw: 2.5, arrow: true, layer: 'fx' });
+        }
+        pts.forEach((q, id) => {
+          const inHull = hull.includes(id);
+          const popped = step.pop === id;
+          s.circle(`p${id}`, { x: X(q.x), y: Y(q.y), r: 7, fill: popped ? COLORS.red : inHull ? COLORS.yellow : COLORS.surface3, stroke: step.test?.includes(id) ? COLORS.text : COLORS.muted, sw: step.test?.includes(id) ? 2.5 : 1 });
+          s.text(`pl${id}`, id, { x: X(q.x) + 12, y: Y(q.y) - 12, size: 12, mono: true, fill: COLORS.muted });
+        });
+        if (step.cross != null) s.text('cr', `cruz = ${step.cross}`, { x: W - 24, y: 28, size: 15, anchor: 'end', mono: true, weight: 700, fill: step.cross > 0 ? COLORS.green : COLORS.red });
+      },
+    });
+
+    function run() {
+      $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === alg));
+      sortPts();
+      player.setCode(CODES[alg], 'cpp');
+      player.load(alg === 'andrew' ? andrewSteps(pts) : jarvisSteps(pts));
+    }
+    function fresh() { $('#n-o').value = $('#n').value; pts = randomPoints(+$('#n').value, Math.random, { w: GX, hgt: GY }); run(); }
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.a; run(); }));
+    $('#n').addEventListener('input', fresh);
+    $('#new').addEventListener('click', fresh);
+    $('#circle').addEventListener('click', () => {
+      const n = +$('#n').value, seen = new Set();
+      pts = [];
+      for (let k = 0; k < n; k++) {
+        const q = { x: Math.round(10 + 9 * Math.cos((2 * Math.PI * k) / n)), y: Math.round(6 + 5.5 * Math.sin((2 * Math.PI * k) / n)) };
+        if (!seen.has(`${q.x},${q.y}`)) { seen.add(`${q.x},${q.y}`); pts.push(q); }
+      }
+      run();
+    });
+    player.svg.addEventListener('click', e => {
+      const pt = player.svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(player.svg.getScreenCTM().inverse());
+      const q = { x: Math.round((p.x - 50) / ((W - 100) / GX)), y: Math.round((H - 40 - p.y) / ((H - 80) / GY)) };
+      if (q.x < 0 || q.x > GX || q.y < 0 || q.y > GY || pts.some(a => a.x === q.x && a.y === q.y) || pts.length >= 30) return;
+      pts.push(q);
+      run();
+      player.last();
+    });
+    fresh();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quanto vale cruz((0,0), (1,0), (0,1))?', options: ['1 (vira à esquerda)', '−1 (vira à direita)', '0', '2'], answer: 0, explain: '$(1-0)(1-0) - (0-0)(0-0) = 1$: de leste para norte é giro anti-horário.' },
+      { q: 'Por que o Andrew é $O(n \\log n)$ se o laço interno pode desempilhar vários pontos?', options: ['Cada ponto é empilhado e desempilhado no máximo uma vez por cadeia: O(n) amortizado, mais a ordenação', 'Porque a pilha tem tamanho log n', 'Porque usa busca binária', 'Não é: é O(n²)'], answer: 0, explain: 'Análise amortizada como no KMP: o total de pops é limitado pelo total de pushes.' },
+      { q: 'Para 1 milhão de pontos com só 5 na envoltória, qual é mais rápido?', options: ['Jarvis: O(nh) = 5 milhões de testes', 'Andrew, sempre', 'São iguais', 'Nenhum dos dois termina'], answer: 0, explain: '$n \\log_2 n \\approx 20$ milhões; $nh = 5$ milhões. Algoritmos sensíveis à saída ganham quando $h \\ll \\log n$.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova orientação',
+      generate() {
+        const r = () => ({ x: randInt(-5, 5), y: randInt(-5, 5) });
+        let o, a, b, c;
+        do { o = r(); a = r(); b = r(); c = cross(o, a, b); } while (c === 0);
+        return { q: `$o = (${o.x}, ${o.y})$, $a = (${a.x}, ${a.y})$, $b = (${b.x}, ${b.y})$. Quanto vale cruz(o, a, b)?`, input: true, answer: String(c),
+          explain: `$(${a.x - o.x})(${b.y - o.y}) - (${a.y - o.y})(${b.x - o.x}) = ${c}$: ${c > 0 ? 'vira à esquerda (anti-horário)' : 'vira à direita (horário)'}.` };
+      },
+    });
+  </script>
+</body>
+</html>

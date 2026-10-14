@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fluxo máximo · Pesquisa Operacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#po">Pesquisa Operacional</a>
+      <span class="sep">/</span><span>Fluxo máximo</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Pesquisa Operacional</div>
+    <h1>Fluxo máximo e corte mínimo</h1>
+    <p class="lead">Quanto dá para mandar da fonte ao sumidouro sem estourar a capacidade de nenhum cano? O método de <b>Ford-Fulkerson</b> procura caminhos com folga e empurra fluxo por eles, inclusive <b>desfazendo</b> fluxo mandado antes. Com busca em largura (Edmonds-Karp), termina em $O(VE^2)$. E, de brinde, acha o gargalo da rede: o <b>corte mínimo</b>.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Rede"></select>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>caminho aumentante</span><span><i style="background:#ff9f43"></i>aresta usada ao contrário (cancela fluxo)</span><span><i style="background:#58c4dd"></i>aresta saturada</span><span><i style="background:#83c167"></i>lado S do corte mínimo</span><span><i style="background:#fc6255"></i>arestas do corte</span></div>
+
+    <section class="prose">
+      <h2>Rede residual</h2>
+      <p>Para uma aresta $u \to v$ com capacidade $c$ e fluxo $f$, a rede residual tem $u \to v$ com capacidade $c - f$ (quanto ainda cabe) e $v \to u$ com capacidade $f$ (quanto dá para devolver). Um <b>caminho aumentante</b> é qualquer caminho de $s$ a $t$ na residual; usar uma aresta "ao contrário" significa redirecionar fluxo que tinha ido por um caminho ruim. Sem isso, um guloso que só empurra para frente pode travar abaixo do máximo (veja a rede "Caminho que cancela fluxo").</p>
+      <h2>Teorema do fluxo máximo / corte mínimo</h2>
+      <p>Um <b>corte</b> $(S, T)$ separa $s \in S$ de $t \in T$; sua capacidade é a soma das arestas de $S$ para $T$. Todo fluxo passa por todo corte, então <b>fluxo ≤ corte</b> para quaisquer dois. Quando não há caminho aumentante, os vértices alcançáveis de $s$ na residual formam um $S$ cujas arestas de saída estão todas saturadas (e as de entrada, vazias): fluxo = corte. Logo os dois são ótimos. É a <b>dualidade</b> de programação linear num caso particular.</p>
+      <h2>Por que BFS</h2>
+      <p>Com caminhos arbitrários e capacidades inteiras, Ford-Fulkerson termina em $O(E \cdot f^*)$, que pode ser enorme (e com capacidades irracionais, pode nem terminar). Escolhendo sempre o caminho com <b>menos arestas</b>, a distância de $s$ a cada vértice na residual nunca diminui, e cada aresta só pode ser gargalo $O(V)$ vezes: $O(VE)$ aumentos, $O(VE^2)$ no total.</p>
+      <div class="callout tip"><p><b>Aplicações.</b> Emparelhamento bipartido máximo (alunos × vagas: capacidades 1), segmentação de imagens (o corte mínimo separa objeto e fundo), escalonamento, conectividade de redes (quantas arestas derrubar para desconectar), eliminação de times em campeonatos.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { FLOW_EXAMPLES, FLOW_CODE, maxFlowSteps } from './po.js';
+
+    const W = 900, H = 520, R = 26;
+    let G = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'po.py (Edmonds-Karp)', lang: 'python',
+      render(step, s) {
+        G.edges.forEach(([u, v, c], k) => {
+          const key = `${u}-${v}`;
+          const [x1, y1] = G.pos[u], [x2, y2] = G.pos[v];
+          const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+          const f = step.flow[k];
+          const onPath = step.path?.includes(key), back = step.back?.includes(key), cut = step.cut?.includes(key);
+          const col = back ? COLORS.orange : onPath ? COLORS.yellow : cut ? COLORS.red : f === c ? COLORS.blue : f > 0 ? COLORS.text : COLORS.faint;
+          s.line(`e${key}`, x1 + ux * (R + 2), y1 + uy * (R + 2), x2 - ux * (R + 6), y2 - uy * (R + 6), { stroke: col, sw: onPath || back ? 4.5 : 1.5 + 3 * (f / c), arrow: true, dash: cut ? '7 5' : null });
+          const mx = (x1 + x2) / 2 - uy * 16, my = (y1 + y2) / 2 + ux * 16;
+          s.rect(`eb${key}`, { x: mx - 26, y: my - 12, w: 52, h: 24, rx: 6, fill: COLORS.bg, stroke: col, sw: 1 });
+          s.text(`el${key}`, `${f}/${c}`, { x: mx, y: my, size: 13, mono: true, weight: 700, fill: col });
+        });
+        G.names.forEach((nm, u) => {
+          const inS = step.S?.[u];
+          const isST = u === 0 || u === G.names.length - 1;
+          s.circle(`n${u}`, { x: G.pos[u][0], y: G.pos[u][1], r: R, fill: inS ? '#1f3319' : isST ? COLORS.surface3 : COLORS.surface2, stroke: inS ? COLORS.green : isST ? COLORS.yellow : COLORS.border, sw: inS || isST ? 2.5 : 1.5 });
+          s.text(`nl${u}`, nm, { x: G.pos[u][0], y: G.pos[u][1], size: nm.length > 3 ? 11 : 15, weight: 700, mono: true });
+        });
+        s.text('tot', `fluxo = ${step.total}${step.done ? `  ·  corte mínimo = ${step.cutCap}` : ''}`, { x: W / 2, y: H - 14, size: 16, mono: true, weight: 700, fill: step.done ? COLORS.green : COLORS.text });
+      },
+    });
+
+    function run() {
+      G = FLOW_EXAMPLES[$('#ex').value];
+      player.load(maxFlowSteps(G, 0, G.names.length - 1));
+    }
+    $('#ex').innerHTML = Object.entries(FLOW_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', run);
+    player.setCode(FLOW_CODE, 'python');
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O fluxo atual é 10 e existe um corte de capacidade 10. O que se conclui?', options: ['O fluxo é máximo e o corte é mínimo', 'Só que o corte é mínimo', 'Nada', 'Há um erro: fluxo nunca iguala corte'], answer: 0, explain: 'Todo fluxo ≤ todo corte; se são iguais, nenhum dos dois pode melhorar.' },
+      { q: 'Por que a rede residual tem arestas ao contrário?', options: ['Para permitir desfazer fluxo mandado por um caminho ruim', 'Para o grafo ficar não dirigido', 'Para a BFS funcionar', 'Para contar o corte'], answer: 0, explain: 'Sem elas, a escolha gulosa dos primeiros caminhos pode bloquear o máximo.' },
+      { q: 'Como achar um emparelhamento máximo entre alunos e vagas com fluxo?', options: ['Fonte → cada aluno (cap. 1), aluno → vagas aceitáveis (cap. 1), cada vaga → sumidouro (cap. 1)', 'Ligar todos a todos com capacidade infinita', 'Usar o simplex', 'Não dá'], answer: 0, explain: 'Com capacidades inteiras, o fluxo máximo é inteiro, e cada unidade é um par aluno-vaga.' },
+    ]);
+  </script>
+</body>
+</html>

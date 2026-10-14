@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simplex · Pesquisa Operacional</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#po">Pesquisa Operacional</a>
+      <span class="sep">/</span><span>Simplex</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Pesquisa Operacional</div>
+    <h1>O método simplex: de vértice em vértice</h1>
+    <p class="lead">O simplex começa num vértice (a origem) e, enquanto houver uma aresta que melhora o objetivo, anda por ela até o vértice vizinho. Em álgebra, cada vértice é uma <b>solução básica</b>; andar por uma aresta é um <b>pivoteamento</b> no tableau. Veja as duas coisas lado a lado.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Problema"></select>
+      <span class="c-muted" id="story"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#58c4dd"></i>coluna que entra</span><span><i style="background:#ff9f43"></i>linha que sai</span><span><i style="background:#f4d35e"></i>pivô / vértice atual</span><span><i style="background:#83c167"></i>região viável</span></div>
+
+    <section class="prose">
+      <h2>Lendo o tableau</h2>
+      <ul>
+        <li>Cada linha de restrição tem uma variável <b>básica</b> (coluna identidade); as demais (<b>não-básicas</b>) valem 0. A solução básica lê-se na coluna $b$.</li>
+        <li>A linha $z$ tem os <b>custos reduzidos</b>: quanto $z$ muda (com sinal trocado) se a variável não-básica subir uma unidade. Algum negativo? Dá para melhorar.</li>
+        <li><b>Quem entra:</b> uma coluna com custo reduzido negativo (aqui, a mais negativa, regra de Dantzig). <b>Quem sai:</b> o <b>teste da razão</b> $\min b_i / a_{ij}$ sobre $a_{ij} > 0$, a primeira restrição a ficar apertada; assim a solução continua viável.</li>
+        <li><b>Ótimo</b> quando nenhum custo reduzido é negativo. Os valores da linha $z$ sob as folgas são os <b>preços-sombra</b>, a solução ótima do dual.</li>
+      </ul>
+      <h2>O que pode dar errado</h2>
+      <ul>
+        <li><b>Ilimitado:</b> a coluna que entra não tem entrada positiva; nada impede a variável de crescer.</li>
+        <li><b>Degeneração</b> (razão zero): o pivô não sai do lugar, e regras ingênuas podem <b>ciclar</b>. A regra de Bland (sempre o menor índice) garante terminação.</li>
+        <li><b>Origem inviável</b> (restrições ≥ ou =): o método de <b>duas fases</b> primeiro minimiza a soma de variáveis artificiais para achar um vértice viável (o código em Python faz isso), ou usa-se o "M grande".</li>
+      </ul>
+      <h2>Dualidade</h2>
+      <p>Todo problema $\max\ c^\top x$, $Ax \le b$, $x \ge 0$ tem um <b>dual</b> $\min\ b^\top y$, $A^\top y \ge c$, $y \ge 0$. <b>Dualidade fraca:</b> qualquer $y$ viável dá um limite superior para o primal. <b>Forte:</b> nos ótimos, $c^\top x^* = b^\top y^*$. Interpretação econômica: $y_i$ é o preço justo de uma unidade do recurso $i$; no ótimo, o lucro total é igual ao valor dos recursos.</p>
+      <div class="callout tip"><p><b>Eficiência.</b> No pior caso o simplex visita um número exponencial de vértices (cubo de Klee-Minty), mas na prática faz poucas iterações, por isso continua sendo o método mais usado. Os métodos de pontos interiores (Karmarkar, 1984) são polinomiais no pior caso.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { LP_EXAMPLES, SIMPLEX_CODE, simplexSteps, feasiblePolygon, fmtNum } from './po.js';
+
+    const W = 900, H = 520;
+    let ex = null, trail = [];
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'po.py (núcleo do simplex)', lang: 'python',
+      render(step, s) {
+        const T = step.T, m = T.length - 1, nc = T[0].length;
+        const cw = Math.min(64, 520 / (nc + 2)), ch = 34, x0 = 20, y0 = 50;
+        const headers = ['base', ...step.names, 'b', 'razão'];
+        headers.forEach((hd, k) => s.text(`h${k}`, hd, { x: x0 + k * cw + cw / 2, y: y0 - 16, size: 13, mono: true, weight: 700, fill: k - 1 === step.enter ? COLORS.blue : COLORS.muted }));
+        for (let r = 0; r <= m; r++) {
+          const y = y0 + r * ch;
+          const leaving = r - 1 === step.leave && step.leave != null;
+          s.text(`bl${r}`, r === 0 ? 'z' : step.names[step.base[r - 1]], { x: x0 + cw / 2, y: y + ch / 2, size: 14, mono: true, weight: 700, fill: leaving ? COLORS.orange : r === 0 ? COLORS.yellow : COLORS.text });
+          for (let k = 0; k < nc; k++) {
+            const isPivot = step.pivot && step.pivot[0] === r - 1 && step.pivot[1] === k;
+            const inCol = k === step.enter, inRow = leaving;
+            const neg = r === 0 && k < nc - 1 && T[0][k] < -1e-9;
+            s.rect(`c${r}-${k}`, { x: x0 + (k + 1) * cw, y, w: cw - 3, h: ch - 3, rx: 4,
+              fill: isPivot ? '#3d3a22' : inCol && inRow ? '#3d3a22' : inCol ? '#1c3640' : inRow ? '#3a2a1a' : r === 0 ? '#1f1f2a' : COLORS.surface2,
+              stroke: isPivot || (inCol && inRow) ? COLORS.yellow : inCol ? COLORS.blue : inRow ? COLORS.orange : COLORS.border, sw: isPivot || (inCol && inRow) ? 2.5 : 1 });
+            s.text(`t${r}-${k}`, fmtNum(T[r][k]), { x: x0 + (k + 1) * cw + (cw - 3) / 2, y: y + (ch - 3) / 2, size: 13, mono: true, fill: neg ? COLORS.red : COLORS.text });
+          }
+          if (r > 0) {
+            const rt = step.ratios?.[r - 1];
+            s.text(`ra${r}`, step.ratios ? (rt == null ? '—' : fmtNum(rt)) : '', { x: x0 + (nc + 1) * cw + cw / 2, y: y + ch / 2, size: 13, mono: true, fill: leaving ? COLORS.orange : COLORS.muted });
+          }
+        }
+        // geometria (só para 2 variáveis de decisão)
+        const n = step.names.length - m;
+        if (n === 2) {
+          const cons = ex.A.map((a, i) => ({ a, op: '<=', b: ex.b[i] }));
+          const poly = feasiblePolygon(cons);
+          const mx = Math.max(...poly.map(p => p[0])) * 1.2 + 0.5, my = Math.max(...poly.map(p => p[1])) * 1.2 + 0.5;
+          const bx = [575, 40, 880, 480];
+          const sc = Math.min((bx[2] - bx[0]) / mx, (bx[3] - bx[1]) / my);
+          const X = v => bx[0] + v * sc, Y = v => bx[3] - v * sc;
+          s.line('ax', X(0), Y(0), X(mx), Y(0), { stroke: COLORS.muted, sw: 1 });
+          s.line('ay', X(0), Y(0), X(0), Y(my), { stroke: COLORS.muted, sw: 1 });
+          s.text('axl', step.names[0], { x: X(mx) - 4, y: Y(0) + 14, size: 12, anchor: 'end', fill: COLORS.muted });
+          s.text('ayl', step.names[1], { x: X(0) + 6, y: Y(my) + 8, size: 12, anchor: 'start', fill: COLORS.muted });
+          s.path('poly', poly.map((p, k) => `${k ? 'L' : 'M'} ${X(p[0])} ${Y(p[1])}`).join(' ') + ' Z', { stroke: COLORS.green, sw: 2, fill: 'rgba(131,193,103,0.15)' });
+          poly.forEach((p, k) => s.circle(`pv${k}`, { x: X(p[0]), y: Y(p[1]), r: 4, fill: COLORS.surface3, stroke: COLORS.muted, sw: 1 }));
+          const idx = player.index ?? 0;
+          const seen = [];
+          for (const st of player.steps.slice(0, idx + 1)) { const p = [st.x[0], st.x[1]]; if (!seen.length || seen.at(-1)[0] !== p[0] || seen.at(-1)[1] !== p[1]) seen.push(p); }
+          for (let k = 0; k + 1 < seen.length; k++) s.line(`tr${k}`, X(seen[k][0]), Y(seen[k][1]), X(seen[k + 1][0]), Y(seen[k + 1][1]), { stroke: COLORS.yellow, sw: 3, arrow: true, layer: 'fx' });
+          s.circle('cur', { x: X(step.x[0]), y: Y(step.x[1]), r: 8, fill: COLORS.yellow, stroke: COLORS.text, sw: 1.5, layer: 'fx' });
+          s.text('curl', `(${fmtNum(step.x[0])}, ${fmtNum(step.x[1])})  z = ${fmtNum(step.z)}`, { x: X(step.x[0]) + 12, y: Y(step.x[1]) - 12, size: 13, anchor: 'start', mono: true, weight: 700, fill: COLORS.yellow, layer: 'fx' });
+        }
+      },
+    });
+
+    function run() {
+      ex = LP_EXAMPLES[$('#ex').value];
+      $('#story').textContent = `max ${ex.c.map((v, j) => `${v}x${j + 1}`).join(' + ')} · ${ex.texto}`;
+      player.load(simplexSteps(ex.c, ex.A, ex.b));
+    }
+    $('#ex').innerHTML = Object.entries(LP_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', run);
+    player.setCode(SIMPLEX_CODE, 'python');
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'No tableau ótimo, todas as entradas da linha z (exceto b) são…', options: ['≥ 0', '≤ 0', 'zero', 'iguais a c'], answer: 0, explain: 'Com a linha escrita como z − c·x = 0, um custo reduzido negativo indica que dá para melhorar.' },
+      { q: 'Para que serve o teste da razão?', options: ['Garantir que a nova solução continue viável (nenhuma básica fica negativa)', 'Escolher quem entra', 'Garantir a otimalidade', 'Detectar degeneração'], answer: 0, explain: 'A variável que entra cresce até a primeira básica chegar a zero; mais que isso violaria $x \\ge 0$.' },
+      { q: 'O dual de um primal de maximização com 3 restrições e 2 variáveis tem…', options: ['3 variáveis e 2 restrições', '2 variáveis e 3 restrições', '5 variáveis', 'o mesmo tamanho'], answer: 0, explain: 'Uma variável dual por restrição primal, uma restrição dual por variável primal.' },
+      { q: 'No Wyndor, o preço-sombra da fábrica 1 é 0. O que isso significa?', options: ['Sobram horas na fábrica 1: mais horas lá não aumentam o lucro', 'A fábrica 1 dá prejuízo', 'A fábrica 1 está no limite', 'É um erro'], answer: 0, explain: 'No ótimo (2, 6), x₁ = 2 < 4: a restrição tem folga 2.' },
+    ]);
+  </script>
+</body>
+</html>

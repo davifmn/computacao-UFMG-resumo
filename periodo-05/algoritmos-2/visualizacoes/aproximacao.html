@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NP-completude e aproximação · Algoritmos II</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#alg2">Algoritmos II</a>
+      <span class="sep">/</span><span>NP-completude e aproximação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Algoritmos II</div>
+    <h1>Quando o ótimo é caro demais: algoritmos aproximativos</h1>
+    <p class="lead">Para problemas NP-difíceis não se conhece algoritmo polinomial, e provavelmente não existe. Mas às vezes dá para garantir em tempo polinomial uma solução <b>no máximo $\rho$ vezes pior</b> que a ótima. Veja duas 2-aproximações clássicas, lado a lado com o ótimo achado por força bruta (exponencial: só cabe para entradas pequenas).</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Problema">
+        <button class="btn" data-a="cobertura">Cobertura por vértices</button>
+        <button class="btn" data-a="tsp">Caixeiro viajante métrico</button>
+      </div>
+      <button class="btn small" id="new">Nova instância</button>
+      <button class="btn small" id="preset">Exemplo fixo</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend" id="legend"></div>
+
+    <section class="prose">
+      <h2>P, NP e NP-completude em uma página</h2>
+      <ul>
+        <li><b>P</b>: problemas de decisão resolvíveis em tempo polinomial. <b>NP</b>: aqueles cuja resposta "sim" tem um <b>certificado</b> verificável em tempo polinomial (uma rota de custo ≤ k, uma atribuição que satisfaz a fórmula).</li>
+        <li><b>Redução</b> $A \le_p B$: transformar em tempo polinomial instâncias de $A$ em instâncias de $B$ com a mesma resposta. Se $B$ é fácil, $A$ também; se $A$ é difícil, $B$ também.</li>
+        <li><b>NP-completo</b>: está em NP e todo problema de NP se reduz a ele. <b>Cook-Levin</b>: SAT é NP-completo. A partir dele, por reduções: 3-SAT → Clique → Cobertura por vértices → Ciclo hamiltoniano → Caixeiro viajante; 3-SAT → Soma de subconjuntos → Mochila…</li>
+        <li>Para provar que $X$ é NP-completo: (1) $X \in$ NP; (2) reduza um NP-completo conhecido <b>a</b> $X$ (a direção importa!).</li>
+      </ul>
+      <h2>Cobertura por vértices: 2-aproximação</h2>
+      <p>As arestas escolhidas pelo algoritmo não compartilham pontas: formam um <b>emparelhamento</b> $M$. Toda cobertura precisa de um vértice distinto para cada aresta de $M$, então $\text{OPT} \ge |M|$; o algoritmo leva $2|M| \le 2\,\text{OPT}$. O fator 2 é justo: no grafo bipartido completo $K_{n,n}$ ele leva $2n$ e o ótimo é $n$.</p>
+      <h2>Caixeiro viajante métrico: 2-aproximação</h2>
+      <p>Com distâncias que obedecem a desigualdade triangular: $\text{MST} \le \text{OPT}$ (tire uma aresta da rota ótima e sobra uma árvore geradora); o passeio que contorna a árvore custa $2\,\text{MST}$; os atalhos da pré-ordem não aumentam o custo. O algoritmo de <b>Christofides</b> melhora para 1,5 somando um emparelhamento perfeito mínimo dos vértices de grau ímpar. <b>Sem</b> desigualdade triangular, nenhuma aproximação com fator constante existe, a menos que P = NP (ela decidiria o ciclo hamiltoniano).</p>
+      <div class="callout tip"><p><b>Outras saídas para problemas NP-difíceis:</b> algoritmos exponenciais espertos (programação dinâmica de Held-Karp, $O(n^2 2^n)$; <i>branch and bound</i>, que você verá em Pesquisa Operacional), heurísticas sem garantia (2-opt, busca local, algoritmos genéticos), casos especiais polinomiais (cobertura em árvores e grafos bipartidos) e esquemas de aproximação $(1 + \varepsilon)$ para a mochila.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, PRESETS, vertexCoverSteps, tspSteps } from './aproximacao.js';
+
+    const W = 900, H = 520;
+    let alg = 'cobertura', G = null, cities = null;
+
+    function randomGraph() {
+      const n = randInt(7, 10);
+      const pos = [...Array(n).keys()].map(k => [W / 2 + 230 * Math.cos((2 * Math.PI * k) / n - Math.PI / 2) + randInt(-30, 30), H / 2 - 10 + 200 * Math.sin((2 * Math.PI * k) / n - Math.PI / 2) + randInt(-20, 20)]);
+      const edges = [];
+      for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (Math.random() < (v === u + 1 ? 0.8 : 0.22)) edges.push([u, v]);
+      edges.sort(() => Math.random() - 0.5);
+      return { n, pos, edges };
+    }
+    function randomCities() {
+      const n = randInt(6, 8), c = [];
+      while (c.length < n) {
+        const q = { x: randInt(60, W - 60), y: randInt(50, H - 60) };
+        if (c.every(p => Math.hypot(p.x - q.x, p.y - q.y) > 80)) c.push(q);
+      }
+      return c;
+    }
+    const FIXED_CITIES = [{ x: 120, y: 120 }, { x: 300, y: 70 }, { x: 520, y: 130 }, { x: 760, y: 90 }, { x: 800, y: 330 }, { x: 600, y: 440 }, { x: 330, y: 400 }, { x: 160, y: 330 }];
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'geometria.cpp',
+      render(step, s) {
+        if (alg === 'cobertura') {
+          G.edges.forEach(([u, v], k) => {
+            const covered = step.inC[u] || step.inC[v];
+            const picked = step.picked.includes(k), cur = step.edge === k;
+            s.line(`e${k}`, ...G.pos[u], ...G.pos[v], { stroke: cur ? COLORS.blue : picked ? COLORS.yellow : covered ? COLORS.green : COLORS.faint, sw: picked || cur ? 5 : 2.5, opacity: covered || cur ? 1 : 0.7 });
+          });
+          for (let u = 0; u < G.n; u++) {
+            const inOpt = step.done && step.opt.includes(u);
+            s.circle(`v${u}`, { x: G.pos[u][0], y: G.pos[u][1], r: 22, fill: step.inC[u] ? '#3d3a22' : COLORS.surface2, stroke: step.inC[u] ? COLORS.yellow : COLORS.border, sw: step.inC[u] ? 3 : 1.5 });
+            s.text(`vt${u}`, u, { x: G.pos[u][0], y: G.pos[u][1], size: 16, weight: 700, mono: true });
+            if (step.done) s.circle(`o${u}`, { x: G.pos[u][0], y: G.pos[u][1], r: 30, fill: 'none', stroke: COLORS.purple, sw: 2.5, opacity: inOpt ? 1 : 0 });
+          }
+        } else {
+          const P = u => [cities[u].x, cities[u].y];
+          if (step.done && step.opt) step.opt.forEach((u, i) => s.line(`opt${i}`, ...P(u), ...P(step.opt[(i + 1) % step.opt.length]), { stroke: COLORS.purple, sw: 8, opacity: 0.35, layer: 'bg' }));
+          step.tree.forEach(([a, b]) => s.line(`t${a}-${b}`, ...P(a), ...P(b), { stroke: COLORS.green, sw: 2.5, dash: step.rota.length ? '6 5' : null }));
+          const r = step.rota;
+          for (let i = 0; i + 1 < r.length; i++) s.line(`r${i}`, ...P(r[i]), ...P(r[i + 1]), { stroke: COLORS.yellow, sw: 3.5, arrow: true });
+          if (step.done) s.line('rclose', ...P(r.at(-1)), ...P(r[0]), { stroke: COLORS.yellow, sw: 3.5, arrow: true });
+          cities.forEach((c, u) => {
+            s.circle(`c${u}`, { x: c.x, y: c.y, r: 16, fill: step.cur === u ? '#3d3a22' : step.na[u] ? COLORS.surface3 : COLORS.surface2, stroke: step.cur === u ? COLORS.yellow : step.na[u] ? COLORS.green : COLORS.border, sw: 2 });
+            s.text(`ct${u}`, u, { x: c.x, y: c.y, size: 14, weight: 700, mono: true });
+          });
+        }
+      },
+    });
+
+    function run() {
+      $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === alg));
+      player.setCode(CODES[alg], 'cpp');
+      if (alg === 'cobertura') {
+        player.load(vertexCoverSteps(G.n, G.edges));
+        $('#legend').innerHTML = '<span><i style="background:#f4d35e"></i>arestas escolhidas (emparelhamento) e vértices levados</span><span><i style="background:#83c167"></i>arestas cobertas</span><span><i style="background:#b189f5"></i>cobertura ótima (no fim)</span>';
+      } else {
+        player.load(tspSteps(cities));
+        $('#legend').innerHTML = '<span><i style="background:#83c167"></i>árvore geradora mínima</span><span><i style="background:#f4d35e"></i>rota da pré-ordem</span><span><i style="background:#b189f5"></i>rota ótima (no fim)</span>';
+      }
+    }
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.a; run(); }));
+    $('#new').addEventListener('click', () => { if (alg === 'cobertura') G = randomGraph(); else cities = randomCities(); run(); });
+    $('#preset').addEventListener('click', () => { if (alg === 'cobertura') G = PRESETS.cobertura; else cities = FIXED_CITIES; run(); });
+    G = PRESETS.cobertura; cities = FIXED_CITIES;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Para provar que o problema X é NP-difícil, você deve…', options: ['reduzir um problema NP-completo conhecido a X', 'reduzir X a SAT', 'mostrar um algoritmo exponencial para X', 'mostrar que X está em NP'], answer: 0, explain: 'Se X resolvesse rápido, resolveria o NP-completo rápido. Reduzir X a SAT só mostra que X não é mais difícil que SAT.' },
+      { q: 'Se alguém achar um algoritmo polinomial para a cobertura por vértices, então…', options: ['P = NP', 'só a cobertura fica fácil', 'o caixeiro continua exponencial', 'a 2-aproximação deixa de valer'], answer: 0, explain: 'Ela é NP-completa: todo problema de NP se reduz a ela.' },
+      { q: 'A heurística "leve sempre o vértice de maior grau" é uma 2-aproximação para a cobertura?', options: ['Não: há grafos em que ela fica Θ(log n) vezes pior', 'Sim, é ótima', 'Sim, com fator 2', 'Só em árvores'], answer: 0, explain: 'O guloso por grau parece mais esperto, mas não tem garantia constante. A versão "leva as duas pontas" é mais burra e tem garantia.' },
+      { q: 'Por que a 2-aproximação do caixeiro exige a desigualdade triangular?', options: ['Para os atalhos da pré-ordem não aumentarem o custo', 'Para a árvore geradora existir', 'Para o Prim funcionar', 'Não exige'], answer: 0, explain: 'Pular cidades já visitadas troca um caminho u → … → w pela aresta direta u–w, que só é mais curta se $d(u,w) \\le d(u,v) + d(v,w)$.' },
+    ]);
+  </script>
+</body>
+</html>

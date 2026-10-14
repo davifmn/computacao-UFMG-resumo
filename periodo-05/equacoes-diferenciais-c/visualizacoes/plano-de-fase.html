@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano de fase · Equações Diferenciais C</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .ctl { display: grid; grid-template-columns: 2.2em 1fr 3.4em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); font-weight: 600; }
+    .stage svg#phase { cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#edc">Equações Diferenciais C</a>
+      <span class="sep">/</span><span>Plano de fase</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Equações Diferenciais C</div>
+    <h1>Sistemas lineares no plano de fase</h1>
+    <p class="lead">Para $\mathbf{x}' = A\mathbf{x}$ com $A$ 2×2, cada ponto do plano tem uma velocidade, e as soluções são as correntes desse fluxo. Os <b>autovalores</b> de $A$ decidem tudo: se as partículas fogem, caem na origem, giram ou fazem as duas coisas. Mexa na matriz e veja o ponto pular entre as regiões do <b>diagrama traço-determinante</b>. Clique no plano para traçar uma solução.</p>
+
+    <div class="lab">
+      <div class="stage"><svg id="phase" aria-label="Plano de fase"></svg></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Matriz A</div>
+          <div class="ctl" style="grid-template-columns:1fr"><select id="preset"></select></div>
+          <div class="ctl" id="ctl"></div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px;flex-wrap:wrap">
+            <label class="c-muted" style="font-size:14px"><input type="checkbox" id="parts" checked> partículas</label>
+            <label class="c-muted" style="font-size:14px"><input type="checkbox" id="field" checked> campo</label>
+            <button class="btn small" id="clear">Limpar curvas</button>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Autovalores e classificação</div><div class="readout" id="out"></div></div>
+        <div class="stage"><svg id="td" aria-label="Diagrama traço-determinante"></svg></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Autovalores e autovetores</h2>
+      <p>Se $A\mathbf{v} = \lambda \mathbf{v}$, então $\mathbf{x}(t) = e^{\lambda t}\mathbf{v}$ é solução: uma reta pela origem percorrida para fora ($\lambda > 0$) ou para dentro ($\lambda &lt; 0$). Com dois autovalores reais distintos, a solução geral é $c_1 e^{\lambda_1 t}\mathbf{v}_1 + c_2 e^{\lambda_2 t}\mathbf{v}_2$ e as retas dos autovetores (desenhadas em rosa e verde-água) organizam todas as outras trajetórias. Com $\lambda = \alpha \pm i\beta$, as soluções são $e^{\alpha t}$ vezes rotações de frequência $\beta$: espirais (ou elipses, se $\alpha = 0$).</p>
+      <h2>O diagrama traço-determinante</h2>
+      <p>Os autovalores são raízes de $\lambda^2 - (\text{tr}\,A)\lambda + \det A = 0$, então só dependem de $\tau = \text{tr}\,A$ e $\Delta = \det A$:</p>
+      <ul>
+        <li>$\Delta &lt; 0$: autovalores reais de sinais opostos, <b>sela</b>.</li>
+        <li>$\Delta > 0$ e $\tau^2 > 4\Delta$: reais de mesmo sinal, <b>nó</b> (estável se $\tau &lt; 0$).</li>
+        <li>$\tau^2 &lt; 4\Delta$: complexos, <b>espiral</b> (estável se $\tau &lt; 0$); no eixo $\tau = 0$, <b>centro</b>.</li>
+        <li>Na parábola $\tau^2 = 4\Delta$: autovalor duplo, <b>nó degenerado</b> ou <b>estrela</b>.</li>
+      </ul>
+      <div class="callout tip"><p><b>Por que isso vai além do linear.</b> O oscilador $my'' + cy' + ky = 0$ é o sistema $(y, v)' = \begin{pmatrix} 0 & 1 \\ -k/m & -c/m \end{pmatrix}(y, v)$: subamortecido é espiral estável, superamortecido é nó estável (veja o exemplo "Oscilador"). E perto de um equilíbrio, um sistema não linear se comporta como sua linearização (a matriz jacobiana), salvo nos casos de fronteira: é assim que se estudam predador-presa, pêndulos e circuitos.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, svgEl } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { SYSTEMS, eigen, classify, rk4System } from './edo.js';
+
+    const W = 640, H = 600;
+    const scene = new Scene($('#phase'), { width: W, height: H });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { x: [-4.2, 4.2], y: [-3.9, 3.9], box: [20, 14, W - 14, H - 14] });
+    plot.clip(['edges', 'nodes']);
+    const td = new Scene($('#td'), { width: 380, height: 300 });
+    td.setAnimated(false);
+    const tdp = new Plot(td, { x: [-5, 5], y: [-4, 8], box: [30, 12, 370, 280] });
+    tdp.clip(['edges']);
+    const partLayer = svgEl('g', {}, scene.layers.nodes);
+
+    let A = SYSTEMS.espiral.A.map(r => [...r]);
+    let extra = [];
+    const F = (t, [x, y]) => [A[0][0] * x + A[0][1] * y, A[1][0] * x + A[1][1] * y];
+    const inBox = ([x, y]) => Math.abs(x) < 4.6 && Math.abs(y) < 4.3;
+
+    function traj(p0, T = 10) {
+      const fw = rk4System(F, 0, p0, 0.02, T / 0.02), bw = rk4System(F, 0, p0, -0.02, T / 0.02);
+      const cut = arr => { const out = []; for (const [, x, y] of arr) { if (!inBox([x, y]) || Math.hypot(x, y) < 1e-3) { out.push([x, y]); break; } out.push([x, y]); } return out; };
+      return [...cut(bw).reverse(), ...cut(fw).slice(1)];
+    }
+    const pathOf = pts => 'M ' + pts.map(([x, y]) => `${plot.X(Math.max(-9, Math.min(9, x)))} ${plot.Y(Math.max(-9, Math.min(9, y)))}`).join(' L ');
+
+    function draw() {
+      const ev = eigen(A), cl = classify(A);
+      scene.frame(s => {
+        plot.axes(s, { xLabel: 'x', yLabel: 'y', labels: false });
+        if ($('#field').checked) {
+          for (let i = -8; i <= 8; i++) for (let j = -7; j <= 7; j++) {
+            const x = i * 0.5, y = j * 0.52;
+            const [u, v] = F(0, [x, y]);
+            const L = Math.hypot(u, v);
+            if (L < 1e-9) continue;
+            const len = 11, dx = (u / L) * len, dy = (-v / L) * len;
+            const px = plot.X(x), py = plot.Y(y);
+            s.line(`a${i}_${j}`, px - dx / 2, py - dy / 2, px + dx / 2, py + dy / 2, { stroke: COLORS.faint, sw: 1.2, arrow: true, layer: 'bg' });
+          }
+        }
+        // trajetórias de referência
+        const starts = [];
+        for (let k = 0; k < 12; k++) { const a = (2 * Math.PI * k) / 12 + 0.13; starts.push([3.6 * Math.cos(a), 3.4 * Math.sin(a)]); }
+        for (let k = 0; k < 6; k++) { const a = (2 * Math.PI * k) / 6 + 0.4; starts.push([1.2 * Math.cos(a), 1.2 * Math.sin(a)]); }
+        starts.forEach((p, k) => s.path(`tr${k}`, pathOf(traj(p)), { stroke: COLORS.blue, sw: 1.5, opacity: 0.55 }));
+        extra.forEach((p, k) => {
+          s.path(`ex${k}`, pathOf(traj(p)), { stroke: COLORS.yellow, sw: 2.5 });
+          s.circle(`exp${k}`, { x: plot.X(p[0]), y: plot.Y(p[1]), r: 5, fill: COLORS.yellow, stroke: 'none', sw: 0, layer: 'fx' });
+        });
+        if (ev.real) ev.vectors.forEach((v, k) => {
+          const col = k ? COLORS.teal : COLORS.pink;
+          s.line(`ev${k}`, plot.X(-6 * v[0]), plot.Y(-6 * v[1]), plot.X(6 * v[0]), plot.Y(6 * v[1]), { stroke: col, sw: 2.5, opacity: 0.9 });
+          s.text(`evl${k}`, `λ${k ? '₂' : '₁'} = ${fmt(ev.values[k], 2)}`, { x: plot.X(3.2 * v[0]) + 8, y: plot.Y(3.2 * v[1]) - 10, size: 13, anchor: 'start', mono: true, weight: 700, fill: col, layer: 'fx' });
+        });
+        s.circle('o', { x: plot.X(0), y: plot.Y(0), r: 5, fill: COLORS.text, stroke: 'none', sw: 0, layer: 'fx' });
+      });
+      // diagrama traço-determinante
+      td.frame(s => {
+        tdp.axes(s, { xLabel: 'τ = tr', yLabel: 'Δ = det', grid: false });
+        tdp.fn(s, 'par', t => (t * t) / 4, { stroke: COLORS.purple, sw: 2 });
+        const lab = (k, txt, x, y) => s.text(k, txt, { x: tdp.X(x), y: tdp.Y(y), size: 11, fill: COLORS.muted });
+        lab('l1', 'sela', 0, -2.4); lab('l2', 'nó estável', -4, 2.4); lab('l3', 'nó instável', 4, 2.4);
+        lab('l4', 'espiral estável', -1.9, 6.4); lab('l5', 'espiral instável', 1.9, 6.4); lab('l6', 'centro (τ = 0)', 2.6, 7.6);
+        const { tr, det } = ev;
+        s.circle('pt', { x: tdp.X(Math.max(-5, Math.min(5, tr))), y: tdp.Y(Math.max(-4, Math.min(8, det))), r: 7, fill: COLORS.yellow, stroke: COLORS.text, sw: 1.5 });
+      });
+      const vals = ev.real ? ev.values.map(v => fmt(v, 3)).join(' e ') : `${fmt(ev.values[0].re, 3)} ± ${fmt(ev.values[0].im, 3)}i`;
+      $('#out').innerHTML = `<div>tr A = <b>${fmt(ev.tr, 2)}</b>, det A = <b>${fmt(ev.det, 2)}</b>, tr² − 4 det = ${fmt(ev.disc, 2)}</div><div>autovalores: <b>${vals}</b></div><div style="font-size:16px"><b>${cl.nome}</b></div>`;
+    }
+
+    // ----- partículas -----
+    let parts = [];
+    const spawn = () => [(Math.random() * 2 - 1) * 4.2, (Math.random() * 2 - 1) * 3.9, Math.random() * 3];
+    function resetParts() {
+      partLayer.replaceChildren();
+      parts = Array.from({ length: 140 }, () => {
+        const [x, y, age] = spawn();
+        const el = svgEl('circle', { r: 2.6, fill: COLORS.yellow, opacity: 0.85 }, partLayer);
+        return { x, y, age, el };
+      });
+    }
+    let last = performance.now();
+    function tick(now) {
+      const dt = Math.min(0.05, (now - last) / 1000) * 0.6;
+      last = now;
+      if ($('#parts').checked) {
+        partLayer.style.display = '';
+        for (const p of parts) {
+          const [u, v] = F(0, [p.x, p.y]);
+          const [u2, v2] = F(0, [p.x + (dt / 2) * u, p.y + (dt / 2) * v]);
+          p.x += dt * u2; p.y += dt * v2; p.age += dt;
+          if (!inBox([p.x, p.y]) || p.age > 4 || Math.hypot(p.x, p.y) < 0.03) [p.x, p.y, p.age] = [...spawn().slice(0, 2), 0];
+          p.el.setAttribute('cx', plot.X(p.x)); p.el.setAttribute('cy', plot.Y(p.y));
+          p.el.setAttribute('opacity', Math.min(1, p.age * 3, (4 - p.age) * 2) * 0.85);
+        }
+      } else partLayer.style.display = 'none';
+      requestAnimationFrame(tick);
+    }
+
+    // ----- controles -----
+    const names = [['a', 0, 0], ['b', 0, 1], ['c', 1, 0], ['d', 1, 1]];
+    $('#ctl').innerHTML = names.map(([n]) => `<span>${n}</span><input id="${n}" type="range" min="-4" max="4" step="0.1"><output id="${n}-o"></output>`).join('');
+    const sync = () => names.forEach(([n, i, j]) => { $(`#${n}`).value = A[i][j]; $(`#${n}-o`).value = A[i][j]; });
+    names.forEach(([n, i, j]) => $(`#${n}`).addEventListener('input', () => { A[i][j] = +$(`#${n}`).value; $(`#${n}-o`).value = A[i][j]; draw(); }));
+    $('#preset').innerHTML = Object.entries(SYSTEMS).map(([k, s]) => `<option value="${k}">${s.nome}</option>`).join('');
+    $('#preset').value = 'espiral';
+    $('#preset').addEventListener('change', () => { A = SYSTEMS[$('#preset').value].A.map(r => [...r]); extra = []; sync(); draw(); });
+    $('#field').addEventListener('change', draw);
+    $('#clear').addEventListener('click', () => { extra = []; draw(); });
+    $('#phase').addEventListener('click', e => {
+      const pt = $('#phase').createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform($('#phase').getScreenCTM().inverse());
+      extra.push([plot.invX(p.x), plot.invY(p.y)]);
+      if (extra.length > 8) extra.shift();
+      draw();
+    });
+    sync(); draw(); resetParts(); requestAnimationFrame(tick);
+
+    mountQuiz($('#quiz'), [
+      { q: 'A matriz $\\begin{pmatrix} 2 & 0 \\\\ 0 & -1 \\end{pmatrix}$ gera…', options: ['uma sela', 'um nó instável', 'uma espiral', 'um centro'], answer: 0, explain: 'Autovalores 2 e −1, de sinais opostos (det = −2 < 0).' },
+      { q: 'Se tr A = −1 e det A = 3, a origem é…', options: ['espiral estável', 'nó estável', 'sela', 'centro'], answer: 0, explain: '$\\tau^2 - 4\\Delta = 1 - 12 < 0$: autovalores complexos com parte real $\\tau/2 < 0$.' },
+      { q: 'O oscilador $y\'\' + 5y\' + 4y = 0$, como sistema, tem a origem como…', options: ['nó estável (superamortecido)', 'espiral estável', 'centro', 'sela'], answer: 0, explain: 'A = [[0, 1], [−4, −5]]: tr = −5, det = 4, $\\tau^2 - 4\\Delta = 9 > 0$; autovalores −1 e −4.' },
+      { q: 'Num centro, as trajetórias são…', options: ['curvas fechadas (elipses)', 'retas', 'espirais', 'hipérboles'], answer: 0, explain: 'Autovalores imaginários puros: rotação sem crescimento nem decaimento.' },
+    ]);
+  </script>
+</body>
+</html>
