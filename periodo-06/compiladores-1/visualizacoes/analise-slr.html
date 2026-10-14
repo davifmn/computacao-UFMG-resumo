@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise SLR · Compiladores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    .gram { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; margin-bottom: 14px; align-items: start; }
+    .gram textarea { width: 100%; min-height: 110px; font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .gram input[type=text] { width: 100%; font-family: var(--mono); }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+    table.t th, table.t td { border: 1px solid var(--border); padding: 3px 7px; text-align: center; }
+    table.t th { color: var(--muted); font-weight: 600; background: var(--surface); }
+    table.t td.hit { background: rgba(244, 211, 94, .2); outline: 2px solid var(--yellow); }
+    table.t td.conf { background: rgba(252, 98, 85, .2); color: var(--red); }
+    table.t tr.cur th { color: var(--yellow); }
+    .tabwrap { max-height: 420px; overflow: auto; }
+    details.items pre { font-size: 12.5px; columns: 3; }
+    #err { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#comp">Compiladores I</a>
+      <span class="sep">/</span><span>Análise SLR</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Compiladores I</div>
+    <h1>Análise ascendente: empilha e reduz (SLR)</h1>
+    <p class="lead">O analisador LR lê a entrada da esquerda para a direita e constrói a árvore <b>de baixo para cima</b>: empilha tokens até que o topo da pilha forme o lado direito de uma produção e então o <b>reduz</b> ao não-terminal. Um autômato de <b>itens LR(0)</b> diz quando reduzir. Ele aceita a gramática de expressões <b>com</b> recursão à esquerda, que o LL(1) rejeita.</p>
+
+    <div class="gram">
+      <div>
+        <select id="ex" aria-label="Gramática" style="width:100%;margin-bottom:8px"></select>
+        <textarea id="g" spellcheck="false" aria-label="Gramática"></textarea>
+        <label class="c-muted" style="font-size:14px">entrada <input id="in" type="text"></label>
+        <button class="btn primary small" id="go" style="margin-top:8px">Analisar</button>
+        <div id="err"></div>
+        <div id="prods" style="margin-top:8px;font-family:var(--mono);font-size:13px"></div>
+      </div>
+      <div class="tabwrap" id="tab"></div>
+    </div>
+    <details class="items"><summary class="c-muted">Ver todos os conjuntos de itens LR(0)</summary><pre id="items"></pre></details>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>Itens e o autômato LR(0)</h2>
+      <p>Um <b>item</b> é uma produção com um ponto marcando quanto dela já foi visto: $E \to E\ \bullet + T$ significa "já empilhei um $E$ e espero um $+$". Cada estado do autômato é um conjunto de itens fechado (o <b>fechamento</b>: se o ponto está antes de um não-terminal $B$, todos os itens $B \to \bullet\gamma$ entram). As transições (<b>goto</b>) movem o ponto sobre um símbolo. O autômato reconhece exatamente os <b>prefixos viáveis</b>: o que pode estar na pilha numa análise correta.</p>
+      <h2>A tabela SLR</h2>
+      <ul>
+        <li>Transição por terminal $a$ para o estado $j$: <code>ACTION[i, a] = s j</code> (empilha).</li>
+        <li>Item completo $A \to \alpha\ \bullet$ no estado $i$: <code>ACTION[i, a] = r</code> (reduz) <b>para todo</b> $a \in \text{FOLLOW}(A)$. Esse uso do FOLLOW é o "S" (simple) de SLR.</li>
+        <li>Transição por não-terminal: <code>GOTO[i, A] = j</code>, usada logo depois de uma redução.</li>
+      </ul>
+      <p>Conflitos <b>empilha/reduz</b> ou <b>reduz/reduz</b> significam que a gramática não é SLR. O LR(1) canônico e o LALR(1) (do <code>yacc</code>/<code>bison</code>) usam antecipações mais precisas que o FOLLOW e aceitam mais gramáticas. No if-then-else pendente, o conflito empilha/reduz no <code>else</code> é resolvido preferindo empilhar: o <code>else</code> fica com o <code>if</code> mais próximo.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { GRAMMARS, LR_CODE, parseGrammar, slrTable, slrSteps, showProd, showItem, showAct, EPS } from './comp.js';
+    import { layoutForest, drawTree } from './arvore.js';
+
+    const W = 900, H = 520;
+    let G = null, T = null, layout = null, kidsOf = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'analisador SLR', lang: 'python',
+      onStep(step) {
+        document.querySelectorAll('#tab td.hit').forEach(td => td.classList.remove('hit'));
+        document.querySelectorAll('#tab tr.cur').forEach(tr => tr.classList.remove('cur'));
+        const s = step.from ?? step.state;
+        document.querySelector(`#tab tr[data-s="${s}"]`)?.classList.add('cur');
+        if (step.look) document.querySelector(`#tab td[data-k="${CSS.escape(s + '|' + step.look)}"]`)?.classList.add('hit');
+      },
+      render(step, s) {
+        // entrada
+        step.toks.forEach((t, k) => {
+          const x = 110 + k * 50;
+          s.rect(`in${k}`, { x, y: 14, w: 46, h: 26, rx: 5, fill: k === step.pos ? '#3d3a22' : COLORS.surface2, stroke: k === step.pos ? COLORS.yellow : COLORS.border, sw: k === step.pos ? 2 : 1, opacity: k < step.pos ? 0.35 : 1 });
+          s.text(`it${k}`, t.lex, { x: x + 23, y: 27, size: 13, mono: true, fill: k === step.pos ? COLORS.yellow : COLORS.text });
+        });
+        s.text('inl', 'entrada', { x: 100, y: 27, size: 12, anchor: 'end', fill: COLORS.muted });
+        // pilha (estados e símbolos), horizontal embaixo
+        s.text('stl', 'pilha', { x: 20, y: H - 64, size: 12, anchor: 'start', fill: COLORS.muted });
+        step.stack.forEach((x, k) => {
+          const px = 20 + k * 64, top = k === step.stack.length - 1;
+          s.rect(`sk${k}`, { x: px, y: H - 52, w: 60, h: 40, rx: 6, fill: top ? '#3d3a22' : COLORS.surface2, stroke: top ? COLORS.yellow : COLORS.border, sw: top ? 2 : 1 });
+          s.text(`sks${k}`, x.sym ?? '⊥', { x: px + 30, y: H - 40, size: 12, mono: true, weight: 700, fill: x.sym && G.nts.includes(x.sym) ? COLORS.blue : COLORS.green });
+          s.text(`skn${k}`, x.s, { x: px + 30, y: H - 22, size: 13, mono: true, fill: top ? COLORS.yellow : COLORS.muted });
+        });
+        // itens do estado do topo
+        const st = step.state;
+        s.text('ish', `itens do estado ${st}`, { x: W - 20, y: 66, size: 12, anchor: 'end', fill: COLORS.muted });
+        T.states[st].slice(0, 9).forEach((it, k) => s.text(`is${k}`, showItem(T.prods, it), { x: W - 20, y: 86 + k * 18, size: 12, anchor: 'end', mono: true, fill: T.prods[it.p].rhs.length === it.dot ? COLORS.orange : COLORS.text }));
+        for (let k = T.states[st].length; k < 12; k++) s.text(`is${k}`, '', { x: W - 20, y: 86 + k * 18 });
+        // floresta
+        const have = new Set(step.nodes.map(n => n.id));
+        const pos = new Map([...layout].filter(([id]) => have.has(id)));
+        drawTree(s, pos, id => kidsOf(id).filter(c => have.has(c)), id => {
+          const n = step.nodes[id];
+          return n.lex && n.lex !== n.label ? `${n.label}:${n.lex}` : n.label;
+        }, id => {
+          const n = step.nodes[id], isRoot = step.roots.includes(id), red = id === step.reduced;
+          return { fill: red ? '#3d3a22' : COLORS.surface2, stroke: red ? COLORS.yellow : n.eps ? COLORS.faint : G.nts.includes(n.label) ? COLORS.blue : COLORS.green, text: red ? COLORS.yellow : isRoot ? COLORS.text : COLORS.muted, sw: isRoot ? 2 : 1 };
+        });
+      },
+    });
+
+    function tables() {
+      T = slrTable(G);
+      const ts = [...G.ts, '$'];
+      const conf = new Set(T.conflicts.map(c => `${c.s}|${c.a}`));
+      $('#tab').innerHTML = `<table class="t"><tr><th>estado</th>${ts.map(a => `<th>${a}</th>`).join('')}${G.nts.map(A => `<th>${A}</th>`).join('')}</tr>${T.states.map((_, s) => `<tr data-s="${s}"><th>${s}</th>${ts.map(a => {
+        const k = `${s}|${a}`;
+        if (conf.has(k)) { const c = T.conflicts.filter(x => x.s === s && x.a === a); return `<td class="conf" data-k="${k}">${[c[0].acts[0], ...c.map(x => x.acts[1])].map(showAct).join('/')}</td>`; }
+        return `<td data-k="${k}">${showAct(T.ACTION[s][a])}</td>`;
+      }).join('')}${G.nts.map(A => `<td>${T.GOTO[s][A] ?? ''}</td>`).join('')}</tr>`).join('')}</table>${T.conflicts.length ? `<p class="c-red" style="font-size:14px">${T.conflicts.length} conflito(s): a gramática <b>não é SLR</b> (o analisador usa a primeira ação).</p>` : `<p class="c-green" style="font-size:14px">${T.states.length} estados, nenhum conflito: a gramática é SLR.</p>`}`;
+      $('#prods').innerHTML = T.prods.map((p, i) => `<div>${i}: ${showProd(p)}</div>`).join('');
+      $('#items').textContent = T.states.map((I, s) => `I${s}:\n${I.map(it => '  ' + showItem(T.prods, it)).join('\n')}`).join('\n\n');
+    }
+
+    function run() {
+      $('#err').textContent = '';
+      try { G = parseGrammar($('#g').value); } catch (e) { $('#err').textContent = e.message; return; }
+      tables();
+      const steps = slrSteps(G, $('#in').value);
+      const nodes = steps.at(-1).nodes;
+      kidsOf = id => nodes[id]?.kids ?? [];
+      // layout da floresta final; nós que já foram reduzidos aparecem nas posições definitivas
+      const parented = new Set(nodes.flatMap(n => n.kids));
+      const roots = nodes.filter(n => !parented.has(n.id)).map(n => n.id);
+      layout = layoutForest(roots, kidsOf, [40, 70, W - 330, H - 90], { maxDx: 60, maxDy: 48 });
+      player.setCode(LR_CODE, 'python');
+      player.load(steps);
+    }
+    $('#ex').innerHTML = Object.entries(GRAMMARS).map(([k, g]) => `<option value="${k}">${g.nome}</option>`).join('');
+    $('#ex').value = 'expr_lr';
+    $('#ex').addEventListener('change', () => { const g = GRAMMARS[$('#ex').value]; $('#g').value = g.text; $('#in').value = g.input; run(); });
+    $('#go').addEventListener('click', run);
+    $('#in').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    $('#g').value = GRAMMARS.expr_lr.text; $('#in').value = GRAMMARS.expr_lr.input;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Em <code>a + b * c</code>, por que o analisador não reduz <code>E + T</code> a E logo depois de ler b?', options: ['Porque o próximo token é *, que não está em FOLLOW(E): a tabela manda empilhar', 'Porque b não é T', 'Porque a pilha está cheia', 'Ele reduz sim'], answer: 0, explain: 'No estado com E → E + T • e T → T • * F, a antecipação * leva a empilhar: é assim que a precedência de * aparece na tabela.' },
+      { q: 'A derivação que um analisador LR reconstrói (lendo as reduções de trás para frente) é…', options: ['mais à direita', 'mais à esquerda', 'qualquer uma', 'a de menor altura'], answer: 0, explain: 'LR = Left-to-right scan, Rightmost derivation (em ordem reversa).' },
+      { q: 'Uma gramática ambígua pode ser SLR?', options: ['Não: ambiguidade sempre gera conflito na tabela LR', 'Sim, sempre', 'Só se for LL(1) também', 'Depende da entrada'], answer: 0, explain: 'Nenhuma gramática ambígua é LR(k). Por isso o if-else pendente dá conflito; o yacc o resolve por convenção (empilhar).' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escalonamento de CPU · Sistemas Operacionais</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#so">Sistemas Operacionais</a>
+      <span class="sep">/</span><span>Escalonamento de CPU</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Sistemas Operacionais</div>
+    <h1>Escalonamento de CPU: quem roda agora?</h1>
+    <p class="lead">Há uma CPU e vários processos prontos. O escalonador decide quem usa o processador e por quanto tempo, e cada política troca uma coisa por outra: espera média, tempo de resposta, justiça, número de trocas de contexto. Acompanhe a fila de prontos e o <b>gráfico de Gantt</b> sendo desenhado unidade a unidade.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Política" id="pols"></div>
+      <label id="qlab">quantum <select id="q"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+      <select id="ex" aria-label="Exemplo"></select>
+      <button class="btn small" id="rand">Processos aleatórios</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend" id="cmp"></div>
+
+    <section class="prose">
+      <h2>Métricas</h2>
+      <ul>
+        <li><b>Tempo de retorno</b> (turnaround) = término − chegada.</li>
+        <li><b>Tempo de espera</b> = retorno − duração: o tempo parado na fila de prontos.</li>
+        <li><b>Tempo de resposta</b> = primeira vez na CPU − chegada: o que o usuário de um sistema interativo sente.</li>
+      </ul>
+      <h2>As políticas</h2>
+      <ul>
+        <li><b>FCFS</b>: simples e justo na ordem, mas sofre o <b>efeito comboio</b>: tarefas curtas esperam atrás de uma longa (veja o exemplo "Efeito comboio").</li>
+        <li><b>SJF</b>: comprovadamente <b>ótimo</b> para a espera média (argumento de troca: pôr uma tarefa curta antes de uma longa nunca piora). O problema é que ninguém sabe a duração da próxima rajada; na prática ela é estimada por média exponencial das anteriores, $\tau_{n+1} = \alpha t_n + (1 - \alpha)\tau_n$.</li>
+        <li><b>SRTF</b>: a versão preemptiva do SJF; quem chega com rajada menor que o restante do atual toma a CPU.</li>
+        <li><b>Prioridade</b>: generaliza o SJF, mas processos de baixa prioridade podem sofrer <b>inanição</b> (starvation); a solução é o <b>envelhecimento</b> (aging), que aumenta a prioridade de quem espera muito.</li>
+        <li><b>Round-Robin</b>: fatias de tempo $q$ em fila circular. Tempo de resposta bom e ninguém espera mais que $(n-1)q$. Com $q$ grande vira FCFS; com $q$ muito pequeno, a CPU gasta o tempo trocando de contexto.</li>
+      </ul>
+      <div class="callout tip"><p><b>Na vida real.</b> O Linux usou por anos o CFS (Completely Fair Scheduler), que mantém os processos numa árvore rubro-negra ordenada pelo tempo de CPU já recebido e roda sempre o que recebeu menos. Sistemas reais combinam filas multinível com realimentação: processos interativos sobem, os que gastam a fatia inteira descem.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt, pick } from '../../../engine/page.js';
+    import { SCHED_CODE, POLICIES, SCHED_EXAMPLES, schedule } from './so.js';
+
+    const W = 900, H = 500;
+    const PCOL = [COLORS.blue, COLORS.green, COLORS.orange, COLORS.purple, COLORS.pink, COLORS.teal, COLORS.yellow];
+    let policy = 'fcfs', procs = SCHED_EXAMPLES.silberschatz.procs;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'escalonador (Python)', lang: 'python',
+      render(step, s) {
+        // tabela de processos
+        const tx = 20, ty = 30, rh = 30;
+        ['processo', 'chegada', 'duração', 'prior.', 'restante'].forEach((h, k) => s.text(`th${k}`, h, { x: tx + [30, 110, 180, 245, 300][k], y: ty, size: 12, anchor: k === 4 ? 'start' : 'middle', fill: COLORS.muted }));
+        procs.forEach((p, i) => {
+          const y = ty + 22 + i * rh, running = step.atual === i, done = step.fim[i] != null;
+          s.rect(`pr${i}`, { x: tx, y: y - 12, w: 60, h: 24, rx: 5, fill: running ? PCOL[i % 7] : COLORS.surface2, stroke: PCOL[i % 7], sw: running ? 2.5 : 1.5, opacity: done ? 0.45 : 1 });
+          s.text(`pn${i}`, p.nome, { x: tx + 30, y, size: 13, mono: true, weight: 700, fill: running ? COLORS.bg : COLORS.text });
+          [p.chegada, p.duracao, p.prioridade].forEach((v, k) => s.text(`pv${i}-${k}`, v, { x: tx + [110, 180, 245][k], y, size: 13, mono: true, fill: COLORS.muted }));
+          const maxd = Math.max(...procs.map(q => q.duracao));
+          s.rect(`rb${i}`, { x: tx + 300, y: y - 7, w: Math.max(0.001, 200 * step.restante[i] / maxd), h: 14, rx: 3, fill: PCOL[i % 7], stroke: 'none', sw: 0, opacity: 0.8 });
+          s.text(`rt${i}`, done ? `terminou em ${step.fim[i]}` : step.restante[i], { x: tx + 306 + 200 * step.restante[i] / maxd, y, size: 12, anchor: 'start', mono: true, fill: done ? COLORS.green : COLORS.text });
+        });
+        // fila de prontos
+        const qy = 46;
+        s.text('ql', 'fila de prontos', { x: 640, y: ty, size: 12, anchor: 'start', fill: COLORS.muted });
+        step.prontos.forEach((id, k) => {
+          s.rect(`q${id}`, { x: 640 + k * 48, y: qy - 4, w: 42, h: 26, rx: 5, fill: COLORS.surface2, stroke: PCOL[id % 7], sw: 2 });
+          s.text(`qt${id}`, procs[id].nome, { x: 661 + k * 48, y: qy + 9, size: 12, mono: true, weight: 700 });
+        });
+        s.text('cpu', `CPU: ${step.atual != null ? procs[step.atual].nome : 'ociosa'}   ·   t = ${step.t}`, { x: 640, y: qy + 52, size: 15, anchor: 'start', mono: true, weight: 700, fill: step.atual != null ? PCOL[step.atual % 7] : COLORS.faint });
+        // Gantt
+        const total = procs.reduce((a, p) => a + p.duracao, 0) + Math.max(...procs.map(p => p.chegada));
+        const gx = 30, gw = W - 60, gy = 270, unit = gw / Math.max(total, 1);
+        s.text('gl', 'gráfico de Gantt', { x: gx, y: gy - 16, size: 12, anchor: 'start', fill: COLORS.muted });
+        step.gantt.forEach((g, k) => {
+          s.rect(`g${k}`, { x: gx + g.start * unit, y: gy, w: (g.end - g.start) * unit, h: 40, rx: 2, fill: g.p == null ? COLORS.surface : PCOL[g.p % 7], stroke: COLORS.bg, sw: 1.5, opacity: g.p == null ? 0.6 : 0.9 });
+          if ((g.end - g.start) * unit > 22) s.text(`gt${k}`, g.p == null ? '—' : procs[g.p].nome, { x: gx + (g.start + g.end) / 2 * unit, y: gy + 20, size: 12, mono: true, weight: 700, fill: COLORS.bg });
+        });
+        const step2 = total > 30 ? 5 : total > 15 ? 2 : 1;
+        for (let t = 0; t <= total; t += step2) s.text(`gtk${t}`, t, { x: gx + t * unit, y: gy + 56, size: 10, mono: true, fill: COLORS.faint });
+        // métricas
+        if (step.done) {
+          const my = 360;
+          ['', 'espera', 'retorno', 'resposta'].forEach((h, k) => s.text(`mh${k}`, h, { x: 120 + k * 110, y: my, size: 12, fill: COLORS.muted }));
+          step.metrics.forEach((m, i) => {
+            s.text(`mn${i}`, m.nome, { x: 120, y: my + 18 + i * 18, size: 12, mono: true, weight: 700, fill: PCOL[i % 7] });
+            ['espera', 'retorno', 'resposta'].forEach((k, j) => s.text(`mv${i}-${j}`, m[k], { x: 230 + j * 110, y: my + 18 + i * 18, size: 12, mono: true }));
+          });
+        }
+      },
+    });
+
+    function run() {
+      $$('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === policy));
+      $('#qlab').style.display = policy === 'rr' ? '' : 'none';
+      const q = +$('#q').value;
+      player.load(schedule(procs, policy, q).steps);
+      $('#cmp').innerHTML = 'espera média →&nbsp;' + Object.entries(POLICIES).map(([k, p]) => `<span${k === policy ? ' style="color:var(--yellow)"' : ''}>${p.nome}: ${schedule(procs, k, q).avg.espera.toFixed(2)}</span>`).join('');
+    }
+    $('#pols').innerHTML = Object.entries(POLICIES).map(([k, p]) => `<button class="btn" data-p="${k}" title="${p.desc}">${p.nome}</button>`).join('');
+    $$('[data-p]').forEach(b => b.addEventListener('click', () => { policy = b.dataset.p; run(); }));
+    $('#q').addEventListener('change', run);
+    $('#ex').innerHTML = Object.entries(SCHED_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    $('#ex').addEventListener('change', () => { procs = SCHED_EXAMPLES[$('#ex').value].procs; run(); });
+    $('#rand').addEventListener('click', () => {
+      const n = randInt(3, 5);
+      procs = Array.from({ length: n }, (_, i) => ({ nome: `P${i + 1}`, chegada: i === 0 ? 0 : randInt(0, 6), duracao: randInt(1, 8), prioridade: randInt(1, 5) }));
+      run();
+    });
+    player.setCode(SCHED_CODE, 'python');
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual política minimiza a espera média quando todos chegam juntos?', options: ['SJF', 'FCFS', 'Round-Robin', 'Prioridade aleatória'], answer: 0, explain: 'Pôr os curtos primeiro: cada tarefa curta adiantada economiza mais espera dos outros do que custa.' },
+      { q: 'O que acontece com o Round-Robin quando o quantum é muito grande?', options: ['Vira FCFS', 'Vira SJF', 'Fica mais justo', 'Gera inanição'], answer: 0, explain: 'Se o quantum é maior que qualquer rajada, ninguém é interrompido: é a ordem de chegada.' },
+      { q: 'Como evitar inanição no escalonamento por prioridade?', options: ['Envelhecimento: aumentar a prioridade de quem espera', 'Diminuir o quantum', 'Usar FCFS dentro de cada prioridade', 'Não dá'], answer: 0, explain: 'Com aging, todo processo acaba chegando ao topo.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novo exercício',
+      generate() {
+        const pol = pick(['fcfs', 'sjf', 'rr']);
+        const ps = [0, 1, 2, 3].map(i => ({ nome: `P${i + 1}`, chegada: 0, duracao: randInt(1, 7), prioridade: 1 }));
+        const r = schedule(ps, pol, 2);
+        return { q: `Quatro processos chegam em t = 0 com durações ${ps.map(p => `${p.nome} = ${p.duracao}`).join(', ')}. Qual a <b>espera média</b> com ${POLICIES[pol].nome}${pol === 'rr' ? ' (quantum 2, fila na ordem P1..P4)' : ''}?`, input: true, answer: String(+r.avg.espera.toFixed(2)),
+          check: v => Math.abs(parseFloat(v.replace(',', '.')) - r.avg.espera) < 0.01,
+          explain: `Esperas: ${r.metrics.map(m => `${m.nome} = ${m.espera}`).join(', ')}; média ${r.avg.espera.toFixed(2)}.` };
+      },
+    });
+  </script>
+</body>
+</html>

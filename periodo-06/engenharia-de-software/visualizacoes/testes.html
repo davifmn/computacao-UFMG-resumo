@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes e cobertura · Engenharia de Software</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .code .ln.cov { background: rgba(131, 193, 103, .12); border-left-color: var(--green); }
+    .code .ln.miss { background: rgba(252, 98, 85, .10); border-left-color: var(--red); }
+    .code .ln.mut { background: rgba(177, 137, 245, .16); border-left-color: var(--purple); }
+    .code .br { float: right; font-size: 11px; margin-left: 6px; }
+    .code .br i { font-style: normal; padding: 0 4px; border-radius: 3px; margin-left: 3px; }
+    .code .br i.on { background: rgba(131, 193, 103, .3); color: var(--green); }
+    .code .br i.off { background: rgba(252, 98, 85, .2); color: var(--red); }
+    table.t { border-collapse: collapse; width: 100%; font-size: 14px; }
+    table.t th, table.t td { border-bottom: 1px solid var(--border); padding: 5px 8px; text-align: left; }
+    table.t th { color: var(--muted); font-weight: 600; }
+    table.t td.mono { font-family: var(--mono); }
+    .ok { color: var(--green); } .bad { color: var(--red); }
+    .add { display: flex; gap: 6px; padding: 10px 14px; flex-wrap: wrap; align-items: center; }
+    .add input { width: 52px; font-family: var(--mono); }
+    .meter { display: grid; grid-template-columns: 14em 1fr 4em; gap: 10px; align-items: center; padding: 6px 14px; font-size: 14px; }
+    .meter .bar { height: 12px; background: var(--surface-3); border-radius: 6px; overflow: hidden; }
+    .meter .bar div { height: 100%; border-radius: 6px; transition: width .3s; }
+    tr.sel td { background: rgba(177, 137, 245, .12); }
+    tr[data-m] { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#es">Engenharia de Software</a>
+      <span class="sep">/</span><span>Testes e cobertura</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Engenharia de Software</div>
+    <h1>Testes: cobertura não é tudo</h1>
+    <p class="lead">Monte uma suíte de testes para a função abaixo e veja três medidas de qualidade: os testes passam? Quanto do código eles executam (<b>cobertura</b>)? E, a mais exigente, eles percebem quando alguém introduz um bug (<b>teste de mutação</b>)? Comece pela suíte "Um teste por classe": 100% de cobertura de ramos, e mesmo assim metade dos bugs passa despercebida.</p>
+
+    <div class="toolbar">
+      <span class="c-muted">Suítes prontas:</span>
+      <span class="chips" id="suites"></span>
+      <button class="btn small" id="clear">Limpar</button>
+    </div>
+
+    <div class="lab">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">triangulo.py <span class="c-muted">· verde: executado · vermelho: nunca executado · V/F: ramos</span></div><pre class="code" id="code"></pre></div>
+        <div class="panel">
+          <div class="panel-title">Qualidade da suíte</div>
+          <div class="meter"><span>testes passando</span><div class="bar"><div id="b-pass" style="background:var(--blue)"></div></div><span id="v-pass"></span></div>
+          <div class="meter"><span>cobertura de comandos</span><div class="bar"><div id="b-stmt" style="background:var(--green)"></div></div><span id="v-stmt"></span></div>
+          <div class="meter"><span>cobertura de ramos</span><div class="bar"><div id="b-br" style="background:var(--teal)"></div></div><span id="v-br"></span></div>
+          <div class="meter" style="padding-bottom:14px"><span>mutantes mortos</span><div class="bar"><div id="b-mut" style="background:var(--purple)"></div></div><span id="v-mut"></span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="panel-title">Casos de teste</div>
+          <div class="add">
+            a <input id="a" type="number" value="3"> b <input id="b" type="number" value="3"> c <input id="c" type="number" value="5">
+            esperado <select id="exp"></select>
+            <button class="btn primary small" id="addt">Adicionar</button>
+          </div>
+          <table class="t" id="tests"></table>
+        </div>
+        <div class="panel"><div class="panel-title">Mutantes (clique para ver a mudança)</div><table class="t" id="muts"></table></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>Tipos de teste</h2>
+      <ul>
+        <li><b>Unidade</b>: uma função ou classe isolada, rápido, muitos. <b>Integração</b>: vários módulos juntos (com banco, com rede). <b>Sistema / ponta a ponta</b>: o sistema inteiro pela interface. A <b>pirâmide de testes</b> recomenda muitos de unidade e poucos de ponta a ponta, porque estes são lentos e frágeis.</li>
+        <li><b>Caixa-preta</b> (pela especificação): partição em classes de equivalência e análise de valor-limite, como na suíte "Classes + fronteiras". <b>Caixa-branca</b> (pelo código): cobertura de comandos, ramos, condições, caminhos.</li>
+        <li><b>Dublês de teste</b> (mocks, stubs, fakes) substituem dependências lentas ou não determinísticas, como banco de dados, rede e relógio.</li>
+      </ul>
+      <h2>O que cada métrica diz</h2>
+      <p><b>Cobertura</b> responde "que código os testes executam?", mas não "os testes verificam alguma coisa?". Um teste sem <code>assert</code> pode ter 100% de cobertura. Ela é útil ao contrário: código <b>não</b> coberto certamente não está testado. O <b>teste de mutação</b> introduz pequenos bugs plausíveis (trocar <code>&lt;=</code> por <code>&lt;</code>, <code>and</code> por <code>or</code>) e conta quantos a suíte detecta. Mutantes sobreviventes apontam exatamente o teste que falta, geralmente um <b>valor-limite</b>: para matar M3 é preciso um caso em que $a + b = c$.</p>
+      <div class="callout tip"><p><b>TDD.</b> No desenvolvimento dirigido por testes, o ciclo é <b>vermelho</b> (escreva um teste que falha), <b>verde</b> (o mínimo de código para passar), <b>refatore</b>. Os testes viram especificação executável e rede de segurança para refatorar. O código desta disciplina tem a mesma suíte em <code>unittest</code>.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { highlightLine } from '../../../engine/highlight.js';
+    import { CODE, STATEMENTS, DECISIONS, SUITES, CLASSES, evaluate } from './testes.js';
+
+    let tests = structuredClone(SUITES.classes.tests), sel = null;
+
+    function render() {
+      const ev = evaluate(tests);
+      const mu = sel ? ev.mutants.find(m => m.id === sel) : null;
+      $('#code').innerHTML = CODE.map((l, k) => {
+        const n = k + 1;
+        const cls = mu && mu.line === n ? 'mut' : !tests.length || !STATEMENTS.includes(n) ? '' : ev.lines.has(n) ? 'cov' : 'miss';
+        const br = DECISIONS.includes(n) && tests.length ? `<span class="br"><i class="${ev.branches.has(`${n}V`) ? 'on' : 'off'}">V</i><i class="${ev.branches.has(`${n}F`) ? 'on' : 'off'}">F</i></span>` : '';
+        const txt = mu && mu.line === n ? `${highlightLine(mu.code, 'python')}   <span class="tk-com"># mutante ${mu.id}</span>` : highlightLine(l, 'python');
+        return `<span class="ln ${cls}">${br}${txt || ' '}</span>`;
+      }).join('');
+      $('#tests').innerHTML = `<tr><th>a, b, c</th><th>esperado</th><th>obtido</th><th></th><th></th></tr>` + ev.results.map((r, k) =>
+        `<tr><td class="mono">${r.a}, ${r.b}, ${r.c}</td><td>${r.expected}</td><td>${r.actual}</td><td class="${r.pass ? 'ok' : 'bad'}">${r.pass ? '✔ passa' : '✖ falha'}</td><td><button class="btn small" data-del="${k}" aria-label="remover">✕</button></td></tr>`).join('') +
+        (tests.length ? '' : '<tr><td colspan="5" class="c-muted">Nenhum teste. Adicione acima ou escolha uma suíte.</td></tr>');
+      $('#muts').innerHTML = `<tr><th>mutante</th><th>mudança</th><th>situação</th></tr>` + ev.mutants.map(m =>
+        `<tr data-m="${m.id}" class="${m.id === sel ? 'sel' : ''}"><td class="mono">${m.id} (linha ${m.line})</td><td class="mono">${m.desc}</td><td class="${m.killed ? 'ok' : 'bad'}">${m.killed ? `morto por (${m.killer.a}, ${m.killer.b}, ${m.killer.c})` : 'sobreviveu'}</td></tr>`).join('');
+      const pass = tests.length ? ev.results.filter(r => r.pass).length / tests.length : 0;
+      const set = (id, v) => { $(`#b-${id}`).style.width = `${(100 * v).toFixed(0)}%`; $(`#v-${id}`).textContent = `${(100 * v).toFixed(0)}%`; };
+      set('pass', pass); set('stmt', tests.length ? ev.stmtCov : 0); set('br', tests.length ? ev.branchCov : 0); set('mut', ev.score);
+    }
+
+    $('#exp').innerHTML = CLASSES.map(c => `<option>${c}</option>`).join('');
+    $('#exp').value = 'isósceles';
+    $('#suites').innerHTML = Object.entries(SUITES).map(([k, s]) => `<button class="btn small" data-s="${k}">${s.nome}</button>`).join('');
+    $$('[data-s]').forEach(b => b.addEventListener('click', () => { tests = structuredClone(SUITES[b.dataset.s].tests); render(); }));
+    $('#clear').addEventListener('click', () => { tests = []; render(); });
+    $('#addt').addEventListener('click', () => {
+      const [a, b, c] = ['#a', '#b', '#c'].map(id => Math.round(+$(id).value));
+      if ([a, b, c].some(x => !Number.isFinite(x))) return;
+      tests.push({ a, b, c, expected: $('#exp').value });
+      render();
+    });
+    document.addEventListener('click', e => {
+      const d = e.target.closest('[data-del]');
+      if (d) { tests.splice(+d.dataset.del, 1); render(); return; }
+      const m = e.target.closest('[data-m]');
+      if (m) { sel = sel === m.dataset.m ? null : m.dataset.m; render(); }
+    });
+    render();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Uma suíte com 100% de cobertura de ramos…', options: ['pode deixar bugs passarem: cobertura mede o que é executado, não o que é verificado', 'garante que não há bugs', 'garante 100% de cobertura de caminhos', 'mata todos os mutantes'], answer: 0, explain: 'É exatamente o que a suíte "Um teste por classe" mostra.' },
+      { q: 'Qual teste mata o mutante M3 (a + b <= c → a + b < c)?', options: ['(1, 2, 3), esperando "não é triângulo"', '(1, 2, 8)', '(3, 4, 5)', '(2, 2, 2)'], answer: 0, explain: 'Só um caso na fronteira a + b = c distingue <= de <.' },
+      { q: 'Um teste falhou porque o "esperado" estava errado. Qual é o problema?', options: ['O oráculo do teste, não o código', 'O código', 'A cobertura', 'O mutante'], answer: 0, explain: 'Testes também têm bugs; o valor esperado precisa vir da especificação.' },
+      { q: 'Na pirâmide de testes, a base (mais numerosa) é formada por…', options: ['testes de unidade', 'testes de ponta a ponta', 'testes manuais', 'testes de carga'], answer: 0, explain: 'São rápidos, isolados e apontam com precisão onde está o problema.' },
+    ]);
+  </script>
+</body>
+</html>

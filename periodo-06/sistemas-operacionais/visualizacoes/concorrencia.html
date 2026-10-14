@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concorrência · Sistemas Operacionais</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: 1fr 1fr 320px; gap: 16px; align-items: start; }
+    .thread .code { font-size: 13px; max-height: none; }
+    .thread .code .ln.done { opacity: .45; }
+    .thread .st { padding: 6px 14px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .badge.blk { color: var(--red); border-color: rgba(252, 98, 85, .4); }
+    .mem { padding: 8px 14px 14px; font-family: var(--mono); font-size: 14px; display: grid; gap: 6px; }
+    .mem b { color: var(--yellow); }
+    .buf { display: flex; gap: 4px; }
+    .buf span { width: 34px; height: 30px; border: 1px solid var(--border); border-radius: 5px; display: grid; place-items: center; }
+    .buf span.f { border-color: var(--green); color: var(--green); }
+    .log { max-height: 220px; overflow: auto; padding: 6px 14px 12px; font-size: 13px; color: var(--muted); }
+    .log div.t0 { color: var(--blue); } .log div.t1 { color: var(--orange); }
+    .hist { padding: 8px 14px 14px; display: grid; gap: 6px; font-size: 14px; }
+    .hist .bar { height: 18px; background: var(--purple); border-radius: 3px; }
+    .hist .row { display: grid; grid-template-columns: 9em 1fr 8em; gap: 8px; align-items: center; }
+    .result { padding: 10px 14px; font-size: 16px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#so">Sistemas Operacionais</a>
+      <span class="sep">/</span><span>Concorrência</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Sistemas Operacionais</div>
+    <h1>Concorrência: você é o escalonador</h1>
+    <p class="lead">Duas threads compartilham memória, e o escalonador pode interrompê-las <b>entre quaisquer duas instruções de máquina</b>. Escolha quem executa cada instrução (botões ou teclas <kbd>1</kbd> e <kbd>2</kbd>) e tente perder uma atualização, travar as threads ou provar que o código protegido sempre funciona. Depois, deixe o computador testar <b>todas</b> as intercalações.</p>
+
+    <div class="toolbar">
+      <select id="prog" aria-label="Programa"></select>
+      <button class="btn" id="undo">Desfazer</button>
+      <button class="btn" id="reset">Reiniciar</button>
+      <button class="btn" id="random">Terminar aleatoriamente</button>
+      <button class="btn primary" id="all">Explorar todas as intercalações</button>
+    </div>
+
+    <div class="lab">
+      <div class="panel thread" id="t0"></div>
+      <div class="panel thread" id="t1"></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Memória compartilhada</div><div class="mem" id="mem"></div><div class="result" id="result"></div></div>
+        <div class="panel"><div class="panel-title">Histórico</div><div class="log" id="log"></div></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px"><div class="panel-title">Todas as intercalações</div><div class="hist" id="hist"><span class="c-muted">Clique em "Explorar todas as intercalações".</span></div></div>
+
+    <section class="prose">
+      <h2>Por que x = x + 1 não é seguro</h2>
+      <p>Em linguagem de máquina, <code>x = x + 1</code> são três passos: <b>ler</b> x para um registrador, <b>somar</b> no registrador, <b>escrever</b> de volta. Se T1 lê, é interrompida, T2 lê o mesmo valor, soma e escreve, e então T1 escreve, a soma de T2 se perde. Com duas threads fazendo duas somas cada, o resultado pode ser 2, 3 ou 4, e o código em C desta disciplina perde milhões de atualizações com quatro threads.</p>
+      <h2>Região crítica e exclusão mútua</h2>
+      <p>Uma solução para a região crítica precisa de <b>exclusão mútua</b> (no máximo uma thread lá dentro), <b>progresso</b> (se ninguém está dentro, alguém que quer entrar consegue) e <b>espera limitada</b> (ninguém espera para sempre). O <b>mutex</b> faz isso com <code>lock</code>/<code>unlock</code>; por baixo, o hardware oferece instruções atômicas (<code>test-and-set</code>, <code>compare-and-swap</code>).</p>
+      <h2>Semáforos</h2>
+      <p>Um semáforo é um contador com <code>wait</code> (decrementa; bloqueia se for 0) e <code>signal</code> (incrementa e acorda alguém). No produtor-consumidor, <code>vazio</code> conta posições livres, <code>cheio</code> conta itens e <code>mutex</code> protege o buffer. Trocar a ordem de <code>wait(vazio)</code> e <code>wait(mutex)</code> no produtor causa deadlock com o buffer cheio: tente imaginar por quê.</p>
+      <h2>Deadlock</h2>
+      <p>As quatro condições de Coffman, todas necessárias: <b>exclusão mútua</b>, <b>posse e espera</b>, <b>não preempção</b> e <b>espera circular</b>. No exemplo, T1 segura A e espera B enquanto T2 segura B e espera A. A prevenção mais usada quebra a espera circular: todas as threads adquirem os locks na <b>mesma ordem</b>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { highlightLine } from '../../../engine/highlight.js';
+    import { PROGRAMS, initState, canRun, step, finished, deadlocked, exploreAll, showInstr } from './so.js';
+
+    let prog = null, hist = [];
+    const cur = () => hist.at(-1);
+
+    function render() {
+      const st = cur();
+      prog.threads.forEach((th, k) => {
+        const t = st.th[k], done = t.pc >= th.code.length, ok = canRun(prog, st, k);
+        const ins = th.code[t.pc];
+        const why = done ? '' : !ok ? (ins[0] === 'lock' ? `esperando o mutex ${ins[1]} (com ${prog.threads[st.locks[ins[1]]].nome})` : `bloqueada em wait(${ins[1]}): ${ins[1]} = 0`) : '';
+        $(`#t${k}`).innerHTML = `<div class="panel-title">${th.nome} <span class="c-muted">· registrador r = ${t.regs.r}</span></div>
+          <pre class="code">${th.code.map((c, i) => `<span class="ln ${i === t.pc ? 'active' : i < t.pc ? 'done' : ''}">${highlightLine(showInstr(c), 'cpp')}</span>`).join('')}</pre>
+          <div class="st"><span>${done ? '<span class="badge ok">terminou</span>' : ok ? '<span class="badge info">pronta</span>' : `<span class="badge blk">bloqueada</span> <span class="c-muted" style="font-size:13px">${why}</span>`}</span>
+          <button class="btn primary small" data-k="${k}" ${done || !ok ? 'disabled' : ''}>Executar (${k + 1})</button></div>`;
+      });
+      const m = [];
+      for (const [v, x] of Object.entries(st.vars)) m.push(`<div>${v} = <b>${x}</b></div>`);
+      for (const [l, o] of Object.entries(st.locks)) m.push(`<div>mutex ${l}: ${o == null ? 'livre' : `com <b>${prog.threads[o].nome}</b>`}</div>`);
+      for (const [s, v] of Object.entries(st.sems)) m.push(`<div>semáforo ${s} = <b>${v}</b></div>`);
+      if (prog.buffer) m.push(`<div>buffer: <span class="buf">${Array.from({ length: prog.buffer }, (_, i) => `<span class="${st.buf[i] != null ? 'f' : ''}">${st.buf[i] ?? ''}</span>`).join('')}</span></div>`);
+      $('#mem').innerHTML = m.join('');
+      $('#log').innerHTML = st.log.map(l => `<div class="t${l.k}">${l.msg}</div>`).join('') || '—';
+      $('#log').scrollTop = 1e9;
+      $('#result').innerHTML = finished(prog, st) ? `✔ Fim: ${prog.expect(st)}` : deadlocked(prog, st) ? '<span class="c-red">✖ DEADLOCK: nenhuma thread pode continuar.</span>' : '';
+      $('#undo').disabled = hist.length < 2;
+    }
+    function run(k) { if (canRun(prog, cur(), k)) { hist.push(step(prog, cur(), k)); render(); } }
+    function load() {
+      prog = PROGRAMS[$('#prog').value];
+      hist = [initState(prog)];
+      $('#hist').innerHTML = '<span class="c-muted">Clique em "Explorar todas as intercalações".</span>';
+      render();
+    }
+    document.addEventListener('click', e => { const k = e.target.closest('[data-k]')?.dataset.k; if (k != null) run(+k); });
+    document.addEventListener('keydown', e => { if (e.target.closest('input, select, textarea')) return; if (e.key === '1') run(0); if (e.key === '2') run(1); });
+    $('#undo').addEventListener('click', () => { if (hist.length > 1) { hist.pop(); render(); } });
+    $('#reset').addEventListener('click', load);
+    $('#random').addEventListener('click', () => {
+      while (!finished(prog, cur()) && !deadlocked(prog, cur())) {
+        const ks = prog.threads.map((_, k) => k).filter(k => canRun(prog, cur(), k));
+        hist.push(step(prog, cur(), ks[Math.floor(Math.random() * ks.length)]));
+      }
+      render();
+    });
+    $('#all').addEventListener('click', () => {
+      const key = $('#prog').value;
+      const res = exploreAll(prog, key === 'produtor' ? st => `consome ${st.consumed.join(', ')}` : key === 'deadlock' ? () => 'terminam' : st => `x = ${st.vars.x}`);
+      const max = Math.max(res.dead, ...res.counts.map(c => c[1]));
+      const rows = [...res.counts.map(([r, c]) => [r, c]), ...(res.dead ? [['deadlock', res.dead]] : [])];
+      $('#hist').innerHTML = `<div class="c-muted">${res.total} execuções possíveis (cada uma é uma ordem diferente de instruções):</div>` + rows.map(([r, c]) =>
+        `<div class="row"><span class="${r === 'deadlock' ? 'c-red' : ''}">${r}</span><div class="bar" style="width:${(100 * c / max).toFixed(1)}%;${r === 'deadlock' ? 'background:var(--red)' : ''}"></div><span class="c-muted">${c} (${(100 * c / res.total).toFixed(1)}%)</span></div>`).join('');
+    });
+    $('#prog').innerHTML = Object.entries(PROGRAMS).map(([k, p]) => `<option value="${k}">${p.nome}</option>`).join('');
+    $('#prog').addEventListener('change', load);
+    load();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Duas threads executam <code>x = x + 1</code> uma vez cada, com x = 0. Quais resultados são possíveis?', options: ['1 ou 2', 'só 2', '0, 1 ou 2', 'só 1'], answer: 0, explain: 'Se as duas lerem 0 antes de alguma escrever, ambas escrevem 1.' },
+      { q: 'Qual condição de Coffman é quebrada ao impor uma ordem global para adquirir os locks?', options: ['Espera circular', 'Exclusão mútua', 'Não preempção', 'Posse e espera'], answer: 0, explain: 'Com uma ordem total, um ciclo de esperas é impossível.' },
+      { q: 'Por que o pthread_cond_wait fica dentro de um <code>while</code> e não de um <code>if</code>?', options: ['Ao acordar, a condição pode já não valer (outro consumidor pegou o item, ou despertar espúrio)', 'Por desempenho', 'Porque o if não compila', 'Para liberar o mutex'], answer: 0, explain: 'É preciso testar de novo a condição depois de readquirir o mutex.' },
+      { q: 'Um semáforo inicializado com 1 e usado só com wait/signal em volta da região crítica funciona como…', options: ['um mutex', 'uma barreira', 'uma variável de condição', 'um contador de itens'], answer: 0, explain: 'É o semáforo binário.' },
+    ]);
+  </script>
+</body>
+</html>

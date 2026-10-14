@@ -99,6 +99,14 @@ python3 -m http.server 8000     # ou: npx serve
 | [Pesquisa Operacional](periodo-05/pesquisa-operacional/) · DCC035 | Método gráfico · Simplex · Branch and bound · Fluxo máximo | Python |
 | [Equações Diferenciais C](periodo-05/equacoes-diferenciais-c/) · MAT040 | Campo de direções e RK4 · Oscilador massa-mola · Plano de fase | Python |
 
+### 6º período
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Sistemas Operacionais](periodo-06/sistemas-operacionais/) · DCC605 | Escalonamento de CPU · Concorrência (corrida, mutex, semáforos, deadlock) · Banqueiro · Substituição de páginas | C (pthreads) + Python |
+| [Compiladores I](periodo-06/compiladores-1/) · DCC053 | Análise léxica (AFD) · LL(1) com FIRST/FOLLOW · SLR · Geração de código | Python (compilador completo) |
+| [Engenharia de Software](periodo-06/engenharia-de-software/) | Git por dentro · Testes, cobertura e mutação · **Tutoriais:** processos ágeis · projeto, SOLID e padrões | Python + unittest |
+
 ### 7º período
 
 | Disciplina | Páginas interativas | Código |
@@ -107,8 +115,8 @@ python3 -m http.server 8000     # ou: npx serve
 
 ### Próximos períodos
 
-O 6º período, o restante do 7º e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
-"em construção" no site. Ideias já planejadas: escalonamento de processos e memória virtual (SO), análise sintática (Compiladores)...
+O restante do 7º período e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+"em construção" no site.
 
 ## Estrutura do repositório
 
