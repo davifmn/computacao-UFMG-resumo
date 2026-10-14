@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise léxica · Compiladores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    .editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+    .editor textarea { font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 90px; }
+    .editor .side { display: flex; flex-direction: column; gap: 8px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#comp">Compiladores I</a>
+      <span class="sep">/</span><span>Análise léxica</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Compiladores I</div>
+    <h1>Análise léxica: de caracteres a tokens</h1>
+    <p class="lead">A primeira fase do compilador agrupa caracteres em <b>tokens</b> (identificadores, números, operadores) e joga fora espaços e comentários. Por dentro é um <b>autômato finito determinístico</b>, o mesmo de FTC, rodando com uma regra extra: sempre o <b>maior casamento</b> possível.</p>
+
+    <div class="editor">
+      <textarea id="src" spellcheck="false" aria-label="Programa"></textarea>
+      <div class="side">
+        <select id="ex" aria-label="Exemplos">
+          <option value="basico">laço while</option>
+          <option value="palavras">palavras reservadas × identificadores</option>
+          <option value="erro">erro léxico</option>
+        </select>
+        <button class="btn primary" id="go">Analisar</button>
+      </div>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>estado atual / lexema em leitura</span><span><i style="background:#58c4dd"></i>ID</span><span><i style="background:#b189f5"></i>PALAVRA</span><span><i style="background:#ff9f43"></i>NUM</span><span><i style="background:#83c167"></i>OP / ATRIB</span><span><i style="background:#9aa3b0"></i>PONT</span></div>
+
+    <section class="prose">
+      <h2>Do regex ao AFD</h2>
+      <p>Cada tipo de token é descrito por uma <b>expressão regular</b>: <code>ID = [A-Za-z_][A-Za-z0-9_]*</code>, <code>NUM = [0-9]+</code>, <code>OP = &lt;= | &lt; | == | …</code>. Ferramentas como o <code>lex</code>/<code>flex</code> fazem o caminho de FTC: regex → AFN (Thompson) → AFD (subconjuntos) → AFD mínimo, e geram uma tabela de transições. O AFD acima foi escrito à mão, mas é o mesmo tipo de objeto.</p>
+      <h2>Duas regras de desempate</h2>
+      <ul>
+        <li><b>Maior casamento</b> (maximal munch): continue lendo enquanto houver transição e devolva o maior prefixo que parou num estado de aceitação. Por isso <code>&lt;=</code> é um token só, e não <code>&lt;</code> seguido de <code>=</code>; e <code>iffy</code> é um identificador, não <code>if</code> + <code>fy</code>.</li>
+        <li><b>Prioridade</b>: se o mesmo lexema casa com duas regras (<code>if</code> é ID e é palavra reservada), vence a que vem primeiro. Na prática, o AFD reconhece identificadores e uma <b>tabela de palavras reservadas</b> decide depois, o que mantém o autômato pequeno.</li>
+      </ul>
+      <div class="callout tip"><p><b>O que o léxico não faz.</b> Ele não sabe se os parênteses estão balanceados (isso exige uma pilha, ou seja, uma gramática livre de contexto, assunto da próxima página). E não sabe se uma variável foi declarada: isso é análise semântica, feita com a <b>tabela de símbolos</b>.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { DFA, LEX_CODE, LEX_EXAMPLES, lexSteps } from './comp.js';
+
+    const W = 900, H = 600;
+    const TCOL = { ID: COLORS.blue, PALAVRA: COLORS.purple, NUM: COLORS.orange, OP: COLORS.green, ATRIB: COLORS.green, PONT: COLORS.muted, ERRO: COLORS.red };
+    const P = ([x, y]) => [20 + x * 0.9, 170 + y * 0.92];
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'léxico (Python)', lang: 'python',
+      render(step, s) {
+        // código-fonte em grade
+        const cw = 19, chH = 26, perRow = Math.floor((W - 40) / cw);
+        let r = 0, c = 0;
+        const cell = [];
+        [...step.src].forEach((ch, k) => {
+          cell.push([20 + c * cw, 14 + r * chH]);
+          if (ch === '\n' || c === perRow - 1) { r++; c = 0; } else c++;
+        });
+        const tokAt = k => step.tokens.find(t => k >= t.ini && k < t.fim);
+        [...step.src].forEach((ch, k) => {
+          const [x, y] = cell[k];
+          const t = tokAt(k);
+          const inLex = step.vars.j !== '—' && k >= step.vars.i && k < step.vars.j;
+          const stuck = step.stuck === k;
+          const col = inLex ? COLORS.yellow : t ? TCOL[t.tipo] : COLORS.faint;
+          s.rect(`c${k}`, { x, y, w: cw - 2, h: chH - 4, rx: 3, fill: inLex ? '#3d3a22' : stuck ? '#3a1d1d' : COLORS.surface2, stroke: stuck ? COLORS.red : inLex ? COLORS.yellow : t ? col : COLORS.border, sw: inLex || stuck ? 1.8 : 1, opacity: t || inLex ? 1 : 0.6 });
+          s.text(`ct${k}`, ch === '\n' ? '↵' : ch === ' ' ? '·' : ch, { x: x + (cw - 2) / 2, y: y + (chH - 4) / 2, size: 13, mono: true, fill: col });
+        });
+        // AFD
+        for (const [a, b, lab] of DFA.edges) {
+          const [x1, y1] = P(DFA.states[a].pos), [x2, y2] = P(DFA.states[b].pos);
+          const active = step.from === a && step.state === b;
+          const col = active ? COLORS.yellow : COLORS.faint;
+          if (a === b) {
+            s.path(`e${a}${b}`, `M ${x1 - 10} ${y1 - 22} C ${x1 - 30} ${y1 - 62}, ${x1 + 30} ${y1 - 62}, ${x1 + 10} ${y1 - 22}`, { stroke: col, sw: active ? 2.5 : 1.3, arrow: true });
+            s.text(`el${a}${b}`, lab, { x: x1, y: y1 - 58, size: 10, mono: true, fill: active ? COLORS.yellow : COLORS.muted });
+          } else {
+            const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+            s.line(`e${a}${b}`, x1 + ux * 24, y1 + uy * 24, x2 - ux * 26, y2 - uy * 26, { stroke: col, sw: active ? 2.5 : 1.3, arrow: true });
+            s.text(`el${a}${b}`, lab, { x: (x1 + x2) / 2 - uy * 10, y: (y1 + y2) / 2 + ux * 10 - 4, size: 10, mono: true, fill: active ? COLORS.yellow : COLORS.muted });
+          }
+        }
+        for (const [k, st] of Object.entries(DFA.states)) {
+          const [x, y] = P(st.pos), cur = step.state === k;
+          s.circle(`s${k}`, { x, y, r: 22, fill: cur ? '#3d3a22' : COLORS.surface2, stroke: cur ? COLORS.yellow : st.aceita ? COLORS.green : COLORS.border, sw: cur ? 3 : 1.5 });
+          if (st.aceita) s.circle(`s2${k}`, { x, y, r: 18, fill: 'none', stroke: cur ? COLORS.yellow : COLORS.green, sw: 1 });
+          s.text(`sl${k}`, st.nome, { x, y, size: st.nome.length > 4 ? 9.5 : 12, mono: true, weight: 700, fill: cur ? COLORS.yellow : COLORS.text });
+        }
+        // tokens
+        const tx = 640, ty0 = 190;
+        s.text('tkh', 'tokens', { x: tx, y: ty0 - 22, size: 12, anchor: 'start', fill: COLORS.muted });
+        const shown = step.tokens.slice(-16);
+        shown.forEach((t, k) => s.text(`tk${step.tokens.length - shown.length + k}`, `${t.tipo.padEnd(8)} ${t.lexema}`, { x: tx, y: ty0 + k * 22, size: 13, anchor: 'start', mono: true, fill: TCOL[t.tipo] }));
+      },
+    });
+
+    function run() { player.setCode(LEX_CODE, 'python'); player.load(lexSteps($('#src').value.slice(0, 160))); }
+    $('#ex').addEventListener('change', () => { $('#src').value = LEX_EXAMPLES[$('#ex').value]; run(); });
+    $('#go').addEventListener('click', run);
+    $('#src').value = LEX_EXAMPLES.basico;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantos tokens há em <code>x&lt;=y</code>?', options: ['3', '4', '2', '1'], answer: 0, explain: 'ID(x), OP(&lt;=), ID(y): pelo maior casamento, &lt;= é um token só.' },
+      { q: 'Como o léxico distingue a palavra reservada <code>while</code> do identificador <code>whilex</code>?', options: ['Maior casamento: whilex é lido inteiro e não está na tabela de palavras reservadas', 'Pelo contexto sintático', 'Pela tabela de símbolos', 'Não distingue'], answer: 0, explain: 'O AFD de identificadores lê o maior lexema; só depois a tabela decide se é reservada.' },
+      { q: 'Qual destes erros o analisador léxico detecta?', options: ['Caractere inválido, como # em C', 'Parêntese sem par', 'Variável não declarada', 'Tipo incompatível'], answer: 0, explain: 'Os outros exigem a análise sintática ou semântica.' },
+    ]);
+  </script>
+</body>
+</html>

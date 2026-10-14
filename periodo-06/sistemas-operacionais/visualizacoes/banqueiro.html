@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deadlock e banqueiro · Sistemas Operacionais</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    .toolbar input[type=text] { width: 90px; font-family: var(--mono); }
+    #reqout { font-size: 15px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#so">Sistemas Operacionais</a>
+      <span class="sep">/</span><span>Deadlock e banqueiro</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Sistemas Operacionais</div>
+    <h1>Evitando deadlock: o algoritmo do banqueiro</h1>
+    <p class="lead">Um banco que empresta tudo de uma vez pode ficar sem dinheiro para que algum cliente termine e pague. Dijkstra transformou isso em algoritmo: cada processo declara o <b>máximo</b> que pode pedir, e o sistema só atende um pedido se, depois dele, ainda existir uma ordem em que <b>todos conseguem terminar</b> (estado seguro).</p>
+
+    <div class="toolbar">
+      <span class="c-muted">Pedido:</span>
+      <select id="who" aria-label="Processo"></select>
+      <input id="req" type="text" value="1 0 2" aria-label="Vetor do pedido">
+      <button class="btn primary small" id="ask">Pedir</button>
+      <button class="btn small" id="reset">Estado original</button>
+      <span id="reqout"></span>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>processo testado</span><span><i style="background:#83c167"></i>consegue terminar</span><span><i style="background:#58c4dd"></i>vetor trabalho</span></div>
+
+    <section class="prose">
+      <h2>Estado seguro × inseguro</h2>
+      <p>Um estado é <b>seguro</b> se existe uma sequência $P_{i_1}, \ldots, P_{i_n}$ em que cada processo consegue o que ainda precisa com o que está livre mais o que os anteriores devolveram. Seguro implica sem deadlock; <b>inseguro não significa deadlock</b>, só que o sistema perdeu a garantia (se todos pedirem o máximo, pode travar). O banqueiro é conservador: recusa pedidos que levariam a um estado inseguro, mesmo que o deadlock talvez nunca acontecesse.</p>
+      <h2>Para provar à mão</h2>
+      <ol class="step-list">
+        <li>Calcule <b>Necessidade = Máximo − Alocado</b>.</li>
+        <li>Trabalho = Disponível. Ache um processo não terminado com Necessidade ≤ Trabalho.</li>
+        <li>Finja que ele termina: Trabalho += Alocado dele. Repita.</li>
+        <li>Se todos terminam, é seguro; se ninguém cabe, inseguro. Custo $O(m n^2)$ para $n$ processos e $m$ tipos de recurso.</li>
+      </ol>
+      <p>Para um <b>pedido</b>: rejeite se excede a necessidade; espere se excede o disponível; senão, finja que concede e rode o teste de segurança. Experimente o roteiro clássico: P1 pede (1, 0, 2) (concedido); depois P4 pede (3, 3, 0) (não há recursos) e P0 pede (0, 2, 0) (seria inseguro).</p>
+      <div class="callout tip"><p><b>As quatro estratégias.</b> <b>Prevenir</b> (negar uma das condições de Coffman: ordem global de locks, pedir tudo de uma vez), <b>evitar</b> (o banqueiro, que exige saber o máximo de antemão), <b>detectar e recuperar</b> (procurar ciclos no grafo de espera e matar ou reverter processos) e <b>ignorar</b> (o "algoritmo do avestruz" dos sistemas de uso geral, como Linux e Windows, porque deadlocks são raros e as outras soluções custam caro).</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { BANKER_CODE, BANKER_EXAMPLE, bankerSafety, bankerRequest } from './so.js';
+
+    const W = 900, H = 440;
+    const R = BANKER_EXAMPLE.recursos;
+    let state = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'banqueiro (Python)', lang: 'python',
+      render(step, s) {
+        const n = step.aloc.length, cw = 34, rh = 34, y0 = 60;
+        const blocks = [['Alocado', step.aloc, 90], ['Máximo', step.max, 230], ['Necessidade', step.nec, 370]];
+        blocks.forEach(([title, M, x0], b) => {
+          s.text(`bt${b}`, title, { x: x0 + cw * 1.5, y: 20, size: 13, weight: 700, fill: b === 2 ? COLORS.yellow : COLORS.muted });
+          R.forEach((r, j) => s.text(`bh${b}-${j}`, r, { x: x0 + j * cw + cw / 2, y: 42, size: 12, mono: true, fill: COLORS.faint }));
+          for (let i = 0; i < n; i++) for (let j = 0; j < R.length; j++) {
+            const cur = step.cur === i, ok = cur && step.ok;
+            s.rect(`c${b}-${i}-${j}`, { x: x0 + j * cw, y: y0 + i * rh, w: cw - 3, h: rh - 4, rx: 4, fill: b === 2 && cur ? (ok ? '#1f3319' : '#3a1d1d') : COLORS.surface2, stroke: b === 2 && cur ? (ok ? COLORS.green : COLORS.red) : COLORS.border, sw: b === 2 && cur ? 2 : 1 });
+            s.text(`v${b}-${i}-${j}`, M[i][j], { x: x0 + j * cw + (cw - 3) / 2, y: y0 + i * rh + (rh - 4) / 2, size: 14, mono: true, fill: b === 2 ? COLORS.yellow : COLORS.text });
+          }
+        });
+        for (let i = 0; i < n; i++) {
+          const fin = step.fim[i], cur = step.cur === i;
+          s.rect(`p${i}`, { x: 20, y: y0 + i * rh, w: 52, h: rh - 4, rx: 6, fill: fin ? '#1f3319' : cur ? '#3d3a22' : COLORS.surface2, stroke: fin ? COLORS.green : cur ? COLORS.yellow : COLORS.border, sw: cur ? 2.5 : 1.5 });
+          s.text(`pt${i}`, `P${i}`, { x: 46, y: y0 + i * rh + (rh - 4) / 2, size: 14, mono: true, weight: 700, fill: fin ? COLORS.green : COLORS.text });
+        }
+        // disponível e trabalho
+        const vx = 560;
+        [['Disponível', step.disp, COLORS.muted, 60], ['Trabalho', step.trab, COLORS.blue, 150]].forEach(([title, v, col, y], b) => {
+          s.text(`vt${b}`, title, { x: vx, y: y - 14, size: 13, anchor: 'start', weight: 700, fill: col });
+          v.forEach((x, j) => {
+            s.rect(`vv${b}-${j}`, { x: vx + j * 44, y, w: 40, h: 32, rx: 5, fill: COLORS.surface2, stroke: col, sw: b ? 2 : 1 });
+            s.text(`vvt${b}-${j}`, x, { x: vx + j * 44 + 20, y: y + 16, size: 15, mono: true, weight: 700, fill: b ? COLORS.blue : COLORS.text });
+            s.text(`vvh${b}-${j}`, R[j], { x: vx + j * 44 + 20, y: y + 44, size: 11, mono: true, fill: COLORS.faint });
+          });
+        });
+        s.text('seq', `sequência: ${step.seq.map(i => `P${i}`).join(' → ') || '—'}`, { x: vx, y: 260, size: 15, anchor: 'start', mono: true, weight: 700, fill: COLORS.green });
+        if (step.done) s.text('verd', step.safe ? 'ESTADO SEGURO' : 'ESTADO INSEGURO', { x: vx, y: 310, size: 22, anchor: 'start', weight: 800, fill: step.safe ? COLORS.green : COLORS.red });
+        else s.text('verd', '', { x: vx, y: 310 });
+      },
+    });
+
+    function check() { player.load(bankerSafety(state.disp, state.aloc, state.max).steps); }
+    function reset() { state = { disp: [...BANKER_EXAMPLE.disp], aloc: BANKER_EXAMPLE.aloc.map(r => [...r]), max: BANKER_EXAMPLE.max }; $('#reqout').innerHTML = ''; check(); }
+    $('#who').innerHTML = BANKER_EXAMPLE.aloc.map((_, i) => `<option value="${i}">P${i}</option>`).join('');
+    $('#who').value = '1';
+    $('#ask').addEventListener('click', () => {
+      const i = +$('#who').value, req = $('#req').value.trim().split(/[\s,]+/).map(Number);
+      if (req.length !== R.length || req.some(x => !Number.isInteger(x) || x < 0)) { $('#reqout').innerHTML = '<span class="c-red">digite 3 inteiros, ex.: 1 0 2</span>'; return; }
+      const r = bankerRequest(state.disp, state.aloc, state.max, i, req);
+      if (r.granted) {
+        state.disp = r.disp; state.aloc = r.aloc;
+        $('#reqout').innerHTML = `<span class="c-green">P${i} pede (${req.join(', ')}): <b>concedido</b>. Abaixo, a verificação do novo estado.</span>`;
+        check();
+      } else {
+        $('#reqout').innerHTML = `<span class="c-red">P${i} pede (${req.join(', ')}): <b>negado</b>, ${r.reason}.</span>`;
+        if (r.reason.includes('inseguro')) {
+          const aloc2 = state.aloc.map((a, k) => (k === i ? a.map((x, j) => x + req[j]) : [...a]));
+          player.load(bankerSafety(state.disp.map((x, j) => x - req[j]), aloc2, state.max).steps);
+        }
+      }
+    });
+    $('#reset').addEventListener('click', reset);
+    player.setCode(BANKER_CODE, 'python');
+    reset();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Um estado inseguro…', options: ['pode levar a deadlock, mas não necessariamente', 'já está em deadlock', 'nunca leva a deadlock', 'é impossível de alcançar'], answer: 0, explain: 'Inseguro só significa que não há garantia; os processos podem nunca pedir o máximo.' },
+      { q: 'O que o banqueiro precisa saber de antemão?', options: ['O máximo de cada recurso que cada processo pode pedir', 'A ordem de execução', 'O tempo de cada processo', 'Nada'], answer: 0, explain: 'É a principal limitação prática do algoritmo.' },
+      { q: 'Com um único recurso de cada tipo, como detectar deadlock?', options: ['Procurando ciclo no grafo de espera', 'Rodando o banqueiro', 'Contando os processos', 'Não dá'], answer: 0, explain: 'Com uma instância por recurso, ciclo no grafo de espera ⇔ deadlock.' },
+    ]);
+  </script>
+</body>
+</html>

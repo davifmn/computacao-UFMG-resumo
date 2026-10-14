@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geração de código · Compiladores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 300px; font-size: 13px; }
+    .editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+    .editor textarea { font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 120px; }
+    .editor .side { display: flex; flex-direction: column; gap: 8px; }
+    #err { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#comp">Compiladores I</a>
+      <span class="sep">/</span><span>Geração de código</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Compiladores I</div>
+    <h1>Da árvore ao código: geração de código intermediário</h1>
+    <p class="lead">Depois da análise, o compilador tem uma <b>árvore sintática abstrata</b>. Percorrendo-a em pós-ordem, ele emite <b>código de três endereços</b> (cada instrução com no máximo um operador, resultados em temporários) ou código para uma <b>máquina de pilha</b>. Laços e ifs viram rótulos e desvios. Ligue o <b>dobramento de constantes</b> para ver uma otimização acontecer antes da geração.</p>
+
+    <div class="editor">
+      <textarea id="src" spellcheck="false" aria-label="Programa"></textarea>
+      <div class="side">
+        <select id="ex" aria-label="Exemplos"></select>
+        <div class="chips" role="group" aria-label="Alvo">
+          <button class="btn small" data-t="tac">3 endereços</button>
+          <button class="btn small" data-t="pilha">máquina de pilha</button>
+        </div>
+        <label class="c-muted" style="font-size:14px"><input type="checkbox" id="fold"> dobrar constantes</label>
+        <button class="btn primary" id="go">Compilar</button>
+        <div id="err"></div>
+      </div>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>As fases de um compilador</h2>
+      <ol class="step-list">
+        <li><b>Análise léxica</b>: caracteres → tokens.</li>
+        <li><b>Análise sintática</b>: tokens → árvore (LL ou LR).</li>
+        <li><b>Análise semântica</b>: tabela de símbolos, escopos, verificação de tipos.</li>
+        <li><b>Código intermediário</b>: independente da máquina (três endereços, SSA, bytecode).</li>
+        <li><b>Otimização</b>: dobramento e propagação de constantes, eliminação de código morto e de subexpressões comuns, invariantes de laço.</li>
+        <li><b>Geração de código final</b>: seleção de instruções, alocação de registradores (coloração de grafos), escalonamento.</li>
+      </ol>
+      <h2>Três endereços × pilha</h2>
+      <p>O código de três endereços nomeia cada valor intermediário (<code>t1 = b + c</code>), o que facilita as otimizações e a alocação de registradores: é a forma do LLVM IR e do GCC (GIMPLE). A máquina de pilha não precisa de nomes, porque os operandos estão sempre no topo: o código é mais compacto e fácil de gerar, e por isso a JVM, o CPython e o WebAssembly usam pilhas.</p>
+      <h2>Desvios</h2>
+      <p>Um <code>while (c) corpo</code> vira: rótulo do topo, teste da condição <b>negada</b> com desvio para a saída, corpo, desvio de volta ao topo. Testar a negação faz o caso comum (continuar) seguir em linha reta.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { PROGRAMS, parseProgram, fold, tacSteps, stackSteps, runTAC, evalAST, astLabel, astChildren } from './comp.js';
+    import { layoutForest, drawTree } from './arvore.js';
+
+    const W = 900, H = 520;
+    let target = 'tac', ast = null, byId = null, layout = null, result = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'programa-fonte', lang: 'cpp', showVars: false,
+      render(step, s) {
+        const kids = id => astChildren(byId.get(id)).map(c => c.id);
+        drawTree(s, layout, kids, id => astLabel(byId.get(id)), id => {
+          const n = byId.get(id), cur = id === step.node;
+          return { fill: cur ? '#3d3a22' : n.folded ? '#2a1f3a' : COLORS.surface2, stroke: cur ? COLORS.yellow : n.folded ? COLORS.purple : n.k === 'num' || n.k === 'var' ? COLORS.green : COLORS.blue, text: cur ? COLORS.yellow : COLORS.text };
+        }, { size: 12 });
+        // código emitido
+        const x0 = 560;
+        s.text('ch', target === 'tac' ? 'código de três endereços' : 'código de máquina de pilha', { x: x0, y: 20, size: 12, anchor: 'start', fill: COLORS.muted });
+        const lines = step.code ?? [];
+        const first = Math.max(0, lines.length - 22);
+        lines.slice(first).forEach((ins, k) => {
+          const idx = first + k, cur = idx === step.emitted, lab = /:$/.test(ins);
+          s.text(`l${idx}`, `${String(idx).padStart(2)}  ${lab ? '' : '  '}${ins}`, { x: x0, y: 42 + k * 20, size: 13, anchor: 'start', mono: true, fill: cur ? COLORS.yellow : lab ? COLORS.purple : COLORS.text, weight: cur ? 800 : 500 });
+        });
+        if (step.done) s.text('res', result, { x: x0, y: H - 18, size: 14, anchor: 'start', mono: true, weight: 700, fill: COLORS.green });
+        else s.text('res', '', { x: x0, y: H - 18 });
+      },
+    });
+
+    function run() {
+      $$('[data-t]').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === target));
+      $('#err').textContent = '';
+      const ex = PROGRAMS[$('#ex').value];
+      try { ast = parseProgram($('#src').value); } catch (e) { $('#err').textContent = e.message; return; }
+      if ($('#fold').checked) ast = fold(ast);
+      byId = new Map();
+      const walk = n => { byId.set(n.id, n); astChildren(n).forEach(walk); };
+      walk(ast);
+      layout = layoutForest([ast.id], id => astChildren(byId.get(id)).map(c => c.id), [20, 30, 530, H - 30], { maxDx: 56, maxDy: 54 });
+      const gen = target === 'tac' ? tacSteps(ast) : stackSteps(ast);
+      const env = $('#src').value === ex.src ? ex.env : {};
+      const r = evalAST(ast, env);
+      if (target === 'tac') {
+        const t = runTAC(gen.code, env);
+        const same = JSON.stringify(t.out) === JSON.stringify(r.out) && Object.keys(r.vars).every(k => t.vars[k] === r.vars[k]);
+        result = `${Object.keys(env).length ? `entrada ${Object.entries(env).map(([k, v]) => `${k}=${v}`).join(' ')} → ` : ''}${r.out.length ? `imprime ${r.out.join(' ')}` : Object.entries(r.vars).filter(([k]) => !(k in env)).map(([k, v]) => `${k} = ${v}`).join(', ')} ${same ? '✓ (o código gerado confere)' : '✗'}`;
+      } else {
+        result = `${gen.code.length} instruções (contra ${tacSteps(ast).code.length} em três endereços)`;
+      }
+      const steps = [{ code: [], node: ast.id, msg: `Árvore sintática abstrata do programa${$('#fold').checked ? ', já com as constantes dobradas (nós roxos)' : ''}. A geração percorre a árvore: os filhos antes do pai.`, emitted: -1 }, ...gen.steps];
+      steps.push({ ...steps.at(-1), done: true, node: null, emitted: -1, msg: `Fim: ${gen.code.length} instruções. ${result}` });
+      player.setCode($('#src').value, 'cpp');
+      player.load(steps);
+    }
+    $('#ex').innerHTML = Object.entries(PROGRAMS).map(([k, p]) => `<option value="${k}">${p.nome}</option>`).join('');
+    $('#ex').addEventListener('change', () => { $('#src').value = PROGRAMS[$('#ex').value].src; run(); });
+    $$('[data-t]').forEach(b => b.addEventListener('click', () => { target = b.dataset.t; run(); }));
+    $('#fold').addEventListener('change', run);
+    $('#go').addEventListener('click', run);
+    $('#src').value = PROGRAMS.expr.src;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quantas instruções de três endereços gera <code>x = a + b * c;</code>?', options: ['3', '2', '4', '1'], answer: 0, explain: 't1 = b * c; t2 = a + t1; x = t2.' },
+      { q: 'Em que ordem a árvore é percorrida para gerar código de expressões?', options: ['Pós-ordem: filhos antes do pai', 'Pré-ordem', 'Em largura', 'Qualquer ordem'], answer: 0, explain: 'Um operador só pode ser calculado depois dos operandos.' },
+      { q: 'O dobramento de constantes transforma <code>y = 2 * 3 + x;</code> em…', options: ['y = 6 + x', 'y = 2 * 3 + x', 'y = 6', 'y = x'], answer: 0, explain: 'A subárvore 2 * 3 só tem constantes; o compilador calcula 6 em tempo de compilação.' },
+    ]);
+  </script>
+</body>
+</html>

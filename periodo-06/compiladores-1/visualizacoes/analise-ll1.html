@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise LL(1) · Compiladores I</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    .gram { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; margin-bottom: 14px; align-items: start; }
+    .gram textarea { width: 100%; min-height: 130px; font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .gram input[type=text] { width: 100%; font-family: var(--mono); }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+    table.t th, table.t td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; }
+    table.t th { color: var(--muted); font-weight: 600; background: var(--surface); }
+    table.t td.hit { background: rgba(244, 211, 94, .18); outline: 2px solid var(--yellow); }
+    table.t td.conf { background: rgba(252, 98, 85, .18); color: var(--red); }
+    .tables { display: flex; gap: 16px; flex-wrap: wrap; align-items: start; }
+    #err { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#comp">Compiladores I</a>
+      <span class="sep">/</span><span>Análise LL(1)</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Compiladores I</div>
+    <h1>Análise sintática descendente: LL(1)</h1>
+    <p class="lead">O analisador LL(1) constrói a árvore de derivação <b>de cima para baixo</b>, prevendo qual produção usar com um único token de antecipação. Para isso, calcula os conjuntos <b>FIRST</b> e <b>FOLLOW</b> e monta uma tabela. Edite a gramática: se aparecer conflito na tabela, ela não é LL(1).</p>
+
+    <div class="gram">
+      <div>
+        <select id="ex" aria-label="Gramática" style="width:100%;margin-bottom:8px"></select>
+        <textarea id="g" spellcheck="false" aria-label="Gramática"></textarea>
+        <label class="c-muted" style="font-size:14px">entrada <input id="in" type="text"></label>
+        <button class="btn primary small" id="go" style="margin-top:8px">Analisar</button>
+        <div id="err"></div>
+      </div>
+      <div class="tables"><div id="ff"></div><div id="tab"></div></div>
+    </div>
+
+    <div id="player"></div>
+
+    <section class="prose">
+      <h2>FIRST e FOLLOW</h2>
+      <ul>
+        <li><b>FIRST(α)</b>: os terminais que podem começar uma cadeia derivada de α (mais ε, se α pode sumir).</li>
+        <li><b>FOLLOW(A)</b>: os terminais que podem aparecer logo depois de A em alguma forma sentencial ($ para o símbolo inicial). Ele importa quando A deriva ε: nesse caso, a decisão é tomada olhando o que vem <i>depois</i>.</li>
+      </ul>
+      <p>A tabela: para cada produção $A \to \alpha$, coloque-a em $M[A, a]$ para todo $a \in \text{FIRST}(\alpha)$; se $\varepsilon \in \text{FIRST}(\alpha)$, também para todo $a \in \text{FOLLOW}(A)$. A gramática é <b>LL(1)</b> se nenhuma célula recebe duas produções.</p>
+      <h2>Por que a gramática de expressões precisou mudar</h2>
+      <p>Com $E \to E + T \mid T$, o analisador expandiria $E$ em $E + T$ sem consumir nada, para sempre: <b>recursão à esquerda</b> é proibida em LL. A transformação clássica troca $A \to A\alpha \mid \beta$ por $A \to \beta A'$, $A' \to \alpha A' \mid \varepsilon$. E produções com o mesmo começo ($A \to \alpha\beta_1 \mid \alpha\beta_2$) exigem <b>fatoração à esquerda</b>. Carregue a gramática "com recursão à esquerda" e veja os conflitos.</p>
+      <div class="callout tip"><p><b>Descendente recursivo.</b> Na prática, um analisador LL(1) costuma ser escrito à mão: uma função por não-terminal, e um <code>switch</code> no token atual escolhe a produção (a linha da tabela). É assim que são feitos os analisadores do GCC, do Clang e do V8. A tabela com pilha desta página é a mesma coisa sem a recursão.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { GRAMMARS, LL_CODE, parseGrammar, llTable, llSteps, showProd, EPS } from './comp.js';
+    import { layoutForest, drawTree } from './arvore.js';
+
+    const W = 900, H = 500;
+    let G = null, layout = null, kidsOf = null, finalNodes = null;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'analisador LL(1)', lang: 'python',
+      onStep(step) {
+        document.querySelectorAll('#tab td.hit').forEach(td => td.classList.remove('hit'));
+        if (step.prod != null && step.cur != null) {
+          const A = step.nodes[step.cur].label, a = step.toks[step.pos].t;
+          document.querySelector(`#tab td[data-k="${CSS.escape(A + '|' + a)}"]`)?.classList.add('hit');
+        }
+      },
+      render(step, s) {
+        // entrada
+        step.toks.forEach((t, k) => {
+          const x = 120 + k * 52;
+          s.rect(`in${k}`, { x, y: 16, w: 48, h: 28, rx: 5, fill: k === step.pos ? '#3d3a22' : COLORS.surface2, stroke: k === step.pos ? COLORS.yellow : COLORS.border, sw: k === step.pos ? 2 : 1, opacity: k < step.pos ? 0.35 : 1 });
+          s.text(`it${k}`, t.lex, { x: x + 24, y: 30, size: 13, mono: true, fill: k === step.pos ? COLORS.yellow : COLORS.text });
+        });
+        s.text('inl', 'entrada', { x: 110, y: 30, size: 12, anchor: 'end', fill: COLORS.muted });
+        // pilha
+        s.text('stl', 'pilha', { x: 50, y: 70, size: 12, fill: COLORS.muted });
+        step.stack.forEach((sym, k) => {
+          const y = H - 40 - k * 32;
+          const top = k === step.stack.length - 1;
+          s.rect(`sk${k}`, { x: 14, y, w: 72, h: 28, rx: 5, fill: top ? '#3d3a22' : COLORS.surface2, stroke: top ? COLORS.yellow : G.nts.includes(sym) ? COLORS.blue : COLORS.green, sw: top ? 2 : 1.2 });
+          s.text(`skt${k}`, sym, { x: 50, y: y + 14, size: 13, mono: true, weight: 700, fill: top ? COLORS.yellow : COLORS.text });
+        });
+        // árvore
+        const have = new Set(step.nodes.map(n => n.id));
+        const pos = new Map([...layout].filter(([id]) => have.has(id)));
+        drawTree(s, pos, id => kidsOf(id).filter(c => have.has(c)), id => {
+          const n = step.nodes[id];
+          return n.lex && n.lex !== n.label ? `${n.label}:${n.lex}` : n.label;
+        }, id => {
+          const n = step.nodes[id], cur = id === step.cur, term = !G.nts.includes(n.label) && !n.eps;
+          return { fill: cur ? '#3d3a22' : n.lex ? '#1f3319' : COLORS.surface2, stroke: cur ? COLORS.yellow : n.eps ? COLORS.faint : term ? COLORS.green : COLORS.blue, text: n.eps ? COLORS.faint : cur ? COLORS.yellow : COLORS.text };
+        });
+      },
+    });
+
+    function tables() {
+      const T = llTable(G);
+      $('#ff').innerHTML = `<table class="t"><tr><th></th><th>FIRST</th><th>FOLLOW</th></tr>${G.nts.map(A => `<tr><th>${A}</th><td>{ ${[...T.F[A]].join(', ')} }</td><td>{ ${[...T.FO[A]].join(', ')} }</td></tr>`).join('')}</table>`;
+      const cols = [...G.ts, '$'];
+      const conf = new Set(T.conflicts.map(c => `${c.A}|${c.a}`));
+      $('#tab').innerHTML = `<table class="t"><tr><th>M</th>${cols.map(a => `<th>${a}</th>`).join('')}</tr>${G.nts.map(A => `<tr><th>${A}</th>${cols.map(a => {
+        const k = `${A}|${a}`;
+        if (conf.has(k)) { const c = T.conflicts.find(x => x.A === A && x.a === a); return `<td class="conf" data-k="${k}">${c.prods.map(i => showProd(G.prods[i])).join('<br>')}</td>`; }
+        return `<td data-k="${k}">${T.M[A][a] != null ? showProd(G.prods[T.M[A][a]]).replace(`${A} → `, '→ ') : ''}</td>`;
+      }).join('')}</tr>`).join('')}</table>${T.conflicts.length ? `<p class="c-red" style="font-size:14px">${T.conflicts.length} conflito(s): a gramática <b>não é LL(1)</b>; o analisador abaixo usa a primeira produção.</p>` : '<p class="c-green" style="font-size:14px">Nenhum conflito: a gramática é LL(1).</p>'}`;
+    }
+
+    function run() {
+      $('#err').textContent = '';
+      try { G = parseGrammar($('#g').value); } catch (e) { $('#err').textContent = e.message; return; }
+      tables();
+      const steps = llSteps(G, $('#in').value);
+      finalNodes = steps.at(-1).nodes;
+      const kids = new Map(finalNodes.map(n => [n.id, []]));
+      finalNodes.forEach(n => { if (n.parent != null) kids.get(n.parent).push(n.id); });
+      kidsOf = id => kids.get(id) ?? [];
+      layout = layoutForest([0], kidsOf, [130, 80, W - 30, H - 30], { maxDx: 70, maxDy: 52 });
+      player.setCode(LL_CODE, 'python');
+      player.load(steps);
+    }
+    $('#ex').innerHTML = Object.entries(GRAMMARS).map(([k, g]) => `<option value="${k}">${g.nome}</option>`).join('');
+    $('#ex').addEventListener('change', () => { const g = GRAMMARS[$('#ex').value]; $('#g').value = g.text; $('#in').value = g.input; run(); });
+    $('#go').addEventListener('click', run);
+    $('#in').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    $('#g').value = GRAMMARS.expr_ll.text; $('#in').value = GRAMMARS.expr_ll.input;
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: "Na gramática de expressões LL(1), por que M[E', )] = E' → ε?", options: ["Porque ) ∈ FOLLOW(E') e E' pode derivar ε", "Porque ) ∈ FIRST(E')", 'Por engano', "Porque E' começa com )"], answer: 0, explain: "Quando o próximo token é ), a expressão acabou: E' tem que sumir." },
+      { q: 'Qual gramática NÃO pode ser LL(1)?', options: ['Qualquer uma com recursão à esquerda', 'Uma com produções ε', 'Uma com dois não-terminais', 'Uma sem terminais'], answer: 0, explain: 'Com A → Aα | β, FIRST(Aα) ⊇ FIRST(β): as duas produções disputam as mesmas células.' },
+      { q: 'O if-then-else pendente gera conflito em M[S2, else]. Como linguagens como C resolvem?', options: ['Associando o else ao if mais próximo (escolher S2 → else S)', 'Proibindo if aninhado', 'Usando dois tokens de antecipação', 'Não resolvem'], answer: 0, explain: 'A gramática é ambígua; a convenção escolhe uma das árvores, e o analisador simplesmente prefere a produção do else.' },
+    ]);
+  </script>
+</body>
+</html>

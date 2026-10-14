@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Processos de software · Engenharia de Software</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+    .cards3 div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+    .cards3 b { display: block; margin-bottom: 4px; color: var(--yellow); }
+    .burn { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; align-items: start; margin: 14px 0; }
+    .ctl { display: grid; grid-template-columns: 1fr 3em; gap: 6px 8px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#es">Engenharia de Software</a>
+      <span class="sep">/</span><span>Processos de software</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Tutorial · Engenharia de Software</div>
+    <h1>Processos: da cascata ao Scrum</h1>
+    <p class="lead">Um processo responde a "quem faz o quê, quando e em que ordem" para transformar uma ideia em software funcionando. A história da engenharia de software é, em boa parte, a história de abandonar o planejamento total em favor de <b>ciclos curtos com feedback</b>.</p>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+        <h2>Por que software é difícil</h2>
+        <p>Brooks, em <i>"No Silver Bullet"</i> (1986), separa as dificuldades <b>acidentais</b> (ferramentas, linguagens, que melhoram com o tempo) das <b>essenciais</b>, que nenhuma tecnologia elimina: <b>complexidade</b> (nenhuma parte é igual à outra), <b>conformidade</b> (o software se adapta a leis, hardware, processos humanos), <b>mutabilidade</b> (todo mundo quer mudá-lo) e <b>invisibilidade</b> (não há uma planta baixa natural). Da mesma época vem a <b>lei de Brooks</b>: adicionar pessoas a um projeto atrasado o atrasa ainda mais, porque o custo de comunicação cresce com $n(n-1)/2$.</p>
+
+        <h2>Cascata e processos dirigidos por planos</h2>
+        <p>O modelo em <b>cascata</b> executa as fases em sequência: requisitos, análise, projeto, implementação, testes, implantação, manutenção. Funciona quando os requisitos são estáveis e bem conhecidos (software embarcado em aviões, contratos fechados), mas falha no caso comum: o cliente só vê o produto no fim, quando mudar custa mais caro, e documentos extensos envelhecem antes de serem lidos. Variações tentam corrigir isso: o <b>modelo em espiral</b> (Boehm) itera guiado por riscos, e o <b>Processo Unificado</b> (RUP) itera dentro de fases.</p>
+
+        <h2>O Manifesto Ágil (2001)</h2>
+        <p>Dezessete desenvolvedores resumiram o que dava certo em quatro valores (os itens à direita têm valor, mas os da esquerda valem mais):</p>
+        <ul>
+          <li><b>Indivíduos e interações</b> mais que processos e ferramentas.</li>
+          <li><b>Software em funcionamento</b> mais que documentação abrangente.</li>
+          <li><b>Colaboração com o cliente</b> mais que negociação de contratos.</li>
+          <li><b>Responder a mudanças</b> mais que seguir um plano.</li>
+        </ul>
+        <p>Na prática: entregas frequentes (semanas, não anos), o cliente perto do time, e o escopo como a variável que se ajusta (em vez de prazo e qualidade).</p>
+
+        <h2>Scrum</h2>
+        <div class="cards3">
+          <div><b>Papéis</b>Product Owner (dono do produto: prioriza o backlog e representa o cliente), Scrum Master (remove impedimentos, cuida do processo, não é chefe) e o time de desenvolvimento (autogerenciado, multifuncional, até ~10 pessoas).</div>
+          <div><b>Eventos</b>Sprint (iteração de 1 a 4 semanas, com duração fixa), planejamento da sprint, reunião diária (15 minutos), revisão da sprint (demonstrar o incremento ao cliente) e retrospectiva (melhorar o próprio processo).</div>
+          <div><b>Artefatos</b>Backlog do produto (lista priorizada de histórias), backlog da sprint (o que o time se comprometeu a fazer) e o incremento (software potencialmente entregável), com uma <b>definição de pronto</b> combinada.</div>
+        </div>
+        <p>Os requisitos viram <b>histórias de usuário</b>: "Como <i>cliente</i>, quero <i>pagar com Pix</i> para <i>não digitar o cartão</i>", com critérios de aceitação. Boas histórias seguem o INVEST: independentes, negociáveis, valiosas, estimáveis, pequenas (<i>small</i>) e testáveis. O tamanho é estimado em <b>pontos</b> (relativos, não horas), muitas vezes com <i>planning poker</i>.</p>
+
+        <h2>Gráfico de burndown</h2>
+        <p>O burndown mostra o trabalho que falta ao longo da sprint. A linha tracejada é o ritmo ideal; a amarela, o que aconteceu. Aumente o escopo no meio da sprint ou diminua a velocidade e veja quando a sprint deixa de fechar.</p>
+        <div class="burn">
+          <div class="stage"><svg id="burn" aria-label="Gráfico de burndown"></svg></div>
+          <div class="panel"><div class="panel-title">Sprint de 10 dias</div><div class="ctl" style="padding:8px 14px 14px">
+            <span>pontos planejados</span><output id="pl-o"></output><input id="pl" type="range" min="20" max="60" value="40">
+            <span>velocidade (pontos/dia)</span><output id="v-o"></output><input id="v" type="range" min="1" max="7" step="0.5" value="4">
+            <span>escopo extra no dia 5</span><output id="x-o"></output><input id="x" type="range" min="0" max="20" value="0">
+            <span>dias de impedimento</span><output id="i-o"></output><input id="imp" type="range" min="0" max="4" value="0">
+          </div><div id="burnout" style="padding:0 14px 14px;font-size:14px"></div></div>
+        </div>
+
+        <h2>XP e Kanban</h2>
+        <p><b>Extreme Programming</b> (Kent Beck) é o método ágil das práticas de engenharia: <b>programação em pares</b>, <b>desenvolvimento dirigido por testes</b>, <b>integração contínua</b>, refatoração constante, projeto simples (YAGNI: "você não vai precisar disso"), releases pequenos, propriedade coletiva do código e ritmo sustentável. Muitos times usam o Scrum como "casca" de gestão e as práticas do XP por dentro.</p>
+        <p><b>Kanban</b> vem da produção enxuta da Toyota: um quadro com colunas (a fazer, em andamento, revisão, pronto) e um <b>limite de trabalho em progresso</b> (WIP) por coluna. Não há sprints; o objetivo é um fluxo contínuo e previsível. Pela <b>lei de Little</b>, tempo médio de entrega = itens em andamento / vazão: limitar o WIP é a forma direta de entregar mais rápido.</p>
+
+        <h2>DevOps e entrega contínua</h2>
+        <p>O ágil encurtou o ciclo do desenvolvimento; o DevOps encurta o caminho até a produção. <b>Integração contínua</b>: todo commit dispara build e testes automáticos (este repositório faz isso a cada push). <b>Entrega contínua</b>: todo commit aprovado pode ir para produção com um clique; <b>implantação contínua</b>: vai automaticamente. Junto vêm infraestrutura como código, monitoramento e implantações graduais (canário, feature flags).</p>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, buildToc } from '../../../engine/page.js';
+    buildToc($('#toc'), $('#content'));
+
+    const scene = new Scene($('#burn'), { width: 560, height: 320 });
+    scene.setAnimated(false);
+    const plot = new Plot(scene, { x: [0, 10], y: [0, 80], box: [44, 14, 546, 290] });
+    function draw() {
+      const pl = +$('#pl').value, v = +$('#v').value, extra = +$('#x').value, imp = +$('#imp').value;
+      $('#pl-o').value = pl; $('#v-o').value = v; $('#x-o').value = extra; $('#i-o').value = imp;
+      const pts = [[0, pl]];
+      let rest = pl;
+      for (let d = 1; d <= 10; d++) {
+        if (d === 5) rest += extra;
+        if (d > 3 && d <= 3 + imp) { /* impedimento: nada é concluído */ } else rest = Math.max(0, rest - v);
+        pts.push([d, rest]);
+      }
+      plot.setView([0, 10], [0, Math.max(pl + extra, 20) * 1.1]);
+      scene.frame(s => {
+        plot.axes(s, { xLabel: 'dia', yLabel: 'pontos restantes' });
+        s.line('ideal', plot.X(0), plot.Y(pl), plot.X(10), plot.Y(0), { stroke: COLORS.muted, sw: 2, dash: '7 6' });
+        s.path('real', pts.map(([d, r], k) => `${k ? 'L' : 'M'} ${plot.X(d)} ${plot.Y(r)}`).join(' '), { stroke: COLORS.yellow, sw: 3 });
+        pts.forEach(([d, r]) => s.circle(`p${d}`, { x: plot.X(d), y: plot.Y(r), r: 4, fill: COLORS.yellow, stroke: 'none', sw: 0 }));
+      });
+      const left = pts.at(-1)[1];
+      $('#burnout').innerHTML = left > 0 ? `<span class="c-red">Sobram <b>${left}</b> pontos: as histórias incompletas voltam para o backlog, e a próxima sprint deve planejar com a velocidade observada.</span>` : `<span class="c-green">Sprint concluída${pts.findIndex(p => p[1] === 0) < 10 ? ` no dia ${pts.findIndex(p => p[1] === 0)}` : ''}.</span>`;
+    }
+    for (const id of ['#pl', '#v', '#x', '#imp']) $(id).addEventListener('input', draw);
+    draw();
+
+    mountQuiz($('#quiz'), [
+      { q: 'No Scrum, quem decide a ordem de prioridade do backlog do produto?', options: ['O Product Owner', 'O Scrum Master', 'O time, por votação', 'O gerente de projeto'], answer: 0, explain: 'O PO maximiza o valor do produto; o time decide <i>como</i> fazer e quanto cabe na sprint.' },
+      { q: 'Qual a principal diferença entre Kanban e Scrum?', options: ['Kanban não tem iterações fixas: limita o trabalho em progresso e busca fluxo contínuo', 'Kanban não usa quadro', 'Scrum não tem papéis', 'Kanban exige sprints de uma semana'], answer: 0, explain: 'Scrum organiza o trabalho em sprints com duração fixa; Kanban, por limites de WIP.' },
+      { q: 'Um projeto está atrasado. Segundo a lei de Brooks, adicionar mais 5 desenvolvedores…', options: ['tende a atrasá-lo mais', 'resolve o atraso proporcionalmente', 'não tem efeito', 'só ajuda se forem seniores'], answer: 0, explain: 'Os novos precisam ser treinados, e o número de canais de comunicação cresce quadraticamente.' },
+      { q: 'Em que situação a cascata ainda faz sentido?', options: ['Requisitos estáveis e bem conhecidos, com regulação forte (ex.: software de aviação)', 'Startups explorando um mercado novo', 'Aplicativos web com usuários mudando de ideia', 'Nunca'], answer: 0, explain: 'Quanto mais estável o problema e mais caro o erro, mais vale planejar antes.' },
+    ]);
+  </script>
+</body>
+</html>

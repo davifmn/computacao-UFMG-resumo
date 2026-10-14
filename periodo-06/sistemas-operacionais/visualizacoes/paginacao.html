@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Substituição de páginas · Sistemas Operacionais</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; } .toolbar input[type=text] { width: 260px; font-family: var(--mono); }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#so">Sistemas Operacionais</a>
+      <span class="sep">/</span><span>Substituição de páginas</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Sistemas Operacionais</div>
+    <h1>Memória virtual: quem sai quando a memória enche?</h1>
+    <p class="lead">Cada processo enxerga um espaço de endereços enorme, dividido em <b>páginas</b>; só algumas cabem nos <b>quadros</b> da memória física. Quando o programa toca uma página ausente, ocorre uma <b>falta de página</b> e o sistema precisa escolher uma vítima. Cada falta custa milhões de ciclos (ler do disco), então a escolha importa.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo" id="algs"></div>
+      <label>quadros <select id="nf"><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+      <label>referências <input id="refs" type="text"></label>
+      <select id="ex" aria-label="Exemplo"></select>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#fc6255"></i>falta de página</span><span><i style="background:#83c167"></i>acerto</span><span><i style="background:#f4d35e"></i>página que entrou</span><span>gráfico: faltas × número de quadros, para os 4 algoritmos</span></div>
+
+    <section class="prose">
+      <h2>Os algoritmos</h2>
+      <ul>
+        <li><b>Ótimo</b> (Belady): tira a página que vai demorar mais para ser usada. Impossível de implementar (exige conhecer o futuro), mas é o padrão de comparação.</li>
+        <li><b>FIFO</b>: tira a mais antiga na memória. Simples, mas a página antiga pode ser a mais usada, e sofre a <b>anomalia de Belady</b>: com mais quadros, pode ter <i>mais</i> faltas (escolha o exemplo e olhe o gráfico).</li>
+        <li><b>LRU</b>: tira a usada há mais tempo; aproxima o ótimo olhando para trás (localidade temporal). Precisa registrar cada acesso, caro demais em hardware.</li>
+        <li><b>Relógio</b> (segunda chance): cada quadro tem um bit de referência que o hardware liga a cada acesso. O ponteiro gira: bit 1 vira 0 (segunda chance), bit 0 é a vítima. É a aproximação de LRU usada na prática.</li>
+      </ul>
+      <p>LRU e ótimo são <b>algoritmos de pilha</b>: o conjunto de páginas com $k$ quadros está sempre contido no conjunto com $k + 1$, e por isso eles nunca sofrem a anomalia de Belady.</p>
+      <h2>Tradução de endereços e thrashing</h2>
+      <p>O endereço virtual se divide em <b>número da página</b> e <b>deslocamento</b>; a tabela de páginas traduz a página para o quadro, e a <b>TLB</b> guarda as traduções recentes (como uma cache, veja OC I). Se a soma dos <b>conjuntos de trabalho</b> dos processos não cabe na memória, o sistema passa mais tempo trocando páginas que executando: é o <b>thrashing</b>. O exemplo "Laço maior que a memória" mostra o pior caso do LRU: 100% de faltas.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt, pick } from '../../../engine/page.js';
+    import { PAGING_CODE, PAGING, REF_EXAMPLES, paging, faultsOf } from './so.js';
+
+    const W = 900, H = 500;
+    const ACOL = { fifo: COLORS.orange, lru: COLORS.blue, otimo: COLORS.green, relogio: COLORS.purple };
+    let alg = 'fifo', refs = [], nf = 3;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'substituição (Python)', lang: 'python',
+      render(step, s) {
+        const n = refs.length, cw = Math.min(42, (W - 80) / n), x0 = 60, y0 = 40, rh = 34;
+        refs.forEach((p, i) => {
+          const cur = step.i === i;
+          s.text(`r${i}`, p, { x: x0 + i * cw + cw / 2, y: y0 - 18, size: 15, mono: true, weight: 800, fill: cur ? COLORS.yellow : i < (step.i ?? -1) ? COLORS.muted : COLORS.faint });
+        });
+        for (let f = 0; f < nf; f++) s.text(`fl${f}`, `q${f}`, { x: x0 - 16, y: y0 + f * rh + rh / 2, size: 12, mono: true, fill: COLORS.faint });
+        step.cols.forEach((c, i) => {
+          for (let f = 0; f < nf; f++) {
+            const v = c.frames[f], entered = c.fault && c.slot === f, hitHere = !c.fault && c.slot === f;
+            s.rect(`c${i}-${f}`, { x: x0 + i * cw, y: y0 + f * rh, w: cw - 3, h: rh - 4, rx: 4, fill: entered ? '#3d3a22' : hitHere ? '#1f3319' : COLORS.surface2, stroke: entered ? COLORS.yellow : hitHere ? COLORS.green : COLORS.border, sw: entered || hitHere ? 2 : 1, opacity: i === step.i ? 1 : 0.85 });
+            if (v != null) s.text(`cv${i}-${f}`, v, { x: x0 + i * cw + (cw - 3) / 2, y: y0 + f * rh + (rh - 4) / 2, size: 14, mono: true, fill: entered ? COLORS.yellow : COLORS.text });
+          }
+          s.text(`m${i}`, c.fault ? 'F' : '✓', { x: x0 + i * cw + cw / 2, y: y0 + nf * rh + 10, size: 13, weight: 800, fill: c.fault ? COLORS.red : COLORS.green });
+          if (c.victim != null) s.text(`vi${i}`, `−${c.victim}`, { x: x0 + i * cw + cw / 2, y: y0 + nf * rh + 28, size: 11, mono: true, fill: COLORS.muted });
+        });
+        if (alg === 'relogio' && step.i != null) {
+          for (let f = 0; f < nf; f++) s.text(`bit${f}`, `bit ${step.bit[f]}`, { x: x0 + n * cw + 14, y: y0 + f * rh + rh / 2, size: 12, anchor: 'start', mono: true, fill: step.bit[f] ? COLORS.purple : COLORS.faint });
+          s.text('hand', '◀ ponteiro', { x: x0 + n * cw + 60, y: y0 + step.hand * rh + rh / 2, size: 12, anchor: 'start', fill: COLORS.purple });
+        }
+        s.text('tot', `faltas: ${step.faults}`, { x: W - 20, y: y0 + nf * rh + 28, size: 16, anchor: 'end', mono: true, weight: 800, fill: COLORS.red });
+        // gráfico faltas × quadros
+        const gx = 110, gy = 300, gw = 640, gh = 170, maxF = 7;
+        const fs = Object.keys(PAGING).map(a => [a, Array.from({ length: maxF }, (_, k) => faultsOf(refs, k + 1, a))]);
+        const top = Math.max(...fs.flatMap(([, v]) => v));
+        const X = k => gx + (k / (maxF - 1)) * gw, Y = v => gy + gh - (v / top) * gh;
+        s.line('gax', gx, gy + gh, gx + gw, gy + gh, { stroke: COLORS.muted, sw: 1 });
+        s.line('gay', gx, gy, gx, gy + gh, { stroke: COLORS.muted, sw: 1 });
+        for (let k = 0; k < maxF; k++) s.text(`gxk${k}`, k + 1, { x: X(k), y: gy + gh + 14, size: 11, mono: true, fill: COLORS.faint });
+        s.text('gxl', 'quadros', { x: gx + gw, y: gy + gh + 28, size: 11, anchor: 'end', fill: COLORS.muted });
+        s.text('gyl', 'faltas', { x: gx - 10, y: gy, size: 11, anchor: 'end', fill: COLORS.muted });
+        s.text('gyt', top, { x: gx - 8, y: Y(top) + 10, size: 11, anchor: 'end', mono: true, fill: COLORS.faint });
+        fs.forEach(([a, v], j) => {
+          s.path(`gl${a}`, v.map((f, k) => `${k ? 'L' : 'M'} ${X(k)} ${Y(f)}`).join(' '), { stroke: ACOL[a], sw: a === alg ? 3.5 : 1.8, opacity: a === alg ? 1 : 0.6 });
+          v.forEach((f, k) => s.circle(`gp${a}${k}`, { x: X(k), y: Y(f), r: a === alg ? 4 : 2.5, fill: ACOL[a], stroke: 'none', sw: 0 }));
+          s.text(`gn${a}`, `${PAGING[a]}`, { x: gx + gw + 10, y: gy + 14 + j * 18, size: 12, anchor: 'start', fill: ACOL[a], weight: a === alg ? 800 : 500 });
+        });
+        s.circle('gcur', { x: X(nf - 1), y: Y(faultsOf(refs, nf, alg)), r: 8, fill: 'none', stroke: COLORS.yellow, sw: 2 });
+      },
+    });
+
+    function run() {
+      $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === alg));
+      refs = $('#refs').value.trim().split(/[\s,]+/).map(Number).filter(Number.isFinite).slice(0, 22);
+      if (!refs.length) refs = [1, 2, 3];
+      nf = +$('#nf').value;
+      player.load(paging(refs, nf, alg).steps);
+    }
+    $('#algs').innerHTML = Object.entries(PAGING).map(([k, v]) => `<button class="btn" data-a="${k}">${v}</button>`).join('');
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.a; run(); }));
+    $('#nf').addEventListener('change', run);
+    $('#refs').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+    $('#refs').addEventListener('change', run);
+    $('#ex').innerHTML = Object.entries(REF_EXAMPLES).map(([k, e]) => `<option value="${k}">${e.nome}</option>`).join('');
+    const loadEx = k => { $('#refs').value = REF_EXAMPLES[k].refs.join(' '); $('#nf').value = REF_EXAMPLES[k].frames; run(); };
+    $('#ex').addEventListener('change', () => loadEx($('#ex').value));
+    player.setCode(PAGING_CODE, 'python');
+    loadEx('silberschatz');
+
+    mountQuiz($('#quiz'), [
+      { q: 'O que é a anomalia de Belady?', options: ['Mais quadros causando mais faltas (no FIFO)', 'O LRU ser pior que o FIFO', 'Faltas acontecerem em rajadas', 'A TLB ficar cheia'], answer: 0, explain: 'Na sequência 1 2 3 4 1 2 5 1 2 3 4 5, o FIFO faz 9 faltas com 3 quadros e 10 com 4.' },
+      { q: 'Por que o algoritmo ótimo não é usado na prática?', options: ['Exige saber as referências futuras', 'É lento demais', 'Sofre a anomalia de Belady', 'Usa muita memória'], answer: 0, explain: 'Ele serve como limite inferior para avaliar os outros.' },
+      { q: 'No algoritmo do relógio, o que acontece com uma página de bit 1 quando o ponteiro passa?', options: ['O bit vira 0 e ela ganha uma segunda chance', 'Ela é removida', 'O bit vira 2', 'Nada'], answer: 0, explain: 'Só sai quem estiver com bit 0 quando o ponteiro chegar: não foi usada desde a última volta.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova sequência',
+      generate() {
+        const r = Array.from({ length: 10 }, () => randInt(1, 5));
+        const a = pick(['fifo', 'lru', 'otimo']), q = 3;
+        const f = faultsOf(r, q, a);
+        return { q: `Com ${q} quadros inicialmente vazios e ${PAGING[a]}, quantas faltas de página ocorrem para <code>${r.join(' ')}</code>?`, input: true, answer: String(f), explain: `${f} faltas (cada página distinta falta pelo menos na primeira vez em que aparece).` };
+      },
+    });
+  </script>
+</body>
+</html>

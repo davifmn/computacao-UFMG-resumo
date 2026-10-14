@@ -282,7 +282,45 @@ export const PERIODOS = [
       },
     ],
   },
-  { numero: 6, id: 'periodo-06', planejadas: ['Engenharia de Software', 'Sistemas Operacionais', 'Compiladores I'] },
+  {
+    numero: 6,
+    id: 'periodo-06',
+    disciplinas: [
+      {
+        id: 'so', codigo: 'DCC605', nome: 'Sistemas Operacionais', cor: 'blue',
+        pasta: 'periodo-06/sistemas-operacionais',
+        resumo: 'Processos e threads, escalonamento, sincronização, deadlock, memória virtual e sistemas de arquivos.',
+        visualizacoes: [
+          { titulo: 'Escalonamento de CPU', arquivo: 'escalonamento.html', descricao: 'FCFS, SJF, SRTF, prioridade e Round-Robin com a fila de prontos e o gráfico de Gantt.' },
+          { titulo: 'Concorrência', arquivo: 'concorrencia.html', descricao: 'Você escolhe a intercalação: condição de corrida, mutex, semáforos, deadlock e todas as execuções possíveis.' },
+          { titulo: 'Deadlock e banqueiro', arquivo: 'banqueiro.html', descricao: 'O teste de estado seguro passo a passo e pedidos concedidos, adiados ou recusados.' },
+          { titulo: 'Substituição de páginas', arquivo: 'paginacao.html', descricao: 'FIFO, LRU, ótimo e relógio, e o gráfico de faltas que mostra a anomalia de Belady.' },
+        ],
+      },
+      {
+        id: 'comp', codigo: 'DCC053', nome: 'Compiladores I', cor: 'purple',
+        pasta: 'periodo-06/compiladores-1',
+        resumo: 'Análise léxica e sintática (LL e LR), análise semântica, código intermediário e noções de otimização.',
+        visualizacoes: [
+          { titulo: 'Análise léxica', arquivo: 'analise-lexica.html', descricao: 'O AFD do scanner lendo o programa, maior casamento e palavras reservadas.' },
+          { titulo: 'Análise LL(1)', arquivo: 'analise-ll1.html', descricao: 'FIRST, FOLLOW, tabela preditiva com conflitos e a árvore crescendo de cima para baixo.' },
+          { titulo: 'Análise SLR', arquivo: 'analise-slr.html', descricao: 'Itens LR(0), tabela ACTION/GOTO e empilha-reduz construindo a árvore de baixo para cima.' },
+          { titulo: 'Geração de código', arquivo: 'geracao-de-codigo.html', descricao: 'Da árvore sintática a código de três endereços ou de pilha, com dobramento de constantes.' },
+        ],
+      },
+      {
+        id: 'es', codigo: 'DCC · 60h', nome: 'Engenharia de Software', cor: 'green',
+        pasta: 'periodo-06/engenharia-de-software',
+        resumo: 'Processos ágeis, requisitos, projeto (SOLID e padrões), testes, refatoração, Git e DevOps.',
+        visualizacoes: [
+          { titulo: 'Git por dentro', arquivo: 'git.html', descricao: 'Um terminal Git desenhando o grafo de commits: ramos, HEAD, merge, rebase, reset e revert.' },
+          { titulo: 'Testes e cobertura', arquivo: 'testes.html', descricao: 'Monte uma suíte e veja cobertura de comandos e ramos e quantos mutantes ela mata.' },
+          { titulo: 'Processos de software', arquivo: 'processos.html', tipo: 'tutorial', descricao: 'Cascata, Manifesto Ágil, Scrum, XP, Kanban e DevOps, com um burndown interativo.' },
+          { titulo: 'Projeto de software', arquivo: 'projeto.html', tipo: 'tutorial', descricao: 'Coesão, acoplamento, SOLID, padrões de projeto e refatoração, com código testado.' },
+        ],
+      },
+    ],
+  },
   {
     numero: 7,
     id: 'periodo-07',

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projeto de software · Engenharia de Software</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .pat { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0; }
+    .pat div { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+    .pat b { color: var(--yellow); }
+    table.data td, table.data th { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#es">Engenharia de Software</a>
+      <span class="sep">/</span><span>Projeto de software</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Tutorial · Engenharia de Software</div>
+    <h1>Projeto de software: princípios, SOLID e padrões</h1>
+    <p class="lead">Projetar é decidir como dividir um sistema em partes e como elas conversam. O objetivo é um só: que o sistema continue <b>fácil de mudar</b>. Os princípios dizem o que buscar; os padrões são soluções testadas para problemas recorrentes. Os exemplos são de uma loja virtual, e o código completo (com testes) está no fim da página.</p>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+        <h2>Coesão, acoplamento e ocultação de informação</h2>
+        <ul>
+          <li><b>Coesão alta</b>: cada classe ou módulo tem uma única responsabilidade bem definida. Uma classe <code>Pedido</code> que calcula frete, envia e-mail e gera nota fiscal tem coesão baixa.</li>
+          <li><b>Acoplamento baixo</b>: as partes dependem pouco umas das outras, e de preferência de <b>interfaces estáveis</b>, não de detalhes. Acoplamento ruim é aquele em que uma mudança num módulo obriga a mudar outros.</li>
+          <li><b>Ocultação de informação</b> (Parnas, 1972): cada módulo esconde uma decisão de projeto que pode mudar (formato de dados, algoritmo, fornecedor) atrás de uma interface. Atributos privados são a versão mínima disso.</li>
+        </ul>
+
+        <h2>SOLID</h2>
+        <table class="data">
+          <tr><th>Princípio</th><th>Em uma frase</th><th>No exemplo</th></tr>
+          <tr><td><b>S</b>ingle responsibility</td><td>Uma classe deve ter um único motivo para mudar.</td><td><code>Pedido</code> não envia e-mails: quem faz isso é <code>EnviaEmail</code>.</td></tr>
+          <tr><td><b>O</b>pen/closed</td><td>Aberto para extensão, fechado para modificação.</td><td>Um frete novo é uma classe nova; <code>Pedido</code> não muda.</td></tr>
+          <tr><td><b>L</b>iskov substitution</td><td>Um subtipo deve poder substituir o tipo-base sem surpresas.</td><td><code>Quadrado(Retangulo)</code> quebra o contrato de <code>set_largura</code>, e um teste mostra isso.</td></tr>
+          <tr><td><b>I</b>nterface segregation</td><td>Interfaces pequenas e específicas, não uma "faz-tudo".</td><td><code>Observador</code> tem um método só.</td></tr>
+          <tr><td><b>D</b>ependency inversion</td><td>Dependa de abstrações, não de implementações.</td><td><code>Pedido</code> recebe um <code>Frete</code> (injeção de dependência), e o teste passa um dublê de servidor de e-mail.</td></tr>
+        </table>
+        <p>Outros dois princípios frequentes: <b>prefira composição a herança</b> (herança acopla a subclasse aos detalhes da superclasse) e a <b>lei de Demeter</b> ("fale só com seus amigos": evite cadeias como <code>pedido.cliente.endereco.cidade.nome</code>).</p>
+
+        <h2>Padrões de projeto</h2>
+        <p>Os 23 padrões do livro da "Gangue dos Quatro" (Gamma, Helm, Johnson e Vlissides, 1994) são divididos em <b>criacionais</b>, <b>estruturais</b> e <b>comportamentais</b>. Mais que decorá-los, vale reconhecer o problema que cada um resolve:</p>
+        <div class="pat">
+          <div><b>Strategy</b> (comportamental): uma família de algoritmos intercambiáveis atrás de uma interface. O pedido calcula o total sem saber qual frete está usando.</div>
+          <div><b>Observer</b> (comportamental): quem muda de estado avisa uma lista de interessados, sem conhecê-los. Pagar o pedido notifica o estoque e o e-mail.</div>
+          <div><b>Adapter</b> (estrutural): converte a interface de uma classe que você não controla (um gateway antigo, em centavos) para a que o seu código espera.</div>
+          <div><b>Decorator</b> (estrutural): embrulha um objeto para acrescentar comportamento, com a mesma interface. <code>FreteComSeguro(FreteNormal())</code>, e decorators se empilham.</div>
+          <div><b>Factory</b> (criacional): centraliza a criação, para o cliente não depender das classes concretas: <code>cria_frete("expresso")</code>.</div>
+          <div><b>Singleton</b> (criacional): uma única instância global. Use com cuidado: é estado global disfarçado e dificulta os testes.</div>
+        </div>
+        <pre><code data-lang="python">class Frete(ABC):
+    @abstractmethod
+    def custo(self, peso_kg, distancia_km): ...
+
+class FreteExpresso(Frete):
+    def custo(self, peso_kg, distancia_km):
+        return 2 * FreteNormal().custo(peso_kg, distancia_km) + 15
+
+pedido = Pedido(frete=FreteExpresso())   # o pedido não sabe qual frete é
+pedido.total(distancia_km=100)</code></pre>
+
+        <h2>Code smells e refatoração</h2>
+        <p><b>Refatorar</b> é mudar a estrutura do código sem mudar o comportamento, em passos pequenos e com os testes passando o tempo todo (Fowler). Os sinais de que é hora, os <b>code smells</b>:</p>
+        <ul>
+          <li><b>Método longo</b> e <b>classe grande</b> → extrair método / extrair classe.</li>
+          <li><b>Código duplicado</b> → extrair e reutilizar.</li>
+          <li><b>Lista longa de parâmetros</b> → introduzir um objeto parâmetro.</li>
+          <li><b>Inveja de recursos</b> (um método que usa mais os dados de outra classe que os da sua) → mover método.</li>
+          <li><b><code>switch</code> sobre tipos</b> → substituir condicional por polimorfismo (é o caminho que leva ao Strategy).</li>
+          <li><b>Números mágicos</b>, <b>nomes ruins</b>, <b>comentários explicando código confuso</b> → renomear, extrair constantes, simplificar.</li>
+        </ul>
+
+        <h2>Arquitetura</h2>
+        <p>Acima das classes, a <b>arquitetura</b> organiza o sistema em grandes blocos: <b>camadas</b> (apresentação, negócio, dados), <b>MVC</b> (modelo, visão, controlador), <b>cliente/servidor</b>, <b>microsserviços</b> (serviços pequenos e independentes que conversam por rede, com implantação separada: mais autonomia para os times, mais complexidade operacional) e arquiteturas orientadas a <b>eventos</b> (filas e publish/subscribe, o Observer em escala de sistema).</p>
+
+        <h2>O código completo</h2>
+        <pre data-src="../codigo/padroes.py"><code data-lang="python"></code></pre>
+        <pre data-src="../codigo/test_padroes.py"><code data-lang="python"></code></pre>
+        <pre><code data-lang="bash">cd codigo
+python3 -m unittest -v</code></pre>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, buildToc } from '../../../engine/page.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Para aceitar um novo tipo de frete, você precisa editar um <code>if/elif</code> dentro de <code>Pedido.total</code>. Qual princípio está sendo violado?', options: ['Aberto/fechado', 'Liskov', 'Segregação de interfaces', 'Demeter'], answer: 0, explain: 'A solução é o Strategy: cada frete é uma classe que implementa a mesma interface.' },
+      { q: 'Por que <code>Quadrado</code> herdando de <code>Retangulo</code> é problemático?', options: ['O código que muda só a largura de um retângulo quebra quando recebe um quadrado (viola Liskov)', 'Porque quadrados não têm área', 'Porque Python não permite', 'Não é problemático'], answer: 0, explain: '"É um" na matemática não implica "pode substituir" no comportamento.' },
+      { q: 'Qual padrão permite usar uma biblioteca de terceiros cuja interface não bate com a sua?', options: ['Adapter', 'Observer', 'Singleton', 'Strategy'], answer: 0, explain: 'O adaptador traduz chamadas (aqui, reais → centavos e nomes de métodos).' },
+      { q: 'Refatorar é…', options: ['mudar a estrutura interna sem mudar o comportamento observável', 'reescrever o sistema do zero', 'corrigir bugs', 'adicionar funcionalidades'], answer: 0, explain: 'Por isso refatoração depende de uma boa suíte de testes: ela prova que o comportamento não mudou.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git por dentro · Engenharia de Software</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+    .term { background: #0a0d12; border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--mono); font-size: 13px; }
+    .term .out { height: 330px; overflow: auto; padding: 10px 12px; white-space: pre-wrap; color: #cfd5dc; }
+    .term .out .cmd { color: var(--green); }
+    .term .out .err { color: var(--red); }
+    .term .in { display: flex; border-top: 1px solid var(--border); }
+    .term .in span { padding: 8px 0 8px 12px; color: var(--green); }
+    .term .in input { flex: 1; background: transparent; border: 0; color: var(--text); font-family: var(--mono); font-size: 13px; padding: 8px; outline: none; }
+    .queue { padding: 8px 14px 12px; font-family: var(--mono); font-size: 13px; display: grid; gap: 3px; }
+    .queue .done { opacity: .4; } .queue .next { color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-06">6º período</a>
+      <span class="sep">/</span><a href="../../../index.html#es">Engenharia de Software</a>
+      <span class="sep">/</span><span>Git por dentro</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Engenharia de Software</div>
+    <h1>Git por dentro: commits, ramos e HEAD</h1>
+    <p class="lead">O Git não guarda "versões de arquivos": guarda um <b>grafo de commits</b>, e cada <b>ramo</b> é só um ponteiro para um commit. Digite comandos no terminal (ou rode um dos cenários passo a passo) e veja o grafo mudar. Entender isso é o que separa usar o Git de ter medo dele.</p>
+
+    <div class="toolbar">
+      <select id="sc" aria-label="Cenário"></select>
+      <button class="btn primary" id="next">Próximo comando</button>
+      <button class="btn" id="reset">Repositório novo</button>
+    </div>
+
+    <div class="lab">
+      <div class="stage"><svg id="graph" aria-label="Grafo de commits"></svg></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="term"><div class="out" id="out"></div><div class="in"><span>$ git</span><input id="cmd" placeholder="commit -m &quot;mensagem&quot;" aria-label="Comando git" autocomplete="off"></div></div>
+        <div class="panel"><div class="panel-title">Comandos do cenário</div><div class="queue" id="queue"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>O modelo</h2>
+      <ul>
+        <li><b>Commit</b>: uma fotografia do projeto inteiro + autor + mensagem + o(s) <b>pai(s)</b>. É identificado pelo hash SHA-1 do seu conteúdo, por isso é imutável: mudar qualquer coisa gera outro commit.</li>
+        <li><b>Ramo</b> (branch): um arquivo de 41 bytes com o hash de um commit. Criar um ramo é instantâneo, e <code>commit</code> só move o ramo atual para o commit novo.</li>
+        <li><b>HEAD</b>: aponta para o ramo atual (ou direto para um commit, no estado "HEAD destacado").</li>
+      </ul>
+      <h2>Integrando trabalho</h2>
+      <ul>
+        <li><b>Merge com avanço rápido</b>: se o ramo atual é ancestral do outro, basta mover o ponteiro.</li>
+        <li><b>Merge de três vias</b>: compara as duas pontas com a <b>base</b> (o ancestral comum mais recente) e cria um commit com dois pais. Conflitos aparecem quando os dois lados mudaram as mesmas linhas.</li>
+        <li><b>Rebase</b>: reaplica os seus commits em cima do outro ramo, criando commits <b>novos</b>. O histórico fica linear, mas a regra de ouro é: <b>nunca faça rebase de commits que já foram publicados</b>, porque quem os baixou terá uma história diferente da sua.</li>
+        <li><b>reset</b> move o ramo para trás (reescreve a história); <b>revert</b> cria um commit que desfaz outro (seguro em ramos compartilhados).</li>
+      </ul>
+      <div class="callout tip"><p><b>Fluxos de trabalho.</b> No <b>GitHub Flow</b>, cada mudança vive num ramo curto, vira um <i>pull request</i>, passa por revisão de código e testes automáticos (integração contínua) e é integrada à <code>main</code>. O <b>trunk-based development</b> vai além: ramos de horas, integração várias vezes ao dia e <i>feature flags</i> para esconder o que ainda não está pronto.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { initRepo, exec, SCENARIOS, headCommit, reachable } from './git.js';
+
+    const W = 640, H = 460;
+    const scene = new Scene($('#graph'), { width: W, height: H });
+    const BCOL = [COLORS.blue, COLORS.green, COLORS.orange, COLORS.purple, COLORS.pink, COLORS.teal];
+    let repo = initRepo(), queue = [], qi = 0;
+    const lanes = [];
+
+    function draw() {
+      const cs = Object.values(repo.commits).sort((a, b) => a.order - b.order);
+      for (const c of cs) { const b = c.branch ?? 'HEAD'; if (!lanes.includes(b)) lanes.push(b); }
+      const dx = Math.min(96, (W - 100) / Math.max(1, cs.length - 1)), dy = Math.min(90, (H - 120) / Math.max(1, lanes.length - 1));
+      const P = c => [50 + c.order * dx, 70 + lanes.indexOf(c.branch ?? 'HEAD') * dy];
+      const live = reachable(repo);
+      const head = headCommit(repo);
+      scene.frame(s => {
+        lanes.forEach((b, k) => s.text(`lane${b}`, b, { x: 8, y: 70 + k * dy - 26, size: 11, anchor: 'start', mono: true, fill: COLORS.faint }));
+        for (const c of cs) c.parents.forEach((p, k) => {
+          const [x1, y1] = P(repo.commits[p]), [x2, y2] = P(c);
+          const d = y1 === y2 ? `M ${x1} ${y1} L ${x2} ${y2}` : `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`;
+          s.path(`e${p}-${c.id}`, d, { stroke: live.has(c.id) ? (k ? COLORS.purple : COLORS.muted) : COLORS.faint, sw: 2, opacity: live.has(c.id) ? 1 : 0.35, dash: k ? '6 4' : null });
+        });
+        for (const c of cs) {
+          const [x, y] = P(c), alive = live.has(c.id), isHead = c.id === head;
+          const col = BCOL[lanes.indexOf(c.branch ?? 'HEAD') % BCOL.length];
+          s.circle(`c${c.id}`, { x, y, r: c.merge ? 15 : 13, fill: isHead ? '#3d3a22' : COLORS.surface2, stroke: isHead ? COLORS.yellow : col, sw: c.merge ? 3.5 : 2.5, opacity: alive ? 1 : 0.3 });
+          s.text(`ct${c.id}`, c.id, { x, y, size: 11, mono: true, weight: 700, opacity: alive ? 1 : 0.4 });
+          s.text(`cm${c.id}`, c.msg.length > Math.floor(dx / 6.5) ? c.msg.slice(0, Math.floor(dx / 6.5) - 1) + '…' : c.msg, { x, y: y + 26, size: 10, fill: COLORS.muted, opacity: alive ? 1 : 0.35 });
+        }
+        // rótulos dos ramos
+        const stack = {};
+        for (const [b, id] of Object.entries(repo.branches)) {
+          const [x, y] = P(repo.commits[id]);
+          const k = stack[id] = (stack[id] ?? 0) + 1;
+          const cur = repo.head.branch === b;
+          const w = b.length * 7.5 + 16 + (cur ? 38 : 0);
+          s.rect(`b${b}`, { x: x - w / 2, y: y - 32 - k * 24, w, h: 20, rx: 10, fill: cur ? COLORS.yellow : COLORS.surface3, stroke: cur ? COLORS.yellow : COLORS.border, sw: 1, layer: 'fx' });
+          s.text(`bt${b}`, cur ? `HEAD → ${b}` : b, { x, y: y - 22 - k * 24, size: 11.5, mono: true, weight: 700, fill: cur ? COLORS.bg : COLORS.text, layer: 'fx' });
+        }
+        if (repo.head.detached) {
+          const [x, y] = P(repo.commits[repo.head.detached]);
+          s.rect('bHEAD', { x: x - 24, y: y + 38, w: 48, h: 20, rx: 10, fill: COLORS.red, stroke: COLORS.red, sw: 1, layer: 'fx' });
+          s.text('btHEAD', 'HEAD', { x, y: y + 48, size: 11.5, mono: true, weight: 700, fill: COLORS.bg, layer: 'fx' });
+        }
+      });
+    }
+
+    function print(html, cls = '') { $('#out').insertAdjacentHTML('beforeend', `<div class="${cls}">${html}</div>`); $('#out').scrollTop = 1e9; }
+    function runCmd(line) {
+      if (!line.trim()) return;
+      print(`$ ${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}`, 'cmd');
+      const res = exec(repo, line.startsWith('git') ? line : `git ${line}`);
+      repo = res.repo;
+      print(res.out.replace(/&/g, '&amp;').replace(/</g, '&lt;'), res.ok ? '' : 'err');
+      draw();
+    }
+    function showQueue() { $('#queue').innerHTML = queue.map((c, k) => `<div class="${k < qi ? 'done' : k === qi ? 'next' : ''}">${k === qi ? '▶ ' : '&nbsp;&nbsp;'}${c}</div>`).join('') || '<span class="c-muted">—</span>'; $('#next').disabled = qi >= queue.length; }
+    function loadScenario() {
+      repo = initRepo(); lanes.length = 0; queue = SCENARIOS[$('#sc').value].cmds; qi = 0;
+      $('#out').innerHTML = '<div class="c-muted">Repositório novo: um commit inicial c0 na main. Experimente: commit, branch nome, switch nome, switch -c nome, merge nome, rebase nome, reset HEAD~1, revert c1, log.</div>';
+      showQueue(); draw();
+    }
+    $('#sc').innerHTML = Object.entries(SCENARIOS).map(([k, s]) => `<option value="${k}">${s.nome}</option>`).join('');
+    $('#sc').addEventListener('change', loadScenario);
+    $('#next').addEventListener('click', () => { if (qi < queue.length) { runCmd(queue[qi++]); showQueue(); } });
+    $('#reset').addEventListener('click', () => { loadScenario(); queue = []; showQueue(); });
+    $('#cmd').addEventListener('keydown', e => { if (e.key === 'Enter') { runCmd(e.target.value); e.target.value = ''; } });
+    loadScenario();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O que acontece no disco quando você roda <code>git branch nova</code>?', options: ['Um ponteiro novo para o commit atual é criado', 'Todos os arquivos são copiados', 'Um commit novo é criado', 'O HEAD muda para nova'], answer: 0, explain: 'Um ramo é só uma referência; e o HEAD só muda com checkout/switch.' },
+      { q: 'Quando um merge resulta em avanço rápido?', options: ['Quando o ramo atual é ancestral do ramo integrado', 'Quando não há conflitos', 'Sempre que se usa --ff', 'Quando os dois ramos têm o mesmo número de commits'], answer: 0, explain: 'Não houve trabalho divergente: basta mover o ponteiro.' },
+      { q: 'Por que não se deve fazer rebase de commits já publicados?', options: ['O rebase cria commits novos (outros hashes); quem já tinha os antigos fica com uma história divergente', 'Porque apaga arquivos', 'Porque o GitHub proíbe', 'Porque é mais lento'], answer: 0, explain: 'Reescrever história compartilhada obriga todo mundo a reconciliar as cópias.' },
+      { q: 'Para desfazer um commit que já está na main compartilhada, o mais seguro é…', options: ['git revert', 'git reset --hard', 'apagar o ramo', 'git rebase'], answer: 0, explain: 'O revert adiciona um commit que desfaz o outro, sem reescrever a história.' },
+    ]);
+  </script>
+</body>
+</html>
