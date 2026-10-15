@@ -112,10 +112,13 @@ python3 -m http.server 8000     # ou: npx serve
 | Disciplina | Páginas interativas | Código |
 |---|---|---|
 | [Redes de Computadores · Módulo 1](periodo-07/redes-de-computadores/modulo-1/) · DCC023 | **Tutoriais:** caps. 1–4 do Tanenbaum com exercícios resolvidos · Revisão da prova 1 com simulado · Encapsulamento · Nyquist/Shannon · Codificação · CDMA · Circuitos × pacotes · Enquadramento · Hamming/CRC · Janela deslizante · ALOHA/CSMA · Ethernet/Wi-Fi · Pontes | Python |
+| [Redes de Computadores · Módulo 2](periodo-07/redes-de-computadores/modulo-2/) · DCC023 | **Tutoriais:** caps. 5–8 do Tanenbaum com exercícios resolvidos · Revisão da prova 2 com simulado · Roteamento · Endereçamento IP · TCP · DNS · Criptografia | Python |
+| [Fundamentos de Sistemas Paralelos e Distribuídos](periodo-07/fundamentos-de-sistemas-paralelos-e-distribuidos/) · DCC641 | Speedup e DAGs · Relógios lógicos · Eleição de líder · MapReduce | Python (multiprocessing) |
+| [Introdução à Inteligência Artificial](periodo-07/introducao-a-inteligencia-artificial/) · DCC642 | Busca (A*) · Minimax e alfa-beta · Decisões sob incerteza (MDP) · Perceptron e redes neurais | Python |
 
 ### Próximos períodos
 
-O restante do 7º período e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
+Ética na Computação (7º período) e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
 "em construção" no site.
 
 ## Estrutura do repositório

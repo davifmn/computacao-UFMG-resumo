@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisão da prova 2 · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Revisão da prova 2</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · capítulos 5 a 8 do Tanenbaum</div>
+    <h1>Revisão da prova 2</h1>
+    <p class="lead">O mapa das aulas depois da prova 1, a folha de fórmulas, as pegadinhas e um <b>simulado</b> que gera questões numéricas novas de roteamento, endereçamento, transporte e criptografia.</p>
+    <nav class="chapnav"><a href="cap5-camada-de-rede.html">Cap. 5</a><a href="cap6-camada-de-transporte.html">Cap. 6</a><a href="cap7-camada-de-aplicacao.html">Cap. 7</a><a href="cap8-seguranca.html">Cap. 8</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>O que cai: o cronograma depois da prova 1</h2>
+        <table class="data">
+          <tr><th>Aula</th><th>Data</th><th>Assunto</th><th>Onde estudar</th></tr>
+          <tr><td>18</td><td>30/09</td><td>Protocolo IP</td><td><a href="cap5-camada-de-rede.html">Cap. 5.6</a> · <a href="../visualizacoes/enderecamento-ip.html">Endereçamento IP</a></td></tr>
+          <tr><td>19, 20</td><td>05/10, 07/10</td><td>Comutação: arquitetura, implementação e desempenho de malhas</td><td><a href="../../modulo-1/visualizacoes/malhas-de-comutacao.html">Malhas de comutação</a> (módulo 1)</td></tr>
+          <tr><td>22</td><td>14/10</td><td>Comutação de pacotes e de circuitos, pontes, pontes aprendizes, roteamento de fonte</td><td><a href="../../modulo-1/tutoriais/cap4-subcamada-mac.html">Cap. 4.8</a> · <a href="../../modulo-1/visualizacoes/pontes.html">Pontes</a> · <a href="../../modulo-1/visualizacoes/comutacao.html">Circuitos × pacotes</a></td></tr>
+          <tr><td>23</td><td>19/10</td><td>Interconexão de redes</td><td><a href="cap5-camada-de-rede.html">Cap. 5.5</a> (túneis, fragmentação)</td></tr>
+          <tr><td>24</td><td>21/10</td><td>Algoritmos básicos de roteamento, Dijkstra (prática)</td><td><a href="../visualizacoes/roteamento.html">Roteamento</a></td></tr>
+          <tr><td>25</td><td>26/10</td><td>Vetor de distância e estado de enlace</td><td><a href="cap5-camada-de-rede.html">Cap. 5.2</a> · <a href="../visualizacoes/roteamento.html">Roteamento</a></td></tr>
+          <tr><td>28</td><td>04/11</td><td>Escalabilidade, roteamento hierárquico</td><td><a href="cap5-camada-de-rede.html">Cap. 5.2</a> (e o exercício dos 4800 roteadores)</td></tr>
+          <tr><td>29</td><td>09/11</td><td>Protocolos IP, ICMP</td><td><a href="cap5-camada-de-rede.html">Cap. 5.6</a></td></tr>
+          <tr><td>30</td><td>11/11</td><td>Monitoria, resolução de exercícios</td><td>os exercícios resolvidos dos guias e o simulado abaixo</td></tr>
+          <tr><td>31</td><td>16/11</td><td>IPv6</td><td><a href="cap5-camada-de-rede.html">Cap. 5.6</a></td></tr>
+          <tr><td>32</td><td>18/11</td><td>Transporte I: transmissão confiável, TCP e UDP, RPC</td><td><a href="cap6-camada-de-transporte.html">Cap. 6</a> · <a href="../visualizacoes/tcp.html">TCP</a></td></tr>
+          <tr><td>33</td><td>23/11</td><td>Transporte II: TCP e comunicação sem fio</td><td><a href="cap6-camada-de-transporte.html">Cap. 6.3 e 6.5</a></td></tr>
+          <tr><td>34</td><td>25/11</td><td>Aplicação</td><td><a href="cap7-camada-de-aplicacao.html">Cap. 7</a> · <a href="../visualizacoes/dns.html">DNS</a></td></tr>
+        </table>
+        <p class="c-muted">As aulas 21, 26 e 27 são feriados. O trecho do cronograma que tenho termina na aula 34; a data da prova 2 e se segurança (cap. 8) entra nela devem ser confirmadas com o professor. O <a href="cap8-seguranca.html">cap. 8</a> está pronto de qualquer forma.</p>
+
+        <h2>Folha de fórmulas</h2>
+        <table class="data">
+          <tr><th>Assunto</th><th>Fórmula</th></tr>
+          <tr><td>Vetor de distância</td><td>$D_x(y) = \min_v \{ c(x,v) + D_v(y) \}$</td></tr>
+          <tr><td>Hierarquia ótima</td><td>$\ln N$ níveis, $e \ln N$ entradas por roteador</td></tr>
+          <tr><td>Hosts numa sub-rede /n</td><td>$2^{32-n} - 2$</td></tr>
+          <tr><td>Fragmentação</td><td>dados por fragmento = $\lfloor (\text{MTU} - 20)/8 \rfloor \cdot 8$; deslocamento em unidades de 8 bytes</td></tr>
+          <tr><td>Balde de fichas</td><td>duração da rajada $S = \dfrac{B}{M - R}$; bytes na rajada $= MS$</td></tr>
+          <tr><td>Fila M/M/1</td><td>$T = \dfrac{1}{\mu - \lambda}$</td></tr>
+          <tr><td>Janela mínima para encher o enlace</td><td>banda × RTT</td></tr>
+          <tr><td>Vazão limitada pela janela</td><td>janela / RTT</td></tr>
+          <tr><td>RTT suavizado</td><td>$SRTT = \alpha \, SRTT + (1-\alpha) R$; $RTO = SRTT + 4 \, RTTVAR$</td></tr>
+          <tr><td>Congestionamento TCP</td><td>timeout: limiar = cwnd/2, cwnd = 1; 3 dup (Reno): cwnd = limiar = cwnd/2</td></tr>
+          <tr><td>RSA</td><td>$n = pq$, $z = (p-1)(q-1)$, $ed \equiv 1 \pmod z$, $C = P^e \bmod n$, $P = C^d \bmod n$</td></tr>
+          <tr><td>Diffie-Hellman</td><td>chave $= g^{xy} \bmod n$</td></tr>
+        </table>
+
+        <h2>Pegadinhas</h2>
+        <ul>
+          <li>O <b>deslocamento</b> do fragmento é em unidades de <b>8 bytes</b>, e o <b>comprimento total</b> inclui o cabeçalho IP.</li>
+          <li>Na alocação de blocos CIDR, o bloco precisa estar <b>alinhado</b> ao seu tamanho: pode sobrar um buraco entre dois blocos.</li>
+          <li>No maior prefixo, não é a primeira entrada que casa: é a de <b>prefixo mais longo</b>.</li>
+          <li>Balde de fichas: a rajada dura $B/(M - R)$, não $B/M$, porque fichas continuam chegando.</li>
+          <li>Após um timeout, a partida lenta <b>para no limiar</b>, mesmo que dobrar passasse dele.</li>
+          <li>O ACK do TCP é o <b>próximo</b> byte esperado; SYN e FIN consomem um número de sequência cada.</li>
+          <li>A consulta do host ao resolvedor é recursiva; a do resolvedor aos outros servidores, iterativa.</li>
+          <li>Assinar é usar a chave <b>privada</b> do remetente; cifrar para alguém é usar a <b>pública</b> do destinatário.</li>
+        </ul>
+
+        <h2>Simulado</h2>
+        <p>Cada clique gera uma questão nova, de um assunto sorteado.</p>
+        <div id="sim"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc, randInt, pick } from '../../../../engine/page.js';
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { cidrInfo, ipStr, longestPrefix, fragmentPath, smoothRTT, diffieHellman, dvUpdate, rsaKeys, modpow } from '../visualizacoes/redes2.js';
+    buildToc($('#toc'), $('#content'));
+
+    const near = x => v => Math.abs(parseFloat(String(v).replace(',', '.')) - x) < 0.011;
+    const GEN = [
+      () => { const len = randInt(16, 29); return { q: `Quantos hosts cabem numa sub-rede /${len}?`, input: true, answer: String(2 ** (32 - len) - 2), explain: `$2^{${32 - len}} - 2$.` }; },
+      () => { const ip = [randInt(10, 200), randInt(0, 255), randInt(0, 255), randInt(1, 254)].join('.'), len = randInt(17, 28); const i = cidrInfo(`${ip}/${len}`); return { q: `Endereço de rede de <code>${ip}/${len}</code>?`, input: true, answer: ipStr(i.net), explain: `Máscara ${ipStr(i.mask)}; zerando os bits de host: ${ipStr(i.net)}.` }; },
+      () => {
+        const b = randInt(1, 200), c = randInt(0, 62) * 4;
+        const t = [{ prefix: `${b}.10.${c}.0/22`, hop: 'eth0' }, { prefix: `${b}.10.${c + 2}.0/23`, hop: 'eth1' }, { prefix: 'default', hop: 'R' }];
+        const d = `${b}.10.${c + randInt(0, 4)}.${randInt(1, 254)}`;
+        const r = longestPrefix(t, d);
+        return { q: `Tabela: ${t.map(x => `${x.prefix} → ${x.hop}`).join('; ')}. Para onde vai ${d}? (eth0, eth1 ou R)`, input: true, answer: r.best.hop, explain: `Maior prefixo que casa: ${r.best.prefix}.` };
+      },
+      () => {
+        const data = randInt(10, 40) * 50, mtu = pick([576, 500, 1000, 296]);
+        const fr = fragmentPath(data, [mtu])[0];
+        return { q: `Um datagrama com ${data} bytes de dados (+ 20 de cabeçalho) passa por um enlace de carga IP máxima ${mtu} bytes. Quantos fragmentos?`, input: true, answer: String(fr.length), explain: `Até ${Math.floor((mtu - 20) / 8) * 8} bytes de dados por fragmento: ${fr.map(f => f.data).join(' + ')}.` };
+      },
+      () => { const B = randInt(2, 20), R = randInt(1, 5), M = R + randInt(2, 20); const S = B / (M - R); return { q: `Balde de fichas de ${B} Mb, fichas a ${R} Mbps, linha de ${M} Mbps, balde cheio. Por quantos segundos dá para transmitir na taxa máxima?`, input: true, answer: String(+S.toFixed(2)), check: near(S), explain: `$S = ${B} / (${M} - ${R}) = ${S.toFixed(2)}$ s.` }; },
+      () => { const s0 = randInt(20, 60), xs = [randInt(15, 70), randInt(15, 70)]; const r = smoothRTT(s0, xs); return { q: `SRTT = ${s0} ms; chegam amostras de ${xs.join(' e ')} ms. Nova estimativa com α = 0,9?`, input: true, answer: String(+r.toFixed(2)), check: near(r), explain: `0,9 × ${s0} + 0,1 × ${xs[0]} = ${(0.9 * s0 + 0.1 * xs[0]).toFixed(2)}; depois ${r.toFixed(3)}.` }; },
+      () => { const w = pick([16, 18, 20, 24, 32, 40]), k = randInt(2, 6); let th = w / 2, cw = 1; for (let i = 0; i < k; i++) cw = cw < th ? Math.min(cw * 2, th) : cw + 1; return { q: `cwnd = ${w} KB quando ocorre um timeout (MSS = 1 KB). Qual a janela depois de ${k} rajadas bem-sucedidas?`, input: true, answer: String(cw), explain: `Limiar ${th} KB, recomeça em 1 KB, dobra até o limiar e depois cresce 1 KB por rajada: ${cw} KB.` }; },
+      () => { const n = pick([23, 29, 41, 47, 53]), g = pick([2, 3, 5]), x = randInt(2, 9), y = randInt(2, 9); const r = diffieHellman(n, g, x, y); return { q: `Diffie-Hellman: n = ${n}, g = ${g}, x = ${x}, y = ${y}. Chave?`, input: true, answer: String(r.kA), explain: `A = ${r.A}, B = ${r.B}, chave = ${r.kA}.` }; },
+      () => { const [p, q] = pick([[3, 11], [5, 11], [3, 17], [5, 7]]); const z = (p - 1) * (q - 1); let d = pick([7, 11, 13, 17]); while (rsaKeys(p, q, { d }).e == null || d >= z) d = pick([3, 5, 7, 11]); const k = rsaKeys(p, q, { d }); const P = randInt(2, Math.min(k.n - 1, 26)); return { q: `RSA com p = ${p}, q = ${q}, d = ${d}. Cifre P = ${P}.`, input: true, answer: String(modpow(P, k.e, k.n)), explain: `n = ${k.n}, z = ${k.z}, e = ${k.e}; C = ${P}^${k.e} mod ${k.n} = ${modpow(P, k.e, k.n)}.` }; },
+      () => {
+        const names = ['A', 'B', 'C', 'D', 'E'];
+        const v = () => names.map(() => randInt(1, 12));
+        const vec = { B: v(), D: v() }; vec.B[1] = 0; vec.D[3] = 0;
+        const c = { B: randInt(1, 6), D: randInt(1, 6) };
+        const t = dvUpdate(names, vec, c, 'C'), d = pick([0, 4]);
+        return { q: `C recebe B = (${vec.B.join(', ')}) e D = (${vec.D.join(', ')}) (ordem A–E); C–B custa ${c.B} e C–D, ${c.D}. Distância de C até ${names[d]}?`, input: true, answer: String(t[d].cost), explain: `min(${c.B} + ${vec.B[d]}, ${c.D} + ${vec.D[d]}) = ${t[d].cost} via ${t[d].via}.` };
+      },
+    ];
+    mountGenerator($('#sim'), { generate: () => pick(GEN)(), label: 'Nova questão' });
+  </script>
+</body>
+</html>

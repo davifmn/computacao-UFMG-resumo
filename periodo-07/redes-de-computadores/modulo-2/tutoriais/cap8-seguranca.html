@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 8 Segurança · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Cap. 8 · Segurança</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 8</div>
+    <h1>Capítulo 8 — Segurança de redes</h1>
+    <p class="lead">Quatro objetivos: <b>sigilo</b> (só o destinatário lê), <b>autenticação</b> (com quem estou falando?), <b>não repúdio</b> (quem assinou não pode negar) e <b>integridade</b> (a mensagem não foi alterada). Quase todos se resolvem com criptografia, de chave simétrica ou pública, combinada em protocolos como o TLS.</p>
+    <nav class="chapnav"><a href="cap7-camada-de-aplicacao.html">← Cap. 7</a><a href="revisao-prova-2.html">Revisão da prova 2 →</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>8.1 Criptografia</h2>
+        <ul>
+          <li>Texto simples $P$, texto cifrado $C = E_K(P)$, decifração $P = D_K(C)$. <b>Princípio de Kerckhoffs</b>: o algoritmo é público; o segredo está só na chave. O tamanho da chave mede o esforço da busca exaustiva.</li>
+          <li><b>Cifras de substituição</b> (cada letra trocada por outra) caem por análise de frequência; <b>cifras de transposição</b> reordenam as letras.</li>
+          <li><b>Chave única</b> (one-time pad): XOR com uma chave aleatória do tamanho da mensagem, usada uma só vez. É inquebrável, mas distribuir a chave é o problema todo.</li>
+          <li>Dois princípios: mensagens precisam de <b>redundância</b> (para reconhecer as forjadas) e de <b>atualidade</b> (para impedir a repetição de mensagens antigas).</li>
+        </ul>
+
+        <h2>8.2 Algoritmos de chave simétrica</h2>
+        <ul>
+          <li>Cifras de produto: caixas P (permutação) e caixas S (substituição) em várias rodadas.</li>
+          <li><b>DES</b> (56 bits, hoje fraco), <b>3DES</b> (EDE, 112 bits efetivos) e <b>AES</b> (Rijndael: blocos de 128 bits, chaves de 128, 192 ou 256, rodadas sobre uma matriz de bytes).</li>
+          <li><b>Modos de operação</b>: livro de códigos eletrônico (ECB: blocos iguais viram blocos iguais, o padrão vaza), encadeamento de blocos (CBC: XOR com o bloco cifrado anterior e um vetor de inicialização), modo contador (CTR: permite acesso aleatório) e fluxo.</li>
+        </ul>
+
+        <h2>8.3 Algoritmos de chave pública</h2>
+        <p>Diffie e Hellman (1976): cifrar com uma chave pública e decifrar com outra, privada, de forma que uma não possa ser deduzida da outra.</p>
+        <p><b>RSA</b>: escolha primos grandes $p$ e $q$; $n = pq$, $z = (p-1)(q-1)$; escolha $d$ coprimo com $z$ e $e$ tal que $ed \equiv 1 \pmod z$. Cifra: $C = P^e \bmod n$; decifra: $P = C^d \bmod n$. A segurança depende da dificuldade de <b>fatorar</b> $n$. É ~1000 vezes mais lento que o AES: na prática, cifra só chaves de sessão.</p>
+        <p class="callout">▶ <a href="../visualizacoes/criptografia.html">Visualização: Diffie-Hellman e RSA com os números do livro</a></p>
+
+        <h2>8.4 Assinaturas digitais</h2>
+        <ul>
+          <li>Com chave simétrica, é preciso uma autoridade central em quem todos confiam (Big Brother).</li>
+          <li>Com chave pública: Alice envia $D_A(P)$, cifrado com a sua privada; qualquer um verifica com $E_A$. Para não assinar o documento inteiro (lento), assina-se um <b>resumo</b> (message digest): função de hash criptográfica (SHA-1, hoje SHA-2/SHA-3), em que é inviável achar duas mensagens com o mesmo resumo.</li>
+          <li><b>Ataque do aniversário</b>: com resumos de $m$ bits, uma colisão aparece com ~$2^{m/2}$ tentativas, não $2^m$.</li>
+        </ul>
+
+        <h2>8.5 Gerenciamento de chaves públicas</h2>
+        <p>Como saber que a chave pública "de Bob" é mesmo de Bob? Uma <b>autoridade certificadora</b> (CA) assina um <b>certificado</b> (X.509) que associa a chave a uma identidade. As CAs formam uma hierarquia (PKI) com <b>âncoras de confiança</b> instaladas nos navegadores; certificados comprometidos entram em listas de revogação.</p>
+
+        <h2>8.6 a 8.8 Segurança na comunicação</h2>
+        <ul>
+          <li><b>IPsec</b> (camada de rede: modo transporte e modo túnel, com AH e ESP) e <b>VPNs</b>.</li>
+          <li><b>Firewalls</b>: filtros de pacotes (por endereços e portas), gateways de aplicação, e a zona desmilitarizada (DMZ). Não protegem contra ataques internos nem contra o que entra por portas permitidas.</li>
+          <li><b>Segurança em sem fio</b>: WEP (quebrado), WPA2/WPA3 com AES.</li>
+          <li><b>Autenticação</b>: desafio-resposta com chave compartilhada (cuidado com o ataque de reflexão), Diffie-Hellman (vulnerável ao homem no meio sem autenticação), centro de distribuição de chaves (Needham-Schroeder, Kerberos) e chave pública.</li>
+        </ul>
+
+        <h2>8.9 a 8.10 Correio e Web</h2>
+        <ul>
+          <li><b>PGP</b> e S/MIME para correio: hash + assinatura com a privada do remetente, compressão, cifra com chave de sessão (IDEA/AES) e a chave de sessão cifrada com a pública do destinatário.</li>
+          <li><b>TLS</b> (antes SSL): o servidor apresenta o certificado, cliente e servidor combinam uma chave de sessão (RSA ou Diffie-Hellman efêmero, que dá sigilo futuro) e os dados seguem com cifra simétrica e MAC. É o HTTPS (porta 443).</li>
+          <li>Ameaças na Web: DNS spoofing (resolvido com DNSSEC), código móvel (sandbox), privacidade.</li>
+        </ul>
+
+        <h2>Exercícios do capítulo resolvidos</h2>
+        <details class="prob exam"><summary><b>RSA do livro</b>: $p = 3$, $q = 11$, $d = 7$. Ache $e$ e cifre SUZANNE (A = 1, …, Z = 26).</summary>
+          <p>$n = 33$, $z = 20$; $7e \equiv 1 \pmod{20}$ ⇒ <b>$e = 3$</b> (21 = 20 + 1). Cifrando $P^3 \bmod 33$: S = 19 → <b>28</b>, U = 21 → <b>21</b>, Z = 26 → <b>20</b>, A = 1 → <b>1</b>, N = 14 → <b>5</b>, N → <b>5</b>, E = 5 → <b>26</b>. Decifrando com $C^7 \bmod 33$, volta SUZANNE.</p>
+        </details>
+        <details class="prob exam"><summary><b>Diffie-Hellman</b> com $n = 47$, $g = 3$, $x = 8$ e $y = 10$. Qual a chave?</summary>
+          <p>Alice envia $3^8 \bmod 47 = 28$; Bob envia $3^{10} \bmod 47 = 17$. Chave: $17^8 \bmod 47 = 28^{10} \bmod 47 = $ <b>4</b>.</p>
+        </details>
+        <details class="prob"><summary><b>Por que o ECB é perigoso</b> para imagens ou registros com campos fixos?</summary>
+          <p>Blocos de texto iguais geram blocos cifrados iguais: os contornos de uma imagem continuam visíveis, e um atacante pode recortar e colar blocos (trocar o campo "valor" de dois registros, por exemplo) sem conhecer a chave. O CBC encadeia os blocos e esconde as repetições.</p>
+        </details>
+        <details class="prob"><summary><b>Chave única reutilizada</b>: o que Trudy consegue com $C_1 = P_1 \oplus K$ e $C_2 = P_2 \oplus K$?</summary>
+          <p>$C_1 \oplus C_2 = P_1 \oplus P_2$: a chave some, e duas mensagens de texto misturadas se separam com análise estatística. Por isso a chave é "única".</p>
+        </details>
+        <details class="prob"><summary><b>Ataque do homem no meio contra Diffie-Hellman</b>.</summary>
+          <p>Trudy intercepta $g^x$ de Alice e manda $g^z$ a Bob; faz o mesmo no outro sentido. Alice combina a chave $g^{xz}$ com Trudy e Bob combina $g^{yz}$, e Trudy decifra, lê e recifra tudo. A defesa é autenticar os valores trocados (assinaturas, certificados).</p>
+        </details>
+        <details class="prob"><summary><b>Resumo de 64 bits</b> é seguro?</summary>
+          <p>Não: pelo ataque do aniversário, ~$2^{32}$ (4 bilhões) mensagens bastam para achar duas com o mesmo resumo, o que é viável. Por isso os resumos atuais têm 256 bits ou mais.</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'O princípio de Kerckhoffs diz que…', options: ['o algoritmo deve ser público e só a chave secreta', 'a chave deve ser maior que a mensagem', 'algoritmos secretos são mais seguros', 'chaves públicas não precisam de certificado'], answer: 0, explain: 'Segurança por obscuridade não dura.' },
+      { q: 'A segurança do RSA se baseia na dificuldade de…', options: ['fatorar n', 'calcular logaritmos discretos', 'inverter funções de hash', 'achar números primos'], answer: 0, explain: 'Com p e q, calcula-se z e, a partir dele, d.' },
+      { q: 'Uma assinatura digital com chave pública garante…', options: ['autenticidade, integridade e não repúdio', 'só sigilo', 'só integridade', 'disponibilidade'], answer: 0, explain: 'Sigilo exige cifrar com a chave do destinatário.' },
+      { q: 'No TLS, os dados da aplicação são cifrados com…', options: ['uma chave simétrica de sessão', 'a chave privada do servidor', 'a chave pública do cliente', 'nada'], answer: 0, explain: 'A chave pública só serve para autenticar e combinar a chave de sessão.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minimax e alfa-beta · Introdução à IA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    .ttt { display: grid; grid-template-columns: repeat(3, 80px); gap: 6px; margin: 12px 0; }
+    .ttt button { height: 80px; font-size: 40px; font-weight: 800; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); cursor: pointer; }
+    .ttt button.X { color: var(--blue); } .ttt button.O { color: var(--orange); }
+    .ttt button:disabled { cursor: default; }
+    .game { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: start; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ia">Introdução à IA</a>
+      <span class="sep">/</span><span>Minimax e alfa-beta</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Inteligência Artificial</div>
+    <h1>Jogos: minimax e a poda alfa-beta</h1>
+    <p class="lead">Num jogo de dois jogadores alternados, MAX escolhe o lance que maximiza o resultado sabendo que MIN vai responder minimizando. O <b>minimax</b> calcula isso de baixo para cima. A <b>poda alfa-beta</b> chega ao mesmo valor ignorando ramos que não podem mudar a decisão.</p>
+
+    <div class="toolbar">
+      <select id="tree" aria-label="Árvore"></select>
+      <label><input type="checkbox" id="prune" checked> poda alfa-beta</label>
+    </div>
+    <div id="player"></div>
+    <div class="legend"><span>▲ MAX · ▼ MIN</span><span><i style="background:#f4d35e"></i>nó atual</span><span><i style="background:#5d6673"></i>podado</span></div>
+
+    <section class="prose">
+      <h2>Contra a máquina</h2>
+      <p>O jogo da velha tem 5478 posições legais: o minimax completo cabe com folga. Você é X; a IA (O) joga perfeitamente. O melhor que dá para fazer é empatar.</p>
+    </section>
+    <div class="game">
+      <div><div class="ttt" id="board"></div><button class="btn" id="newgame">Novo jogo</button> <label class="c-muted" style="font-size:14px"><input type="checkbox" id="aifirst"> IA começa</label></div>
+      <div class="panel"><div class="panel-title">Avaliação minimax de cada lance seu</div><div id="evals" style="padding:8px 14px 14px;font-size:15px"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Por que a poda funciona</h2>
+      <p>$\alpha$ é o melhor valor que MAX já garante no caminho até a raiz; $\beta$, o melhor que MIN garante. Num nó MIN, assim que algum filho dá valor $\le \alpha$, o MAX lá em cima nunca escolheria este nó: o resto dos filhos é irrelevante. No exemplo do livro, o segundo nó MIN encontra 2 no primeiro filho; como MAX já tem 3, os filhos 4 e 6 nem são olhados.</p>
+      <p>Com a ordem ideal dos lances (o melhor primeiro), a alfa-beta examina $O(b^{m/2})$ nós em vez de $O(b^m)$: na prática, dobra a profundidade alcançável. Para jogos grandes (xadrez), corta-se a busca a uma profundidade fixa e usa-se uma <b>função de avaliação</b> heurística; o Go exigiu outras ideias (busca em árvore de Monte Carlo com redes neurais, o AlphaGo).</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { TREES, minimaxSteps, ttt, winner } from './ia.js';
+
+    const CODE = `def alfabeta(no, alfa, beta, max_joga):
+    if folha(no):
+        return utilidade(no)
+    if max_joga:
+        v = -INF
+        for filho in no.filhos:
+            v = max(v, alfabeta(filho, alfa, beta, False))
+            alfa = max(alfa, v)
+            if alfa >= beta:
+                break                    # poda beta
+        return v
+    else:
+        v = +INF
+        for filho in no.filhos:
+            v = min(v, alfabeta(filho, alfa, beta, True))
+            beta = min(beta, v)
+            if alfa >= beta:
+                break                    # poda alfa
+        return v`;
+    const W = 860, H = 420;
+    let R = null, pos = null;
+    const fmt = x => (x == null ? '' : x === Infinity ? '+∞' : x === -Infinity ? '−∞' : x);
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'alfa-beta (Python)', lang: 'python', showVars: false,
+      render(step, s) {
+        for (const nd of R.nodes) for (const c of nd.kids) s.line(`e${c}`, ...pos[nd.id], ...pos[c], { stroke: step.state[c].pruned ? COLORS.faint : COLORS.muted, sw: 1.5, dash: step.state[c].pruned ? '4 4' : null, opacity: step.state[c].pruned ? 0.5 : 1 });
+        for (const nd of R.nodes) {
+          const st = step.state[nd.id], [x, y] = pos[nd.id], cur = step.cur === nd.id;
+          const col = cur ? COLORS.yellow : st.pruned ? COLORS.faint : st.visited ? (nd.depth % 2 ? COLORS.orange : COLORS.blue) : COLORS.border;
+          if (nd.leaf) s.rect(`n${nd.id}`, { x: x - 16, y: y - 14, w: 32, h: 28, rx: 5, fill: cur ? '#3d3a22' : COLORS.surface2, stroke: col, sw: cur ? 2.5 : 1.5, opacity: st.pruned ? 0.4 : 1 });
+          else {
+            const up = nd.depth % 2 === 0;
+            s.path(`n${nd.id}`, up ? `M ${x} ${y - 20} L ${x + 22} ${y + 16} L ${x - 22} ${y + 16} Z` : `M ${x} ${y + 20} L ${x + 22} ${y - 16} L ${x - 22} ${y - 16} Z`, { stroke: col, sw: cur ? 3 : 2, fill: cur ? '#3d3a22' : COLORS.surface2, opacity: st.pruned ? 0.4 : 1 });
+          }
+          const val = nd.leaf ? nd.value : st.visited ? fmt(st.v) : '';
+          s.text(`v${nd.id}`, st.pruned ? '✕' : val, { x, y: y + (nd.leaf ? 0 : nd.depth % 2 ? -4 : 4), size: 13, mono: true, weight: 800, fill: st.pruned ? COLORS.faint : cur ? COLORS.yellow : COLORS.text });
+          if (cur && !nd.leaf) s.text('ab', `α=${fmt(st.alpha)}  β=${fmt(st.beta)}`, { x, y: y + 36, size: 12, mono: true, fill: COLORS.yellow, layer: 'fx' });
+        }
+        if (!R.nodes.some(n => n.id === step.cur && !n.leaf)) s.text('ab', '', { x: 0, y: 0 });
+      },
+    });
+
+    function run() {
+      R = minimaxSteps(TREES[$('#tree').value].tree, { prune: $('#prune').checked });
+      // layout
+      pos = [];
+      let leaf = 0;
+      const nLeaves = R.nodes.filter(n => n.leaf).length, maxD = Math.max(...R.nodes.map(n => n.depth));
+      const dx = (W - 80) / Math.max(1, nLeaves - 1), dy = (H - 90) / Math.max(1, maxD);
+      const go = id => {
+        const nd = R.nodes[id];
+        if (nd.leaf) pos[id] = [40 + leaf++ * dx, 40 + nd.depth * dy];
+        else { nd.kids.forEach(go); pos[id] = [(pos[nd.kids[0]][0] + pos[nd.kids.at(-1)][0]) / 2, 40 + nd.depth * dy]; }
+      };
+      go(0);
+      player.load(R.steps);
+    }
+    $('#tree').innerHTML = Object.entries(TREES).map(([k, t]) => `<option value="${k}">${t.nome}</option>`).join('');
+    $('#tree').addEventListener('change', run);
+    $('#prune').addEventListener('change', run);
+    player.setCode(CODE, 'python');
+    run();
+
+    // ---------- jogo da velha ----------
+    let board = Array(9).fill(null);
+    function evals() {
+      if (winner(board)) return '';
+      const label = v => (v > 0.5 ? '<span class="c-green">você vence</span>' : v < -0.5 ? '<span class="c-red">a IA vence</span>' : 'empate');
+      return [...Array(9).keys()].filter(i => !board[i]).map(i => { board[i] = 'X'; const r = ttt(board, 'O'); board[i] = null; return `casa ${i + 1}: ${label(r.v)}`; }).join('<br>');
+    }
+    function drawBoard() {
+      const w = winner(board);
+      $('#board').innerHTML = board.map((c, i) => `<button class="${c ?? ''}" data-i="${i}" ${c || w ? 'disabled' : ''}>${c ?? ''}</button>`).join('');
+      $('#evals').innerHTML = w ? (w === 'empate' ? '<b>Empate.</b> Contra um jogador perfeito, é o melhor resultado possível.' : w === 'X' ? '<b>Você venceu!</b>' : '<b>A IA venceu.</b> Em algum lance você escolheu uma casa marcada como derrota.') : `Casas numeradas de 1 a 9, linha por linha.<br>${evals()}`;
+    }
+    function aiMove() { if (!winner(board)) { const m = ttt(board, 'O').move; if (m != null) board[m] = 'O'; } }
+    $('#board').addEventListener('click', e => {
+      const i = e.target.closest('[data-i]')?.dataset.i;
+      if (i == null || board[i] || winner(board)) return;
+      board[+i] = 'X';
+      aiMove();
+      drawBoard();
+    });
+    $('#newgame').addEventListener('click', () => { board = Array(9).fill(null); if ($('#aifirst').checked) { const m = ttt(board, 'O').move; board[m] = 'O'; } drawBoard(); });
+    drawBoard();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o valor minimax da árvore do livro [[3, 12, 8], [2, 4, 6], [14, 5, 2]]?', options: ['3', '2', '14', '12'], answer: 0, explain: 'Os MIN valem 3, 2 e 2; o MAX escolhe 3.' },
+      { q: 'A poda alfa-beta pode mudar a decisão escolhida na raiz?', options: ['Não: só evita examinar ramos irrelevantes', 'Sim, às vezes', 'Só com árvores profundas', 'Só se a ordenação for ruim'], answer: 0, explain: 'O valor e o lance escolhidos são os mesmos do minimax.' },
+      { q: 'Com ordenação perfeita, quantos nós a alfa-beta examina?', options: ['$O(b^{m/2})$', '$O(b^m)$', '$O(bm)$', '$O(\\log b^m)$'], answer: 0, explain: 'O que permite buscar o dobro da profundidade no mesmo tempo.' },
+    ]);
+  </script>
+</body>
+</html>

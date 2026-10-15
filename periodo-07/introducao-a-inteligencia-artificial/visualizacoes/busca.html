@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Busca · Introdução à IA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    table.t { border-collapse: collapse; font-size: 14px; width: 100%; }
+    table.t td, table.t th { border-bottom: 1px solid var(--border); padding: 5px 8px; text-align: right; }
+    table.t th:first-child, table.t td:first-child { text-align: left; }
+    table.t th { color: var(--muted); }
+    tr.cur td { color: var(--yellow); }
+    .stage svg { cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ia">Introdução à IA</a>
+      <span class="sep">/</span><span>Busca</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Inteligência Artificial</div>
+    <h1>Busca: do labirinto ao A*</h1>
+    <p class="lead">Um agente que planeja procura uma sequência de ações num espaço de estados. As estratégias diferem só em <b>qual nó da fronteira expandir primeiro</b>. Veja quantos nós cada uma expande e se acha o caminho mais barato. <b>Clique e arraste</b> para desenhar paredes; com <kbd>Shift</kbd>, lama (custo 5).</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo" id="algs"></div>
+      <select id="maze" aria-label="Mapa"></select>
+      <label>expansões <input id="t" type="range" min="0" max="10" value="0"><output id="t-o"></output></label>
+      <button class="btn small" id="play">▶</button>
+    </div>
+    <div class="two">
+      <div class="stage"><svg id="g" aria-label="Grade de busca"></svg></div>
+      <div class="panel"><div class="panel-title">Comparação</div><div style="padding:6px 14px 14px"><table class="t" id="cmp"></table></div></div>
+    </div>
+    <div class="legend"><span><i style="background:linear-gradient(90deg,#2e6e8a,#6a2e8a)"></i>expandido (azul → roxo = ordem)</span><span><i style="background:#4a5160"></i>parede</span><span><i style="background:#f4d35e"></i>fronteira</span><span><i style="background:#83c167"></i>caminho encontrado</span><span><i style="background:#8a6d3b"></i>lama (custo 5)</span></div>
+
+    <section class="prose">
+      <h2>As estratégias</h2>
+      <table class="data">
+        <tr><th>Estratégia</th><th>Expande primeiro</th><th>Completa?</th><th>Ótima?</th></tr>
+        <tr><td>Largura</td><td>o mais raso (fila)</td><td>sim</td><td>só com custos iguais</td></tr>
+        <tr><td>Profundidade</td><td>o mais fundo (pilha)</td><td>não em espaços infinitos</td><td>não</td></tr>
+        <tr><td>Custo uniforme</td><td>menor $g(n)$, o custo até aqui</td><td>sim</td><td>sim</td></tr>
+        <tr><td>Gulosa</td><td>menor $h(n)$, a estimativa até o objetivo</td><td>não</td><td>não</td></tr>
+        <tr><td>A*</td><td>menor $f(n) = g(n) + h(n)$</td><td>sim</td><td>sim, se $h$ é admissível</td></tr>
+      </table>
+      <p>Uma heurística é <b>admissível</b> se nunca superestima o custo real até o objetivo (a distância de Manhattan, numa grade com 4 direções e custo mínimo 1, é). Com ela, o A* é ótimo e, entre os algoritmos ótimos que usam a mesma informação, expande o mínimo de nós. Quanto mais próxima do custo real a heurística, menos nós: com $h = 0$ o A* vira custo uniforme. No mapa da lama, a largura e a gulosa atravessam o pântano (poucos passos, custo alto); custo uniforme e A* dão a volta.</p>
+      <p>Na busca <b>em profundidade iterativa</b> (DFS com limite crescente), tem-se a memória da DFS ($O(bd)$) com a completude e otimalidade da BFS: é a escolha padrão quando o espaço é grande e a profundidade da solução, desconhecida.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { ALGOS, MAZES, parseGrid, search } from './ia.js';
+
+    const W = 760, H = 360;
+    const scene = new Scene($('#g'), { width: W, height: H });
+    scene.setAnimated(false);
+    let G = null, alg = 'astar', res = null, cs = 0;
+
+    function compute() {
+      res = search(G, alg);
+      $('#t').max = res.order.length;
+      $('#t').value = res.order.length;
+      const rows = Object.entries(ALGOS).map(([k, nm]) => { const r = search(G, k); return `<tr class="${k === alg ? 'cur' : ''}"><td>${nm}</td><td>${r.order.length}</td><td>${r.path ? r.cost : '—'}</td></tr>`; }).join('');
+      $('#cmp').innerHTML = `<tr><th>algoritmo</th><th>expandidos</th><th>custo</th></tr>${rows}`;
+      draw();
+    }
+    function draw() {
+      const t = +$('#t').value;
+      $('#t-o').value = t;
+      cs = Math.min((W - 20) / G.w, (H - 20) / G.h);
+      const x0 = (W - cs * G.w) / 2, y0 = (H - cs * G.h) / 2;
+      const order = new Map(res.order.slice(0, t).map((v, k) => [v, k]));
+      const front = new Set(t > 0 && res.steps[t - 1] ? res.steps[t - 1].frontier : [G.start]);
+      const path = t >= res.order.length && res.path ? new Set(res.path) : new Set();
+      scene.frame(s => {
+        for (let v = 0; v < G.w * G.h; v++) {
+          const x = x0 + (v % G.w) * cs, y = y0 + Math.floor(v / G.w) * cs;
+          const c = G.cost[v];
+          let fill = c === Infinity ? '#4a5160' : c > 1 ? '#5a4626' : COLORS.surface2;
+          if (order.has(v)) { const f = order.get(v) / Math.max(1, res.order.length); fill = `hsl(${200 + 80 * f}, 50%, ${c > 1 ? 28 : 36}%)`; }   // azul → roxo, na ordem de expansão
+          if (front.has(v) && !order.has(v)) fill = '#5c5222';
+          if (path.has(v)) fill = '#2f5a23';
+          s.rect(`c${v}`, { x, y, w: cs - 1, h: cs - 1, rx: 2, fill, stroke: path.has(v) ? COLORS.green : 'none', sw: path.has(v) ? 1.5 : 0 });
+        }
+        const lab = (k, v, txt, col) => s.text(k, txt, { x: x0 + (v % G.w) * cs + cs / 2, y: y0 + Math.floor(v / G.w) * cs + cs / 2, size: cs * 0.55, weight: 800, fill: col });
+        lab('S', G.start, 'S', COLORS.yellow); lab('G', G.goal, 'G', COLORS.red);
+      });
+    }
+    // edição
+    let painting = null;
+    const cellAt = e => {
+      const pt = $('#g').createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform($('#g').getScreenCTM().inverse());
+      const x0 = (W - cs * G.w) / 2, y0 = (H - cs * G.h) / 2;
+      const cx = Math.floor((p.x - x0) / cs), cy = Math.floor((p.y - y0) / cs);
+      return cx < 0 || cy < 0 || cx >= G.w || cy >= G.h ? null : cy * G.w + cx;
+    };
+    $('#g').addEventListener('pointerdown', e => {
+      const v = cellAt(e); if (v == null || v === G.start || v === G.goal) return;
+      const want = e.shiftKey ? 5 : Infinity;
+      painting = G.cost[v] === want ? 1 : want;
+      G.cost[v] = painting; compute();
+    });
+    $('#g').addEventListener('pointermove', e => { if (painting == null) return; const v = cellAt(e); if (v == null || v === G.start || v === G.goal || G.cost[v] === painting) return; G.cost[v] = painting; compute(); });
+    window.addEventListener('pointerup', () => { painting = null; });
+
+    $('#algs').innerHTML = Object.entries(ALGOS).map(([k, n]) => `<button class="btn" data-a="${k}">${n}</button>`).join('');
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.a; $$('[data-a]').forEach(x => x.setAttribute('aria-pressed', x.dataset.a === alg)); compute(); }));
+    $$('[data-a]').forEach(x => x.setAttribute('aria-pressed', x.dataset.a === alg));
+    $('#maze').innerHTML = Object.entries(MAZES).map(([k, m]) => `<option value="${k}">${m.nome}</option>`).join('');
+    $('#maze').addEventListener('change', () => { G = parseGrid(MAZES[$('#maze').value].lines); compute(); });
+    $('#t').addEventListener('input', draw);
+    let anim = null;
+    $('#play').addEventListener('click', () => { anim?.cancel(); const N = res.order.length; anim = tween(Math.min(8000, N * 40), k => { $('#t').value = Math.round(k * N); draw(); }, ease.linear); });
+    G = parseGrid(MAZES.sala.lines);
+    compute();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Quando a busca em largura é ótima?', options: ['Quando todas as ações têm o mesmo custo', 'Sempre', 'Nunca', 'Quando a heurística é admissível'], answer: 0, explain: 'Ela minimiza o número de passos, não o custo.' },
+      { q: 'O que acontece com o A* se a heurística superestimar o custo?', options: ['Pode devolver um caminho que não é o mais barato', 'Fica mais lento, mas continua ótimo', 'Não termina', 'Vira busca em largura'], answer: 0, explain: 'A garantia de otimalidade exige h admissível.' },
+      { q: 'Com h(n) = 0, o A* se torna…', options: ['busca de custo uniforme', 'busca gulosa', 'busca em profundidade', 'busca em largura sempre'], answer: 0, explain: 'f = g.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+/* Estilos comuns às páginas de capítulo de Redes (guias de estudo). */
+.chapnav { display: flex; gap: 14px; margin: -8px 0 22px; font-size: 14px; }
+.chapnav a { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.figure { margin: 16px 0; }
+.figure .cap { color: var(--muted); font-size: 13px; margin-top: 6px; text-align: center; }
+.figure svg { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+details.prob { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--purple); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+details.prob summary { cursor: pointer; line-height: 1.5; }
+details.prob[open] summary { margin-bottom: 8px; }
+details.prob p { margin: 6px 0; }
+.exam { border-left-color: var(--red) !important; }
+.exam::before { content: '📌 cai na prova'; display: block; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.kv { font-family: var(--mono); font-size: 14px; }
+/* tabelas de texto (não de números): quebrar linha e alinhar à esquerda */
+.prose table.data td, .prose table.data th { white-space: normal; text-align: left; font-family: var(--sans, inherit); }
+.prose table.data { margin: 14px 0; }

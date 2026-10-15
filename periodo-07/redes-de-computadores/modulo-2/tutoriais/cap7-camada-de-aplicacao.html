@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 7 Camada de aplicação · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Cap. 7 · Camada de aplicação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 7</div>
+    <h1>Capítulo 7 — A camada de aplicação</h1>
+    <p class="lead">Todas as camadas abaixo existem para isto: aplicações. O capítulo cobre o <b>DNS</b> (que todas as outras usam), o <b>correio eletrônico</b>, a <b>Web</b> (HTTP, páginas estáticas e dinâmicas, cache) e a entrega de conteúdo (<b>mídia contínua</b>, <b>CDNs</b> e <b>P2P</b>).</p>
+    <nav class="chapnav"><a href="cap6-camada-de-transporte.html">← Cap. 6</a><a href="cap8-seguranca.html">Cap. 8 →</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>7.1 DNS</h2>
+        <ul>
+          <li>Espaço de nomes <b>hierárquico</b>: raiz, domínios de topo genéricos (com, org, edu…) e de país (br, uk…), e assim por diante, cada nível delegado a quem o administra. Cada <b>zona</b> tem servidores primário e secundários.</li>
+          <li>Registros de recursos: nome, TTL, classe, tipo (A, AAAA, MX, NS, CNAME, PTR, SOA, TXT, SRV) e valor.</li>
+          <li><b>Resolução</b>: o host faz uma consulta <b>recursiva</b> ao resolvedor local, que resolve de forma <b>iterativa</b>, começando pela raiz e seguindo as indicações; tudo fica em <b>cache</b> pelo TTL. Usa UDP na porta 53 (TCP para respostas grandes).</li>
+        </ul>
+        <p class="callout">▶ <a href="../visualizacoes/dns.html">Visualização: resolução iterativa × recursiva de www.dcc.ufmg.br, com e sem cache</a></p>
+
+        <h2>7.2 Correio eletrônico</h2>
+        <ul>
+          <li><b>Agentes de usuário</b> (leitores) e <b>agentes de transferência</b> (servidores de correio). O envelope (endereços) é separado da mensagem (cabeçalhos + corpo).</li>
+          <li>Formato: RFC 5322 (cabeçalhos To, From, Subject, Date…) e <b>MIME</b> para anexos, texto não ASCII e mensagens multipartes (codificação base64: 3 bytes viram 4 caracteres, +33%).</li>
+          <li><b>SMTP</b> (porta 25, ou 587 para submissão) leva a mensagem do remetente até o servidor do destinatário (achado pelo registro MX). A <b>entrega final</b> ao leitor é por <b>IMAP</b> (mensagens ficam no servidor) ou POP3, ou por webmail (HTTP).</li>
+        </ul>
+
+        <h2>7.3 A Web</h2>
+        <ul>
+          <li>Páginas identificadas por <b>URLs</b> (protocolo, nome do servidor, caminho). O navegador busca a página e os objetos embutidos (imagens, scripts, folhas de estilo).</li>
+          <li><b>HTTP</b>: métodos GET, POST, HEAD, PUT, DELETE…; códigos de resposta 1xx (informação), 2xx (sucesso), 3xx (redirecionamento), 4xx (erro do cliente: 404), 5xx (erro do servidor). Sem estado: o estado do usuário vai em <b>cookies</b>.</li>
+          <li><b>Conexões</b>: no HTTP/1.0, uma conexão TCP por objeto (cada objeto custa a abertura, ~2 RTTs); <b>conexões persistentes</b> (HTTP/1.1) reaproveitam a conexão; com <b>pipelining</b> os pedidos seguem sem esperar respostas; o HTTP/2 multiplexa vários fluxos numa conexão e o HTTP/3 roda sobre QUIC (UDP).</li>
+          <li><b>Cache</b>: no navegador e em proxies; validação com <code>If-Modified-Since</code>/ETag (resposta 304 sem corpo) e expiração por cabeçalhos.</li>
+          <li>Páginas <b>dinâmicas</b>: geradas no servidor (PHP, aplicações web) e/ou no cliente (JavaScript, AJAX).</li>
+        </ul>
+
+        <h2>7.4 Áudio e vídeo</h2>
+        <ul>
+          <li>Áudio digital: amostragem e quantização (áudio de CD: 44,1 kHz × 16 bits × 2 canais = <b>1,411 Mbps</b>); compressão com perdas baseada em psicoacústica (MP3, AAC).</li>
+          <li>Vídeo: JPEG para quadros isolados (DCT, quantização, codificação); MPEG/H.264 aproveita a redundância entre quadros (quadros I, P, B).</li>
+          <li><b>Mídia armazenada</b>: o reprodutor faz buffer para absorver a variação de atraso; hoje via HTTP com <b>streaming adaptativo</b> (DASH), escolhendo a qualidade conforme a banda. <b>Mídia ao vivo e interativa</b> (voz sobre IP, videoconferência) é sensível a atraso: RTP sobre UDP, com sinalização por SIP.</li>
+        </ul>
+
+        <h2>7.5 Entrega de conteúdo</h2>
+        <ul>
+          <li>Poucos sites concentram a maior parte do tráfego (distribuição de Zipf), o que torna o cache muito eficiente.</li>
+          <li><b>Fazendas de servidores</b> com balanceamento de carga; <b>proxies</b> de cache.</li>
+          <li><b>CDNs</b>: cópias do conteúdo em servidores espalhados perto dos usuários; o DNS da CDN responde com o endereço do servidor mais próximo (ou o anycast leva até ele).</li>
+          <li><b>P2P</b>: os próprios usuários servem o conteúdo. BitTorrent divide o arquivo em pedaços e usa a reciprocidade (tit-for-tat) contra aproveitadores; <b>DHTs</b> (Chord) localizam quem tem cada chave em $O(\log N)$ saltos.</li>
+        </ul>
+
+        <h2>Exercícios do capítulo resolvidos</h2>
+        <details class="prob exam"><summary><b>Página com 10 imagens</b>, cada objeto pequeno (transmissão desprezível), RTT = 100 ms. Quanto tempo para buscar tudo com conexões não persistentes (uma de cada vez), persistentes sem pipelining e com pipelining?</summary>
+          <p>Não persistente: cada um dos 11 objetos custa 2 RTTs (abrir a conexão + pedir): 11 × 200 ms = <b>2,2 s</b>. Persistente sem pipelining: 1 RTT para abrir + 11 pedidos de 1 RTT = <b>1,2 s</b>. Com pipelining: abrir (1), pedir a página (1) e pedir as 10 imagens de uma vez (1) = <b>300 ms</b>.</p>
+        </details>
+        <details class="prob"><summary><b>DNS usa UDP</b>. O que acontece se um pacote se perder?</summary>
+          <p>Nada de especial: o cliente não recebe resposta, o temporizador expira e ele pergunta de novo (talvez a outro servidor). Como a operação é idempotente, repetir é seguro.</p>
+        </details>
+        <details class="prob"><summary><b>Um nome pode ter vários endereços IP</b> (e vice-versa)? Para quê?</summary>
+          <p>Sim: vários registros A para um nome espalham a carga entre servidores (e permitem respostas com o servidor mais próximo, como fazem as CDNs). Um endereço com vários nomes é comum em hospedagem compartilhada.</p>
+        </details>
+        <details class="prob"><summary><b>Base64</b>: quanto um anexo binário de 3 MB ocupa na mensagem?</summary>
+          <p>Cada 3 bytes viram 4 caracteres: 4 MB (mais as quebras de linha).</p>
+        </details>
+        <details class="prob"><summary><b>Por que o correio não usa só SMTP até o leitor?</b></summary>
+          <p>O SMTP empurra mensagens para um servidor sempre ligado. O computador do usuário pode estar desligado e quer <i>buscar</i> as mensagens quando quiser, do jeito que quiser (pastas no servidor, ler de vários dispositivos): isso é IMAP.</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Qual registro DNS aponta o servidor de correio de um domínio?', options: ['MX', 'NS', 'A', 'PTR'], answer: 0, explain: 'Com uma prioridade, para ter servidores de reserva.' },
+      { q: 'O código HTTP 304 significa…', options: ['Não modificado: use a sua cópia em cache', 'Movido permanentemente', 'Não encontrado', 'Erro interno'], answer: 0, explain: 'Resposta a um GET condicional.' },
+      { q: 'Qual protocolo leva a mensagem do servidor de correio do remetente ao do destinatário?', options: ['SMTP', 'IMAP', 'POP3', 'HTTP'], answer: 0, explain: 'IMAP e POP3 são para a entrega final ao leitor.' },
+      { q: 'Por que conexões persistentes aceleram a Web?', options: ['Evitam abrir uma conexão TCP (e passar pela partida lenta) para cada objeto', 'Comprimem os dados', 'Usam UDP', 'Dispensam o DNS'], answer: 0, explain: 'Cada abertura custa uma ida e volta.' },
+      { q: 'Como uma CDN leva o usuário ao servidor mais próximo?', options: ['O DNS responde com o endereço de um servidor perto do usuário', 'O roteador do usuário decide', 'O BGP muda o destino', 'Por cookies'], answer: 0, explain: 'É redirecionamento no DNS (ou anycast).' },
+    ]);
+  </script>
+</body>
+</html>

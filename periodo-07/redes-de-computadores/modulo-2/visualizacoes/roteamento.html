@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roteamento · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .player .code { max-height: 440px; font-size: 12px; }
+    table.dv { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+    table.dv td, table.dv th { border: 1px solid var(--border); padding: 4px 8px; text-align: center; }
+    table.dv th { color: var(--muted); background: var(--surface); }
+    table.dv td.ch { background: rgba(244, 211, 94, .16); color: var(--yellow); }
+    .dvgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .cti { display: flex; gap: 6px; flex-wrap: wrap; font-family: var(--mono); font-size: 14px; }
+    .cti div { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Roteamento</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · cap. 5</div>
+    <h1>Algoritmos de roteamento: estado de enlace e vetor de distância</h1>
+    <p class="lead">Roteadores precisam descobrir, sozinhos e de forma distribuída, por onde mandar cada pacote. No <b>estado de enlace</b> (OSPF, IS-IS), cada roteador conhece o mapa inteiro e roda <b>Dijkstra</b>. No <b>vetor de distância</b> (RIP), cada um só conversa com os vizinhos, trocando tabelas (Bellman-Ford distribuído), o que é simples, mas sofre a <b>contagem ao infinito</b>.</p>
+
+    <h2 style="margin-top:8px">1. Dijkstra (estado de enlace)</h2>
+    <div class="toolbar">
+      <select id="net" aria-label="Rede"></select>
+      <label>origem <select id="src"></select></label>
+      <label>destino <select id="dst"></select></label>
+    </div>
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#83c167"></i>rótulo permanente</span><span><i style="background:#f4d35e"></i>nó atual / aresta examinada</span><span><i style="background:#58c4dd"></i>árvore de escoamento</span><span id="path" class="c-muted"></span></div>
+
+    <section class="prose" style="max-width:none">
+      <h2>2. Vetor de distância, rodada a rodada</h2>
+      <p>Todos começam conhecendo só a si mesmos. A cada rodada, cada roteador recebe os vetores dos vizinhos e calcula $D_x(y) = \min_v \{ c(x, v) + D_v(y) \}$. As células que mudaram estão em amarelo. A informação anda <b>um salto por rodada</b>.</p>
+    </section>
+    <div class="toolbar"><button class="btn" id="dvprev">◀ rodada</button><span id="dvround" class="c-muted"></span><button class="btn" id="dvnext">rodada ▶</button><label>tabela de <select id="dvwho"></select></label></div>
+    <div class="dvgrid"><div id="dvtab"></div><div id="dvall"></div></div>
+
+    <section class="prose">
+      <h2>3. A contagem ao infinito</h2>
+      <p>Na linha A–B–C–D–E (custos 1), as distâncias até A são 1, 2, 3, 4. Se A cai, B deixa de ouvi-lo, mas C ainda anuncia "chego em A com 2". B acredita e passa a anunciar 3; C então ajusta para 4… A má notícia sobe <b>de 1 em 1</b> a cada troca, até o "infinito" (16 no RIP). Avance as trocas:</p>
+    </section>
+    <div class="toolbar"><button class="btn" id="cprev">◀</button><button class="btn" id="cnext">troca ▶</button><span class="c-muted" id="cmsg"></span></div>
+    <div class="cti" id="cti"></div>
+
+    <section class="prose">
+      <h2>Comparando os dois</h2>
+      <ul>
+        <li><b>Estado de enlace</b>: cada roteador descobre os vizinhos (HELLO), mede o custo, monta um pacote com seus enlaces e o <b>inunda</b> para todos (com número de sequência e idade); com o mapa completo, roda Dijkstra. Converge rápido, mas exige mais memória e processamento.</li>
+        <li><b>Vetor de distância</b>: troca só com os vizinhos, mensagens de tamanho proporcional ao número de destinos. Boas notícias se espalham rápido; más notícias, devagar. Remédios parciais: horizonte dividido (split horizon), poison reverse, e o limite de 16 saltos do RIP.</li>
+        <li><b>Hierárquico</b>: com milhões de roteadores, ninguém guarda o mapa inteiro. A rede é dividida em regiões (e regiões em clusters): cada roteador conhece sua região em detalhe e só uma rota para cada outra região. Entre sistemas autônomos, a Internet usa o <b>BGP</b>, um protocolo de vetor de caminho guiado por políticas.</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../../engine/player.js';
+    import { COLORS } from '../../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../../engine/quiz.js';
+    import { $, randInt, pick } from '../../../../engine/page.js';
+    import { NETWORKS, DIJKSTRA_CODE, dijkstraSteps, pathTo, distanceVector, countToInfinity, dvUpdate } from './redes2.js';
+
+    const W = 720, H = 440;
+    let G = null, dvHist = [], dvR = 0, cHist = countToInfinity(5, 8), cR = 0;
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'dijkstra (Python)', lang: 'python',
+      render(step, s) {
+        const tree = new Set(step.prev.map((p, v) => (p == null ? null : `${Math.min(p, v)}-${Math.max(p, v)}`)).filter(Boolean));
+        G.edges.forEach(([u, v, w]) => {
+          const k = `${Math.min(u, v)}-${Math.max(u, v)}`;
+          const ex = step.edge && ((step.edge[0] === u && step.edge[1] === v) || (step.edge[0] === v && step.edge[1] === u));
+          const [x1, y1] = G.pos[u], [x2, y2] = G.pos[v];
+          s.line(`e${k}`, x1, y1, x2, y2, { stroke: ex ? COLORS.yellow : tree.has(k) ? COLORS.blue : COLORS.faint, sw: ex ? 4 : tree.has(k) ? 3.5 : 2 });
+          s.rect(`eb${k}`, { x: (x1 + x2) / 2 - 11, y: (y1 + y2) / 2 - 10, w: 22, h: 20, rx: 5, fill: COLORS.bg, stroke: 'none', sw: 0 });
+          s.text(`ew${k}`, w, { x: (x1 + x2) / 2, y: (y1 + y2) / 2, size: 13, mono: true, fill: ex ? COLORS.yellow : COLORS.muted });
+        });
+        G.names.forEach((nm, i) => {
+          const [x, y] = G.pos[i], cur = step.cur === i, perm = step.perm[i];
+          s.circle(`n${i}`, { x, y, r: 22, fill: cur ? '#3d3a22' : perm ? '#1f3319' : COLORS.surface2, stroke: cur ? COLORS.yellow : perm ? COLORS.green : COLORS.border, sw: cur || perm ? 3 : 1.5 });
+          s.text(`nt${i}`, nm, { x, y, size: 16, weight: 800 });
+          const d = step.dist[i];
+          s.text(`nl${i}`, d === Infinity ? '(∞, −)' : `(${d}, ${step.prev[i] == null ? '−' : G.names[step.prev[i]]})`, { x, y: y + 36, size: 12, mono: true, fill: perm ? COLORS.green : COLORS.muted });
+        });
+      },
+    });
+
+    function runDijkstra() {
+      const s = +$('#src').value, t = +$('#dst').value;
+      const steps = dijkstraSteps(G, s);
+      player.load(steps);
+      const last = steps.at(-1);
+      $('#path').textContent = `menor caminho ${G.names[s]} → ${G.names[t]}: ${pathTo(last.prev, t).map(i => G.names[i]).join(' → ')} (custo ${last.dist[t]})`;
+    }
+    function loadNet() {
+      G = NETWORKS[$('#net').value];
+      const opts = G.names.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+      $('#src').innerHTML = opts; $('#dst').innerHTML = opts; $('#dvwho').innerHTML = opts;
+      $('#dst').value = G.names.indexOf('D');
+      runDijkstra();
+      dvHist = distanceVector(G); dvR = 0; drawDV();
+    }
+    function drawDV() {
+      const T = dvHist[dvR], P = dvHist[Math.max(0, dvR - 1)], u = +$('#dvwho').value;
+      $('#dvround').textContent = `rodada ${dvR} de ${dvHist.length - 1}${dvR === dvHist.length - 1 ? ' (convergiu)' : ''}`;
+      const cell = (c, p) => `<td class="${dvR && (c.cost !== p.cost || c.via !== p.via) ? 'ch' : ''}">${c.cost === Infinity ? '∞' : c.cost}${c.via != null ? ` <span class="c-muted">via ${G.names[c.via]}</span>` : ''}</td>`;
+      $('#dvtab').innerHTML = `<table class="dv"><tr><th>destino</th><th>tabela de ${G.names[u]}</th></tr>${G.names.map((d, k) => `<tr><th>${d}</th>${cell(T[u][k], P[u][k])}</tr>`).join('')}</table>`;
+      $('#dvall').innerHTML = `<table class="dv"><tr><th>de \\ para</th>${G.names.map(d => `<th>${d}</th>`).join('')}</tr>${G.names.map((x, i) => `<tr><th>${x}</th>${G.names.map((_, k) => `<td class="${dvR && T[i][k].cost !== P[i][k].cost ? 'ch' : ''}">${T[i][k].cost === Infinity ? '∞' : T[i][k].cost}</td>`).join('')}</tr>`).join('')}</table>`;
+    }
+    function drawCTI() {
+      const d = cHist[cR];
+      $('#cti').innerHTML = ['A', 'B', 'C', 'D', 'E'].map((n, k) => `<div>${n}: ${k === 0 ? (cR ? '<span class="c-red">caiu</span>' : '0') : d[k - 1]}</div>`).join('');
+      $('#cmsg').textContent = cR === 0 ? 'antes da queda de A' : `depois de ${cR} troca(s)`;
+    }
+    $('#net').innerHTML = Object.entries(NETWORKS).map(([k, n]) => `<option value="${k}">${n.nome}</option>`).join('');
+    $('#net').addEventListener('change', loadNet);
+    $('#src').addEventListener('change', runDijkstra);
+    $('#dst').addEventListener('change', runDijkstra);
+    $('#dvwho').addEventListener('change', drawDV);
+    $('#dvprev').addEventListener('click', () => { dvR = Math.max(0, dvR - 1); drawDV(); });
+    $('#dvnext').addEventListener('click', () => { dvR = Math.min(dvHist.length - 1, dvR + 1); drawDV(); });
+    $('#cprev').addEventListener('click', () => { cR = Math.max(0, cR - 1); drawCTI(); });
+    $('#cnext').addEventListener('click', () => { cR = Math.min(cHist.length - 1, cR + 1); drawCTI(); });
+    player.setCode(DIJKSTRA_CODE, 'python');
+    loadNet(); drawCTI();
+
+    mountQuiz($('#quiz'), [
+      { q: 'No Dijkstra, por que um rótulo, depois de permanente, nunca mais muda?', options: ['Todos os outros caminhos passam por nós com rótulo maior ou igual, e os custos são não negativos', 'Porque o algoritmo não volta atrás por convenção', 'Porque o grafo é uma árvore', 'Muda sim, se o custo diminuir'], answer: 0, explain: 'É por isso que Dijkstra exige custos não negativos.' },
+      { q: 'Por que o RIP usa 16 como "infinito"?', options: ['Para limitar a contagem ao infinito: a má notícia para depois de no máximo 16 trocas', 'Porque endereços têm 16 bits', 'É o número de roteadores da Internet', 'Para economizar banda'], answer: 0, explain: 'O preço é limitar o diâmetro da rede a 15 saltos.' },
+      { q: 'O que o estado de enlace inunda pela rede?', options: ['Os pacotes de estado de enlace (vizinhos e custos de cada roteador)', 'A tabela de roteamento inteira', 'Os pacotes de dados', 'Os vetores de distância'], answer: 0, explain: 'Cada roteador recebe as informações locais de todos e monta o mapa.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Novo roteador',
+      generate() {
+        const names = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const vec = () => names.map(() => randInt(1, 15));
+        const vectors = { B: vec(), D: vec(), E: vec() };
+        vectors.B[1] = 0; vectors.D[3] = 0; vectors.E[4] = 0;
+        const cost = { B: randInt(1, 8), D: randInt(1, 8), E: randInt(1, 8) };
+        const t = dvUpdate(names, vectors, cost, 'C');
+        const d = pick([0, 1, 3, 4, 5]);
+        return { q: `O roteador C recebe os vetores B = (${vectors.B.join(', ')}), D = (${vectors.D.join(', ')}) e E = (${vectors.E.join(', ')}) (ordem A–F). Os enlaces C–B, C–D e C–E custam ${cost.B}, ${cost.D} e ${cost.E}. Qual a nova distância de C até <b>${names[d]}</b>?`, input: true, answer: String(t[d].cost),
+          explain: `min(${cost.B} + ${vectors.B[d]}, ${cost.D} + ${vectors.D[d]}, ${cost.E} + ${vectors.E[d]}) = ${t[d].cost}, via ${t[d].via}.` };
+      },
+    });
+  </script>
+</body>
+</html>
