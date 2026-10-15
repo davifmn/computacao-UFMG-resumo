@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 5 Camada de rede · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Cap. 5 · Camada de rede</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 5</div>
+    <h1>Capítulo 5 — A camada de rede</h1>
+    <p class="lead">A camada de enlace leva quadros de uma ponta à outra de um fio. A camada de rede leva pacotes <b>da origem ao destino final</b>, atravessando muitos roteadores e redes diferentes. Para isso ela precisa conhecer a topologia, escolher caminhos (roteamento), evitar sobrecargas (congestionamento), oferecer qualidade de serviço e interligar redes heterogêneas. Na Internet, essa camada é o IP.</p>
+    <nav class="chapnav"><a href="revisao-prova-2.html">← Revisão da prova 2</a><a href="cap6-camada-de-transporte.html">Cap. 6 →</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>5.1 Questões de projeto</h2>
+        <ul>
+          <li><b>Comutação de pacotes store-and-forward</b>: o roteador recebe o pacote inteiro, confere o checksum e só então o encaminha.</li>
+          <li>Os serviços oferecidos à camada de transporte devem ser independentes da tecnologia dos roteadores, que devem ficar "escondidos" da camada de transporte, e o endereçamento deve ser uniforme, mesmo atravessando LANs e WANs.</li>
+          <li><b>Sem conexão (datagramas)</b>: cada pacote leva o endereço completo e é roteado independentemente; a tabela diz, para cada destino, a linha de saída. Robusto a falhas de roteadores; a Internet (IP) funciona assim.</li>
+          <li><b>Orientado a conexão (circuitos virtuais)</b>: uma rota é escolhida no estabelecimento e cada pacote leva só um identificador curto do circuito (trocado em cada roteador, <i>label switching</i>). Facilita reservar recursos e garantir qualidade, mas a queda de um roteador derruba todos os circuitos que passam por ele. Exemplo: MPLS.</li>
+        </ul>
+        <table class="data">
+          <tr><th>Questão</th><th>Datagramas</th><th>Circuitos virtuais</th></tr>
+          <tr><td>Estabelecimento</td><td>não precisa</td><td>precisa</td></tr>
+          <tr><td>Endereçamento</td><td>endereço completo em cada pacote</td><td>número curto do circuito</td></tr>
+          <tr><td>Estado nos roteadores</td><td>nenhum por conexão</td><td>uma entrada por circuito</td></tr>
+          <tr><td>Roteamento</td><td>independente por pacote</td><td>definido uma vez</td></tr>
+          <tr><td>Falha de roteador</td><td>só os pacotes perdidos</td><td>todos os circuitos que passam por ele morrem</td></tr>
+          <tr><td>Qualidade de serviço e congestionamento</td><td>difícil</td><td>fácil, reservando recursos</td></tr>
+        </table>
+
+        <h2>5.2 Algoritmos de roteamento</h2>
+        <p>Propriedades desejáveis: correção, simplicidade, robustez, estabilidade, justiça e eficiência (as duas últimas às vezes conflitam). Algoritmos <b>não adaptativos</b> (estáticos) calculam as rotas de antemão; <b>adaptativos</b> mudam as decisões conforme a topologia e o tráfego.</p>
+        <h3>Princípio de otimalidade e árvore de escoamento</h3>
+        <p>Se J está no caminho ótimo de I até K, o trecho de J até K também é ótimo (senão haveria um caminho melhor de I a K). Consequência: os caminhos ótimos de todas as origens para um destino formam uma árvore, a <b>árvore de escoamento</b> (sink tree), sem laços.</p>
+        <h3>Caminho mais curto (Dijkstra)</h3>
+        <p>Cada nó tem um rótulo (distância, nó anterior), provisório ou permanente. A cada passo, o nó provisório de menor distância torna-se permanente e seus vizinhos são reavaliados. A "distância" pode ser saltos, quilômetros, atraso, banda, custo.</p>
+        <p class="callout">▶ <a href="../visualizacoes/roteamento.html">Visualização: Dijkstra passo a passo no exemplo de 8 nós do livro, vetor de distância rodada a rodada e a contagem ao infinito</a></p>
+        <h3>Inundação</h3>
+        <p>Cada pacote é enviado por todas as linhas, exceto a de chegada. Gera infinitas cópias, a menos que se limite: <b>contador de saltos</b> (iniciado com o diâmetro da rede) ou <b>números de sequência</b> por origem (cada roteador lembra o que já repassou). Robusto e sempre acha o caminho mais curto (é usado como referência e para difundir informação de estado de enlace).</p>
+        <h3>Vetor de distância (Bellman-Ford distribuído)</h3>
+        <p>Cada roteador mantém, para cada destino, a menor distância conhecida e a linha de saída, e periodicamente envia o vetor aos vizinhos. Recebendo $X_v(i)$ do vizinho $v$ (cujo enlace custa $m$), estima $m + X_v(i)$ e fica com o mínimo. Era o algoritmo da ARPANET e é o do RIP.</p>
+        <p><b>Contagem ao infinito</b>: boas notícias se espalham um salto por troca; más notícias, não. Se A cai numa linha A–B–C–D–E, B passa a acreditar no caminho de C (que na verdade passa por B!) e as distâncias sobem de 1 em 1: 1 2 3 4 → 3 2 3 4 → 3 4 3 4 → 5 4 5 4 → … O "infinito" precisa ser pequeno (16 no RIP).</p>
+        <h3>Estado de enlace</h3>
+        <ol>
+          <li>Descobrir os vizinhos e seus endereços (pacote HELLO).</li>
+          <li>Medir o custo (atraso, ou inverso da banda) de cada enlace.</li>
+          <li>Montar um pacote com o que aprendeu (identidade, número de sequência, idade, vizinhos e custos).</li>
+          <li>Enviar o pacote a todos os roteadores (inundação confiável, com número de sequência e idade para descartar pacotes velhos).</li>
+          <li>Com o mapa completo, calcular os caminhos mais curtos (Dijkstra).</li>
+        </ol>
+        <p>Usado no OSPF e no IS-IS. Converge mais rápido e não sofre contagem ao infinito, ao custo de memória ($kn$ entradas para $n$ roteadores com $k$ vizinhos) e processamento.</p>
+        <h3>Roteamento hierárquico</h3>
+        <p>As tabelas crescem com a rede. Dividindo os roteadores em <b>regiões</b> (e regiões em clusters, zonas…), cada roteador conhece sua região em detalhe e só um caminho para cada outra região. Com $N$ roteadores, o número ótimo de níveis é $\ln N$, com $e \ln N$ entradas por roteador. O preço é que alguns caminhos ficam mais longos que o ótimo.</p>
+        <h3>Difusão e multidifusão</h3>
+        <ul>
+          <li><b>Difusão</b> (broadcast): enviar pacotes separados (desperdiça banda), inundação, roteamento multidestino, <b>encaminhamento pelo caminho inverso</b> (reverse path forwarding: só repassa o pacote se ele chegou pela linha que o roteador usaria para enviar à origem) ou uma árvore geradora.</li>
+          <li><b>Multidifusão</b> (multicast): poda-se a árvore geradora para só alcançar os membros do grupo; com estado de enlace, cada roteador calcula a árvore podada; com vetor de distância, usa-se poda pelo caminho inverso (mensagens PRUNE). Alternativa: <b>árvores baseadas em núcleo</b> (core-based trees), uma única árvore por grupo.</li>
+          <li><b>Anycast</b>: entregar ao membro mais próximo do grupo (usado no DNS). <b>Roteamento para hosts móveis</b>: um agente local (home agent) encaminha por túnel para o endereço atual do host. <b>Redes ad hoc</b>: AODV descobre rotas sob demanda, por inundação de pedidos de rota.</li>
+        </ul>
+
+        <h2>5.3 Controle de congestionamento</h2>
+        <p>Congestionamento: há mais pacotes do que a rede consegue transportar, e o desempenho despenca (o <b>colapso por congestionamento</b>: os roteadores gastam a capacidade reencaminhando pacotes que vão ser descartados ou retransmitidos). Mais memória nos roteadores não resolve: os pacotes ficam velhos na fila e acabam retransmitidos de qualquer jeito. Controle de <b>congestionamento</b> é global (a rede aguenta?); controle de <b>fluxo</b> é entre um transmissor e um receptor.</p>
+        <p>Abordagens, da escala de tempo mais longa à mais curta: provisionamento da rede, roteamento sensível ao tráfego, <b>controle de admissão</b>, <b>controle da taxa</b> (throttling) e <b>descarte de carga</b>.</p>
+        <ul>
+          <li><b>Pacotes reguladores</b> (choke packets): o roteador congestionado avisa a origem diretamente.</li>
+          <li><b>Notificação explícita de congestionamento</b> (ECN): o roteador marca bits no cabeçalho do pacote; o destino ecoa a marca na resposta, e a origem reduz a taxa.</li>
+          <li><b>Pressão para trás salto a salto</b>: o aviso tem efeito em cada roteador por onde passa.</li>
+          <li><b>Descarte de carga</b>: escolher o que descartar (para arquivos, os pacotes novos — "vinho"; para mídia em tempo real, os velhos — "leite"). <b>RED</b> (random early detection) descarta aleatoriamente <i>antes</i> de a fila encher, quando o tamanho médio passa de um limiar, contando que o TCP da origem entenda a perda como sinal de congestionamento.</li>
+        </ul>
+
+        <h2>5.4 Qualidade de serviço</h2>
+        <p>Um fluxo é caracterizado por <b>largura de banda, atraso, flutuação (jitter) e perda</b>. Correio e arquivos exigem pouca coisa além de confiabilidade; voz e vídeoconferência são sensíveis a atraso e jitter.</p>
+        <ul>
+          <li><b>Moldagem de tráfego</b>: o <b>balde furado</b> (leaky bucket) transforma rajadas numa saída de taxa constante; o <b>balde de fichas</b> (token bucket) permite rajadas limitadas: com capacidade $B$, fichas chegando a $R$ e linha de taxa $M$, uma rajada na taxa máxima dura $S = \dfrac{B}{M - R}$.</li>
+          <li><b>Escalonamento de pacotes</b> nos roteadores: FIFO, <b>enfileiramento justo</b> (fair queueing, rodízio por fluxo, byte a byte) e sua versão ponderada (WFQ).</li>
+          <li><b>Controle de admissão</b> com reservas: <b>serviços integrados</b> (IntServ) com o protocolo de reserva RSVP, por fluxo — não escala bem; <b>serviços diferenciados</b> (DiffServ), com poucas classes marcadas no cabeçalho (encaminhamento expresso, assegurado) — escala, mas não dá garantias por fluxo.</li>
+        </ul>
+
+        <h2>5.5 Interligação de redes</h2>
+        <p>As redes diferem em serviço (com ou sem conexão), endereçamento, tamanho máximo de pacote, qualidade de serviço, segurança e contabilidade. Para conectá-las: roteadores multiprotocolo, ou um protocolo comum por cima de todas (o IP). <b>Tunelamento</b>: atravessar uma rede diferente encapsulando o pacote inteiro (por exemplo, IPv6 dentro de IPv4). Quando o pacote é maior que o MTU da próxima rede, é preciso <b>fragmentar</b>: transparente (remontado na saída da rede) ou não transparente, como no IP (remontado só no destino). A <b>descoberta da MTU do caminho</b> evita a fragmentação: a origem envia com o bit DF ligado e reduz o tamanho a cada erro ICMP "pacote muito grande".</p>
+
+        <h2>5.6 A camada de rede da Internet</h2>
+        <h3>O cabeçalho IPv4</h3>
+        <p>20 bytes fixos + opções: versão, IHL (tamanho do cabeçalho em palavras de 32 bits), serviços diferenciados (com os 2 bits de ECN), comprimento total (até 65 535 bytes), <b>identificação</b>, DF (don't fragment), <b>MF</b> (more fragments), <b>deslocamento do fragmento</b> (em unidades de 8 bytes, 13 bits), <b>tempo de vida</b> (TTL, decrementado a cada salto), protocolo (6 = TCP, 17 = UDP), <b>checksum do cabeçalho</b> (recalculado a cada salto, porque o TTL muda) e os endereços de origem e destino.</p>
+        <p class="callout">▶ <a href="../visualizacoes/enderecamento-ip.html">Visualização: calculadora CIDR, maior prefixo, alocação de blocos e fragmentação</a></p>
+        <h3>Endereços</h3>
+        <ul>
+          <li>32 bits, notação decimal com pontos; um <b>prefixo</b> (rede) e um sufixo (host). As classes antigas (A /8, B /16, C /24) deram lugar ao <b>CIDR</b>: blocos de qualquer tamanho potência de 2, e encaminhamento pelo <b>maior prefixo</b> que casa.</li>
+          <li><b>Sub-redes</b>: uma organização divide seu bloco internamente (máscara). <b>Agregação</b> (supernetting): blocos contíguos com o mesmo próximo salto viram uma entrada só.</li>
+          <li><b>NAT</b>: uma rede privada (10/8, 172.16/12, 192.168/16) compartilha um endereço público; a caixa NAT troca endereço e <b>porta</b> de origem e guarda o mapeamento. Quebra a ideia de conectividade fim a fim (servidores atrás de NAT não recebem conexões sem configuração) e mistura camadas (olha portas TCP/UDP).</li>
+        </ul>
+        <h3>IPv6</h3>
+        <p>Endereços de 128 bits (escritos em hexadecimal, com <code>::</code> para grupos de zeros), cabeçalho fixo de 40 bytes mais simples (sem checksum, sem campos de fragmentação, que viram um cabeçalho de extensão; "limite de saltos" no lugar do TTL; rótulo de fluxo), cabeçalhos de extensão encadeados, e fragmentação só na origem. A transição é lenta: pilha dupla, túneis e tradução.</p>
+        <h3>Protocolos de controle</h3>
+        <ul>
+          <li><b>ICMP</b>: mensagens de erro e teste (destino inalcançável, tempo excedido — usado pelo <code>traceroute</code> —, problema de parâmetro, redirecionamento, eco e resposta de eco — o <code>ping</code>).</li>
+          <li><b>ARP</b>: descobre o endereço Ethernet de um IP da mesma rede (difusão "quem tem 192.168.0.5?" e resposta unicast, com cache). <b>ARP proxy</b> e o envio ao roteador padrão para destinos fora da rede.</li>
+          <li><b>DHCP</b>: o host recém-ligado pede (em difusão) um endereço, a máscara, o roteador padrão e o servidor DNS; recebe um <b>empréstimo</b> (lease) com prazo.</li>
+        </ul>
+        <h3>Roteamento na Internet</h3>
+        <ul>
+          <li>A Internet é um conjunto de <b>sistemas autônomos</b> (AS). Dentro de um AS, um protocolo de gateway interior: <b>OSPF</b> (estado de enlace, com áreas e uma área de backbone, roteamento hierárquico de dois níveis).</li>
+          <li>Entre ASes, o <b>BGP</b>: um protocolo de <b>vetor de caminho</b> (anuncia o caminho inteiro de ASes, o que evita laços e a contagem ao infinito), guiado por <b>políticas</b> (relações de trânsito e de peering, preferências comerciais) e não só por distância.</li>
+          <li><b>MPLS</b>: rótulos curtos inseridos entre o cabeçalho de enlace e o IP, para encaminhamento por circuito virtual dentro das redes de provedores.</li>
+        </ul>
+
+        <h2>Exercícios do capítulo resolvidos</h2>
+        <p class="c-muted">Enunciados resumidos, identificados pelo assunto; todas as contas são conferidas por <code>codigo/redes2.py</code>.</p>
+
+        <details class="prob exam"><summary><b>Vetor de distância no roteador C</b> (rede da Fig. 5-12(a)). C recebe os vetores B = (5, 0, 8, 12, 6, 2), D = (16, 12, 6, 0, 9, 10) e E = (7, 6, 3, 9, 0, 4), na ordem A–F. Os enlaces C–B, C–D e C–E custam 6, 3 e 5. Qual a nova tabela de C?</summary>
+          <p>Para cada destino, o mínimo de custo do enlace + distância anunciada:</p>
+          <p>A: min(6 + 5, 3 + 16, 5 + 7) = <b>11 via B</b>; B: min(6 + 0, 3 + 12, 5 + 6) = <b>6 via B</b>; C: <b>0</b>; D: min(6 + 12, 3 + 0, 5 + 9) = <b>3 via D</b>; E: min(6 + 6, 3 + 9, 5 + 0) = <b>5 via E</b>; F: min(6 + 2, 3 + 10, 5 + 4) = <b>8 via B</b>.</p>
+        </details>
+        <details class="prob"><summary><b>Banda gasta pelo vetor de distância</b>. Custos de 8 bits, 50 roteadores, vetores trocados 2 vezes por segundo. Quanto de cada linha (full-duplex) é consumido?</summary>
+          <p>Cada vetor tem 50 × 8 = 400 bits; duas vezes por segundo, <b>800 bps</b> em cada sentido de cada linha (o número de linhas de cada roteador não muda o resultado por linha).</p>
+        </details>
+        <details class="prob exam"><summary><b>Roteamento hierárquico com 4800 roteadores</b>, três níveis. Que tamanhos de região e de cluster minimizam a tabela?</summary>
+          <p>Com $k_1$ clusters, $k_2$ regiões por cluster e $k_3$ roteadores por região ($k_1 k_2 k_3 = 4800$), a tabela tem $k_3 + (k_2 - 1) + (k_1 - 1)$ entradas. A raiz cúbica de 4800 é ≈ 16,9; testando os divisores, o mínimo é com <b>15 clusters, 16 regiões por cluster e 20 roteadores por região</b> (em qualquer ordem): 20 + 15 + 14 = <b>49 entradas</b> (contra 4800 sem hierarquia).</p>
+        </details>
+        <details class="prob"><summary><b>Difusão: dois caminhos que sobrevivem à queda de qualquer linha</b> (heurística simples).</summary>
+          <p>Calcule o caminho mais curto, remova todas as linhas usadas por ele e calcule de novo. Se ainda houver caminho, os dois não compartilham linha alguma.</p>
+        </details>
+        <details class="prob exam"><summary><b>Descarte nos roteadores</b>. Hospedeiro → R1 → R2 → hospedeiro; cada roteador descarta com probabilidade $p$, e a origem retransmite após timeout. Média de (a) saltos por transmissão, (b) transmissões por pacote, (c) saltos por pacote entregue.</summary>
+          <p>(a) O primeiro salto sempre acontece; o segundo, se R1 não descartou; o terceiro, se nenhum descartou: $1 + (1 - p) + (1 - p)^2 = p^2 - 3p + 3$.</p>
+          <p>(b) Uma transmissão chega com probabilidade $(1-p)^2$: média de $\dfrac{1}{(1-p)^2}$ transmissões (geométrica).</p>
+          <p>(c) O produto: $\dfrac{p^2 - 3p + 3}{(1-p)^2}$. Com $p = 0{,}1$: 3,346 saltos (o código confere com uma simulação).</p>
+        </details>
+        <details class="prob exam"><summary><b>Balde de fichas I</b>. Uma ficha nova a cada 5 μs; cada ficha vale um pacote de 48 bytes. Taxa máxima sustentável?</summary>
+          <p>200 000 fichas/s × 48 bytes = 9,6 MB/s = <b>76,8 Mbps</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Balde de fichas II</b>. Rede de 6 Mbps, balde de 8 megabits inicialmente cheio, enchido a 1 Mbps. Por quanto tempo o computador transmite a 6 Mbps?</summary>
+          <p>$S = \dfrac{B}{M - R} = \dfrac{8}{6 - 1} = $ <b>1,6 s</b>. (Durante a rajada, as fichas continuam chegando: por isso o denominador é $M - R$, e não $M$.)</p>
+        </details>
+        <details class="prob"><summary><b>Atraso em fila</b>. Um roteador processa 2 milhões de pacotes/s e recebe 1,5 milhão/s em média. Num caminho de 10 roteadores, quanto tempo um pacote passa em filas e serviço?</summary>
+          <p>Fila M/M/1: $T = \dfrac{1}{\mu - \lambda} = \dfrac{1}{0{,}5 \times 10^6} = 2\ \mu$s por roteador; 10 roteadores: <b>20 μs</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Fragmentação ao longo do caminho</b>. Segmento TCP de 900 bytes de dados + 20 de cabeçalho TCP, de A para B por R1 e R2. Quadros máximos: A–R1 1024 bytes com 14 de cabeçalho; R1–R2 512 com 8; R2–B 512 com 12. Dê comprimento total, identificação, DF, MF e deslocamento em cada enlace.</summary>
+          <p>O datagrama tem 920 bytes de dados IP + 20 de cabeçalho = 940. Cargas IP máximas: 1010, 504 e 500 bytes.</p>
+          <p>A–R1: cabe: <b>um pacote</b> (940, id = x, DF = 0, MF = 0, deslocamento 0).</p>
+          <p>R1–R2: até 504 − 20 = 484 bytes de dados, arredondados para múltiplo de 8: 480. <b>Dois fragmentos</b>: (500, x, 0, MF = 1, deslocamento 0) e (460, x, 0, MF = 0, deslocamento 60), já que 480 / 8 = 60.</p>
+          <p>R2–B: os dois fragmentos (500 e 460 bytes) cabem em 500: passam sem mudança. Quem remonta é B.</p>
+        </details>
+        <details class="prob"><summary><b>Ciclo do campo de identificação</b>. Pacotes de 1024 bytes que vivem até 10 s. Velocidade máxima da linha sem risco de repetir uma identificação ainda viva?</summary>
+          <p>São $2^{16}$ identificações a cada 10 s: $65\,536 \times 1024 \times 8 / 10 \approx$ <b>53,7 Mbps</b>. (Por isso o IPv4 tem problemas com enlaces muito rápidos e fragmentação.)</p>
+        </details>
+        <details class="prob"><summary><b>Opção de roteamento de origem estrito e fragmentação</b>: a opção vai em todos os fragmentos?</summary>
+          <p>Sim: cada fragmento é roteado independentemente e precisa seguir a rota imposta.</p>
+        </details>
+        <details class="prob"><summary><b>Classe B com 20 bits de rede</b>: quantas redes classe B haveria?</summary>
+          <p>Os dois primeiros bits (10) são fixos: $2^{18} = $ <b>262 144</b> redes.</p>
+        </details>
+        <details class="prob exam"><summary><b>Hexadecimal para decimal com pontos</b>: C22F1582.</summary>
+          <p>C2 = 194, 2F = 47, 15 = 21, 82 = 130: <b>194.47.21.130</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Máscara 255.255.240.0</b>: quantos hosts?</summary>
+          <p>/20, 12 bits de host: $2^{12} - 2 = $ <b>4094</b>.</p>
+        </details>
+        <details class="prob"><summary><b>Por que endereços IP são ligados a redes e endereços Ethernet não?</b></summary>
+          <p>O IP precisa ser roteável: o prefixo diz onde o host está. O endereço Ethernet identifica a placa, é gravado de fábrica e a placa pode ir para qualquer rede; ninguém roteia por ele, só dentro da LAN.</p>
+        </details>
+        <details class="prob exam"><summary><b>Alocação de blocos</b>. Endereços livres a partir de 198.16.0.0; A, B, C e D pedem 4000, 2000, 4000 e 8000, nessa ordem. Primeiro e último endereço e máscara de cada um?</summary>
+          <p>Cada pedido é arredondado para potência de 2 e alinhado:</p>
+          <p>A: 4096 → <b>198.16.0.0 – 198.16.15.255</b>, /20. B: 2048 → <b>198.16.16.0 – 198.16.23.255</b>, /21. C: 4096 precisa começar num múltiplo de 4096 (16 no terceiro byte): <b>198.16.32.0 – 198.16.47.255</b>, /20 (198.16.24.0 a 31.255 fica livre). D: 8192 alinhado em 32: <b>198.16.64.0 – 198.16.95.255</b>, /19.</p>
+        </details>
+        <details class="prob exam"><summary><b>Agregação</b>. 57.6.96.0/21, 57.6.104.0/21, 57.6.112.0/21 e 57.6.120.0/21, todos pela mesma linha. Dá para agregar?</summary>
+          <p>Sim. São 4 blocos consecutivos de 2048 (96, 104, 112, 120 no terceiro byte) começando em 96, múltiplo de 32: <b>57.6.96.0/19</b>.</p>
+        </details>
+        <details class="prob"><summary><b>Buraco num agregado</b>. 29.18.0.0/17 foi agregado, mas 29.18.60.0 a 29.18.63.255 passou a usar outra linha. É preciso desagregar?</summary>
+          <p>Não: basta acrescentar a entrada 29.18.60.0/22 com a nova linha. Pelo maior prefixo, ela vence o /17 para esses endereços.</p>
+        </details>
+        <details class="prob exam"><summary><b>Maior prefixo</b>. Tabela: 135.46.56.0/22 → interface 0; 135.46.60.0/22 → interface 1; 192.53.40.0/23 → roteador 1; padrão → roteador 2. Para onde vão (a) 135.46.63.10, (b) 135.46.57.14, (c) 135.46.52.2, (d) 192.53.40.7, (e) 192.53.56.7?</summary>
+          <p>Os /22 cobrem, no terceiro byte, 56–59 e 60–63; o /23 cobre 40–41.</p>
+          <p>(a) 63 → <b>interface 1</b>; (b) 57 → <b>interface 0</b>; (c) 52 → <b>roteador 2</b> (padrão); (d) 40 → <b>roteador 1</b>; (e) 56 → <b>roteador 2</b>.</p>
+        </details>
+        <details class="prob"><summary><b>Dois roteadores de saída com NAT</b>: a redundância ainda funciona?</summary>
+          <p>Funciona para conexões novas, mas as conexões em andamento dependem do mapeamento guardado na caixa NAT que caiu: elas se perdem (a não ser que os dois NATs sincronizem o estado).</p>
+        </details>
+        <details class="prob"><summary><b>"O ARP serve a camada de rede, então é da camada de enlace."</b> O que responder?</summary>
+          <p>Não é tão simples: o ARP usa a camada de enlace e presta serviço à de rede, fazendo a ponte entre os dois tipos de endereço. Costuma ser considerado parte da camada de rede (é implementado junto com o IP, e seus pacotes são carregados pelo enlace como qualquer outro protocolo de rede).</p>
+        </details>
+        <details class="prob"><summary><b>Fragmento atrasado chega depois do timeout de remontagem</b>. O que fazer?</summary>
+          <p>Tratá-lo como o primeiro fragmento de um datagrama novo: guardá-lo e iniciar outro temporizador, que vai expirar e descartá-lo (os outros já foram descartados).</p>
+        </details>
+        <details class="prob"><summary><b>Por que o checksum do IP cobre só o cabeçalho?</b></summary>
+          <p>Para ser rápido de recalcular a cada salto (o TTL muda). Os dados já são protegidos pelas camadas de cima (TCP, UDP), e assim os roteadores não perdem tempo com eles.</p>
+        </details>
+        <details class="prob"><summary><b>IPv6 com 1 milhão de endereços alocados por picossegundo</b>: quanto tempo duram?</summary>
+          <p>$2^{128} / 10^{18}$ por segundo ≈ $3{,}4 \times 10^{20}$ s ≈ <b>$10^{13}$ anos</b>, cerca de mil vezes a idade do universo.</p>
+        </details>
+        <details class="prob"><summary><b>Por que o IPv6 não tem o campo Protocolo no cabeçalho fixo?</b></summary>
+          <p>Porque o campo "próximo cabeçalho" faz esse papel: o último cabeçalho de extensão aponta para o protocolo de transporte.</p>
+        </details>
+        <details class="prob"><summary><b>Com o IPv6, o ARP muda?</b></summary>
+          <p>Conceitualmente não (ainda é preciso mapear IP para endereço de enlace), mas tecnicamente sim: os endereços têm 16 bytes. No IPv6 a função é feita pelo protocolo de descoberta de vizinhos (ICMPv6).</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'Qual o principal problema do vetor de distância?', options: ['Contagem ao infinito: más notícias se espalham devagar', 'Precisa do mapa inteiro da rede', 'Não funciona com custos diferentes', 'Exige inundação'], answer: 0, explain: 'Boas notícias andam um salto por troca; más notícias sobem a distância de 1 em 1.' },
+      { q: 'O que o campo TTL do IPv4 evita?', options: ['Pacotes circulando para sempre em laços de roteamento', 'Fragmentação', 'Congestionamento', 'Erros no cabeçalho'], answer: 0, explain: 'Cada roteador decrementa; em 0 o pacote é descartado e um ICMP "tempo excedido" é enviado (o traceroute se aproveita disso).' },
+      { q: 'O deslocamento de um fragmento é medido em…', options: ['unidades de 8 bytes', 'bytes', 'palavras de 32 bits', 'fragmentos'], answer: 0, explain: 'São 13 bits para cobrir 65 536 bytes: por isso a unidade de 8.' },
+      { q: 'O BGP é um protocolo de…', options: ['vetor de caminho entre sistemas autônomos, guiado por políticas', 'estado de enlace dentro de um AS', 'vetor de distância com limite de 16', 'multicast'], answer: 0, explain: 'Anunciar o caminho completo evita laços.' },
+      { q: 'O que o RED faz?', options: ['Descarta pacotes aleatoriamente antes de a fila encher, para o TCP reduzir a taxa cedo', 'Marca pacotes de alta prioridade', 'Reserva banda', 'Remonta fragmentos'], answer: 0, explain: 'Random Early Detection.' },
+      { q: 'Uma máscara /26 permite quantos hosts?', options: ['62', '64', '30', '126'], answer: 0, explain: '$2^6 - 2$.' },
+    ]);
+  </script>
+</body>
+</html>

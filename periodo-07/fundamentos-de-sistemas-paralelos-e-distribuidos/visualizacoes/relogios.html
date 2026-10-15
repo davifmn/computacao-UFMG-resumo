@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relógios lógicos · Sistemas Paralelos e Distribuídos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .readout { padding: 8px 14px 14px; font-size: 15px; display: grid; gap: 8px; }
+    .readout b { color: var(--yellow); }
+    .stage svg { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#fspd">Sistemas Paralelos e Distribuídos</a>
+      <span class="sep">/</span><span>Relógios lógicos</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos de Sistemas Paralelos e Distribuídos</div>
+    <h1>Relógios lógicos: quem aconteceu antes de quem?</h1>
+    <p class="lead">Não existe relógio global num sistema distribuído: os relógios físicos derivam e as mensagens demoram. Lamport mostrou que, para muitas coisas, basta a ordem <b>causal</b>: $a \to b$ ("aconteceu antes") se $a$ vem antes de $b$ no mesmo processo, ou se $a$ é o envio e $b$ o recebimento de uma mensagem, ou por transitividade. <b>Clique em dois eventos</b> para compará-los.</p>
+
+    <div class="toolbar">
+      <select id="ex" aria-label="Exemplo"></select>
+      <div class="chips" role="group" aria-label="Relógio">
+        <button class="btn" data-c="lamport">Lamport</button>
+        <button class="btn" data-c="vetor">Vetorial</button>
+      </div>
+      <span class="c-muted">Acrescentar:</span>
+      <select id="who" aria-label="Processo"><option value="0">P1</option><option value="1">P2</option><option value="2">P3</option></select>
+      <button class="btn small" id="local">evento local</button>
+      <select id="to" aria-label="Destino"><option value="0">→ P1</option><option value="1" selected>→ P2</option><option value="2">→ P3</option></select>
+      <button class="btn small" id="send">enviar mensagem</button>
+      <button class="btn small" id="undo">desfazer</button>
+    </div>
+
+    <div class="two">
+      <div class="stage"><svg id="g" aria-label="Diagrama espaço-tempo"></svg></div>
+      <div class="panel"><div class="panel-title">Comparação</div><div class="readout" id="cmp"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>As duas regras</h2>
+      <ul>
+        <li><b>Lamport</b>: cada processo tem um contador $C$. Antes de cada evento, $C \leftarrow C + 1$; ao enviar, a mensagem leva $C$; ao receber uma mensagem com $t$, $C \leftarrow \max(C, t) + 1$. Garante: $a \to b \Rightarrow C(a) &lt; C(b)$. A volta <b>não</b> vale: $C(a) &lt; C(b)$ pode acontecer com eventos concorrentes (veja o segundo exemplo). Com desempate pelo número do processo, dá uma <b>ordem total</b> consistente com a causalidade, usada na exclusão mútua de Lamport e em multicast totalmente ordenado.</li>
+        <li><b>Vetorial</b>: cada processo $i$ guarda um vetor $V$ com uma entrada por processo. Em cada evento, $V[i]{+}{+}$; ao receber, $V \leftarrow \max(V, V_{msg})$ componente a componente e depois $V[i]{+}{+}$. Agora vale nos dois sentidos: $a \to b \iff V(a) \le V(b)$ e $V(a) \ne V(b)$. Se nenhum é menor, os eventos são <b>concorrentes</b> ($a \parallel b$). O custo é um vetor de tamanho $n$ em cada mensagem.</li>
+      </ul>
+      <div class="callout tip"><p><b>Onde aparece.</b> Vetores (e suas variações, como os <i>version vectors</i>) detectam escritas conflitantes em bancos replicados (Dynamo, Riak); a ordem causal guia a entrega de mensagens em sistemas colaborativos; e o relógio de Lamport está por trás de algoritmos de exclusão mútua e de replicação de máquinas de estado.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { CLOCK_EXAMPLES, clocks, relation } from './fspd.js';
+
+    const W = 720, H = 360;
+    const scene = new Scene($('#g'), { width: W, height: H });
+    const PY = [80, 180, 280];
+    let events = [], mode = 'vetor', sel = [], computed = [];
+
+    function draw() {
+      $$('[data-c]').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === mode));
+      computed = clocks(3, events);
+      const dx = Math.min(70, (W - 120) / Math.max(1, events.length));
+      const X = i => 90 + i * dx;
+      scene.frame(s => {
+        PY.forEach((y, p) => {
+          s.line(`pl${p}`, 60, y, W - 20, y, { stroke: COLORS.muted, sw: 1.5, arrow: true, layer: 'bg' });
+          s.text(`pn${p}`, `P${p + 1}`, { x: 30, y, size: 15, weight: 800, fill: COLORS.text });
+        });
+        events.forEach((e, i) => {
+          if (e.kind === 'recv') {
+            const j = e.msg;
+            s.line(`m${i}`, X(j), PY[events[j].p], X(i), PY[e.p], { stroke: COLORS.blue, sw: 1.8, arrow: true });
+          }
+        });
+        computed.forEach((e, i) => {
+          const isSel = sel.includes(i);
+          const col = e.kind === 'send' ? COLORS.orange : e.kind === 'recv' ? COLORS.blue : COLORS.muted;
+          s.circle(`e${i}`, { x: X(i), y: PY[e.p], r: isSel ? 10 : 7, fill: isSel ? COLORS.yellow : col, stroke: COLORS.text, sw: isSel ? 2 : 1 });
+          const lab = mode === 'lamport' ? String(e.lamport) : `[${e.vector.join(',')}]`;
+          s.text(`el${i}`, lab, { x: X(i), y: PY[e.p] - 20, size: mode === 'lamport' ? 14 : 11, mono: true, weight: 700, fill: isSel ? COLORS.yellow : COLORS.text });
+          s.text(`en${i}`, String.fromCharCode(97 + i), { x: X(i), y: PY[e.p] + 22, size: 11, fill: COLORS.faint });
+        });
+      });
+      cmp();
+    }
+
+    function cmp() {
+      if (sel.length < 2) { $('#cmp').innerHTML = `<div class="c-muted">Selecione ${2 - sel.length} evento(s). Laranja: envio; azul: recebimento; cinza: local.</div>`; return; }
+      const [a, b] = sel.map(i => computed[i]), [na, nb] = sel.map(i => String.fromCharCode(97 + i));
+      const r = relation(a.vector, b.vector);
+      const txt = { '→': `${na} → ${nb}: <b>${na} aconteceu antes</b> de ${nb}`, '←': `${nb} → ${na}: <b>${nb} aconteceu antes</b> de ${na}`, '∥': `${na} ∥ ${nb}: <b>concorrentes</b>, nenhum pode ter influenciado o outro`, '=': 'é o mesmo evento' }[r];
+      const lam = a.lamport < b.lamport ? `${na} &lt; ${nb}` : a.lamport > b.lamport ? `${na} &gt; ${nb}` : 'iguais';
+      const fool = r === '∥' && a.lamport !== b.lamport;
+      $('#cmp').innerHTML = `<div>Vetores: [${a.vector}] e [${b.vector}]</div><div>${txt}</div><div>Lamport: ${a.lamport} e ${b.lamport} (${lam})</div>${fool ? '<div class="c-red">Os relógios de Lamport são diferentes, mas os eventos são concorrentes: só pelo Lamport não daria para saber.</div>' : ''}`;
+    }
+
+    $('#g').addEventListener('click', e => {
+      const pt = $('#g').createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform($('#g').getScreenCTM().inverse());
+      const dx = Math.min(70, (W - 120) / Math.max(1, events.length));
+      let best = null, bd = 400;
+      events.forEach((ev, i) => { const d = (90 + i * dx - p.x) ** 2 + (PY[ev.p] - p.y) ** 2; if (d < bd) { bd = d; best = i; } });
+      if (best == null) return;
+      sel = sel.includes(best) ? sel.filter(x => x !== best) : [...sel, best].slice(-2);
+      draw();
+    });
+    $$('[data-c]').forEach(b => b.addEventListener('click', () => { mode = b.dataset.c; draw(); }));
+    $('#ex').innerHTML = Object.entries(CLOCK_EXAMPLES).map(([k, v]) => `<option value="${k}">${v.nome}</option>`).join('');
+    const load = () => { events = structuredClone(CLOCK_EXAMPLES[$('#ex').value].events); sel = $('#ex').value === 'concorrencia' ? [3, 7] : []; draw(); };
+    $('#ex').addEventListener('change', load);
+    $('#local').addEventListener('click', () => { if (events.length < 16) { events.push({ p: +$('#who').value, kind: 'local' }); draw(); } });
+    $('#send').addEventListener('click', () => {
+      const a = +$('#who').value, b = +$('#to').value;
+      if (a === b || events.length > 14) return;
+      events.push({ p: a, kind: 'send' });
+      events.push({ p: b, kind: 'recv', msg: events.length - 1 });
+      draw();
+    });
+    $('#undo').addEventListener('click', () => { const last = events.pop(); if (last?.kind === 'recv') events.pop(); sel = sel.filter(i => i < events.length); draw(); });
+    load();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Se $C(a) &lt; C(b)$ (relógios de Lamport), então…', options: ['b não aconteceu antes de a, mas a e b podem ser concorrentes', 'a aconteceu antes de b', 'a e b são concorrentes', 'nada se pode dizer'], answer: 0, explain: 'Pela contrapositiva: se b → a, então C(b) &lt; C(a).' },
+      { q: 'Com vetores [2,1,0] e [1,2,0], os eventos são…', options: ['concorrentes', 'o primeiro antes', 'o segundo antes', 'o mesmo'], answer: 0, explain: 'Nenhum vetor é ≤ ao outro em todas as componentes.' },
+      { q: 'Ao receber uma mensagem com relógio 9, um processo com relógio 4 passa a…', options: ['10', '9', '5', '13'], answer: 0, explain: 'max(4, 9) + 1.' },
+    ]);
+  </script>
+</body>
+</html>

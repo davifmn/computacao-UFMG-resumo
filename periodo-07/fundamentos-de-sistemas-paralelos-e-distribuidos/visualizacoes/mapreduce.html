@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MapReduce · Sistemas Paralelos e Distribuídos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+    .col h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; font-family: var(--mono); font-size: 13px; transition: opacity .3s; }
+    .box .t { color: var(--muted); font-family: var(--font); font-size: 12px; margin-bottom: 4px; }
+    .kv { display: inline-block; padding: 1px 6px; margin: 2px; border-radius: 5px; }
+    .r0 { background: rgba(88, 196, 221, .18); color: var(--blue); }
+    .r1 { background: rgba(255, 159, 67, .18); color: var(--orange); }
+    .r2 { background: rgba(177, 137, 245, .18); color: var(--purple); }
+    .hidden { opacity: .12; }
+    textarea { width: 100%; min-height: 70px; font-family: var(--mono); font-size: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#fspd">Sistemas Paralelos e Distribuídos</a>
+      <span class="sep">/</span><span>MapReduce</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos de Sistemas Paralelos e Distribuídos</div>
+    <h1>MapReduce: contar palavras em mil máquinas</h1>
+    <p class="lead">O programador escreve só duas funções: <b>map</b> (de cada pedaço da entrada, emite pares chave-valor) e <b>reduce</b> (junta todos os valores de uma mesma chave). O sistema cuida do resto: dividir a entrada, distribuir as tarefas, <b>embaralhar</b> os pares para que cada chave vá a um único redutor, e refazer o trabalho de máquinas que falham.</p>
+
+    <textarea id="txt" spellcheck="false">o rato roeu a roupa do rei de roma e o rei riu do rato que roeu a roupa</textarea>
+    <div class="toolbar" style="margin-top:8px">
+      <label>mapeadores <select id="nm"><option>2</option><option selected>3</option><option>4</option></select></label>
+      <label>redutores <select id="nr"><option>2</option><option selected>3</option></select></label>
+      <button class="btn" id="prev">◀ fase</button><button class="btn primary" id="next">próxima fase ▶</button>
+      <span class="c-muted" id="phase"></span>
+    </div>
+
+    <div class="flow">
+      <div class="col"><h3>1. divisão da entrada</h3><div id="c0"></div></div>
+      <div class="col"><h3>2. map: (palavra, 1)</h3><div id="c1"></div></div>
+      <div class="col"><h3>3. embaralhamento por chave</h3><div id="c2"></div></div>
+      <div class="col"><h3>4. reduce: soma</h3><div id="c3"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>O código que o usuário escreve</h2>
+      <pre><code data-lang="python">def map(documento):
+    for palavra in documento.split():
+        emite(palavra, 1)
+
+def reduce(palavra, contagens):
+    emite(palavra, sum(contagens))</code></pre>
+      <h2>Por que funciona em escala</h2>
+      <ul>
+        <li><b>Particionamento</b>: a chave decide o redutor (aqui, um hash da palavra módulo o número de redutores; a cor mostra o destino). Todas as ocorrências de "rato" chegam ao mesmo redutor, vindas de qualquer mapeador.</li>
+        <li><b>Combinador</b>: um "mini-reduce" local no mapeador (somar os "rato" antes de enviar) reduz o tráfego do embaralhamento, que costuma ser a fase mais cara.</li>
+        <li><b>Tolerância a falhas</b>: as tarefas são determinísticas e sem efeitos colaterais, então a de uma máquina que falhou é simplesmente executada de novo em outra. Tarefas lentas (stragglers) recebem cópias de reserva.</li>
+        <li><b>Localidade</b>: o mapeador roda na máquina que já tem o pedaço do arquivo no sistema de arquivos distribuído (GFS/HDFS), levando a computação aos dados.</li>
+        <li>Sucessores, como o Spark, guardam os dados intermediários em memória e encadeiam muitas etapas sem gravar em disco.</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $ } from '../../../engine/page.js';
+    import { mapReduce } from './fspd.js';
+
+    let phase = 0, r = null;
+    const NAMES = ['dividir a entrada', 'map', 'embaralhar', 'reduce'];
+    function build() {
+      r = mapReduce($('#txt').value, +$('#nm').value, +$('#nr').value);
+      const cls = w => `r${r.hash(w)}`;
+      $('#c0').innerHTML = r.splits.map((s, k) => `<div class="box"><div class="t">pedaço ${k + 1}</div>${s.join(' ') || '—'}</div>`).join('');
+      $('#c1').innerHTML = r.mapped.map((m, k) => `<div class="box"><div class="t">mapeador ${k + 1}</div>${m.map(([w]) => `<span class="kv ${cls(w)}">(${w}, 1)</span>`).join('') || '—'}</div>`).join('');
+      $('#c2').innerHTML = r.partitions.map((p, k) => `<div class="box"><div class="t">para o redutor ${k + 1}</div>${p.map(([w, ones]) => `<span class="kv r${k}">${w}: [${ones.join(', ')}]</span>`).join('') || '—'}</div>`).join('');
+      $('#c3').innerHTML = r.reduced.map((p, k) => `<div class="box"><div class="t">redutor ${k + 1}</div>${p.map(([w, c]) => `<span class="kv r${k}">(${w}, ${c})</span>`).join('') || '—'}</div>`).join('');
+      show();
+    }
+    function show() {
+      ['#c0', '#c1', '#c2', '#c3'].forEach((id, k) => $(id).querySelectorAll('.box').forEach(b => b.classList.toggle('hidden', k > phase)));
+      $('#phase').textContent = `fase ${phase + 1} de 4: ${NAMES[phase]} · ${r.words.length} palavras`;
+      $('#prev').disabled = phase === 0; $('#next').disabled = phase === 3;
+    }
+    $('#prev').addEventListener('click', () => { phase = Math.max(0, phase - 1); show(); });
+    $('#next').addEventListener('click', () => { phase = Math.min(3, phase + 1); show(); });
+    for (const id of ['#txt', '#nm', '#nr']) $(id).addEventListener('input', build);
+    build();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O que garante que todas as contagens de "rei" sejam somadas pelo mesmo redutor?', options: ['A função de particionamento (hash da chave) é a mesma em todos os mapeadores', 'O mapeador envia tudo a todos os redutores', 'O redutor pergunta a cada mapeador', 'A ordem alfabética'], answer: 0, explain: 'A chave determina o redutor de forma determinística.' },
+      { q: 'Por que é seguro reexecutar a tarefa de uma máquina que falhou?', options: ['map e reduce são funções determinísticas sem efeitos colaterais', 'Porque o resultado é guardado no mapeador', 'Porque há sempre uma cópia rodando', 'Não é seguro'], answer: 0, explain: 'Reexecutar dá o mesmo resultado.' },
+      { q: 'Para que serve o combinador?', options: ['Pré-agregar no mapeador e diminuir o tráfego do embaralhamento', 'Juntar as saídas dos redutores', 'Dividir a entrada', 'Ordenar as chaves'], answer: 0, explain: 'Em vez de enviar (rato, 1) duas vezes, envia (rato, 2).' },
+    ]);
+  </script>
+</body>
+</html>

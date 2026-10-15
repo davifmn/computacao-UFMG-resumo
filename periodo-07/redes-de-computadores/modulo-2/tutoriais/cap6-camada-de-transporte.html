@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cap. 6 Camada de transporte · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <link rel="stylesheet" href="capitulo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Cap. 6 · Camada de transporte</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · Tanenbaum &amp; Wetherall, 5ª ed., capítulo 6</div>
+    <h1>Capítulo 6 — A camada de transporte</h1>
+    <p class="lead">A camada de transporte é a primeira <b>fim a fim</b>: roda só nos hospedeiros e oferece aos processos uma comunicação confiável (ou não) independente da rede embaixo. Na Internet, são o <b>UDP</b> (datagramas, quase nada além do IP) e o <b>TCP</b> (fluxo de bytes confiável, com controle de fluxo e de congestionamento).</p>
+    <nav class="chapnav"><a href="cap5-camada-de-rede.html">← Cap. 5</a><a href="cap7-camada-de-aplicacao.html">Cap. 7 →</a></nav>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>6.1 O serviço de transporte</h2>
+        <ul>
+          <li>Por que outra camada, se a de rede já entrega pacotes? Porque a camada de rede é dos operadores (roteadores) e o usuário não a controla. A de transporte roda nos hospedeiros e pode <b>melhorar</b> o serviço: retransmitir perdas, ordenar, controlar o fluxo.</li>
+          <li>As entidades se comunicam por <b>TPDUs</b> (segmentos); a camada de transporte endereça <b>processos</b> por meio de <b>portas</b> (TSAPs), enquanto a de rede endereça hospedeiros (NSAPs).</li>
+          <li>Primitivas: LISTEN, CONNECT, SEND, RECEIVE, DISCONNECT. As de <b>sockets de Berkeley</b> (SOCKET, BIND, LISTEN, ACCEPT, CONNECT, SEND, RECEIVE, CLOSE) foram vistas no módulo 1.</li>
+        </ul>
+
+        <h2>6.2 Elementos dos protocolos de transporte</h2>
+        <h3>Estabelecimento de conexão</h3>
+        <p>O problema das <b>duplicatas atrasadas</b>: uma rede que perde, atrasa e duplica pacotes pode entregar, muito depois, um pedido de conexão antigo, e o receptor não tem como saber. Soluções: limitar o tempo de vida dos pacotes ($T$), numerar os segmentos de forma que um número não seja reutilizado dentro de $T$, e a <b>abertura em três vias</b> (Tomlinson): cada lado escolhe seu número de sequência inicial e o outro o confirma, de forma que uma duplicata de CONNECTION REQUEST ou de ACK é reconhecida e rejeitada.</p>
+        <h3>Encerramento</h3>
+        <p>Encerramento <b>assimétrico</b> (um lado corta e dados podem se perder) × <b>simétrico</b> (cada direção é fechada separadamente). O <b>problema dos dois exércitos</b> mostra que não existe protocolo que garanta que os dois lados concordem em encerrar com mensagens que podem se perder: na prática, usa-se a abertura em três vias para o encerramento e temporizadores.</p>
+        <h3>Controle de erros e de fluxo</h3>
+        <p>Os mesmos mecanismos do enlace (números de sequência, janelas deslizantes, retransmissão), mas com atrasos variáveis e muitas conexões: o receptor pode não ter buffer para todas, e os buffers passam a ser alocados dinamicamente (a janela anunciada pelo receptor é o controle de fluxo). A <b>multiplexação</b> junta várias conexões de transporte numa só conexão de rede (ou o contrário).</p>
+        <h3>Recuperação de falhas</h3>
+        <p>Se um hospedeiro cai e volta, não há como evitar que, em algum cenário, um segmento seja processado duas vezes ou nenhuma: a recuperação completa exige ajuda da camada de cima.</p>
+
+        <h2>6.3 Controle de congestionamento</h2>
+        <ul>
+          <li><b>Alocação desejável</b>: eficiente (perto da capacidade, sem o atraso explodir) e justa entre os fluxos (<b>justiça max-min</b>). A <b>potência</b> (carga/atraso) é máxima quando a carga ocupa uma fração da capacidade.</li>
+          <li><b>AIMD</b> (aumento aditivo, diminuição multiplicativa): Chiu e Jain mostraram que é a regra que converge para a operação eficiente e justa. É a base do TCP.</li>
+          <li>Sinais de congestionamento: perda de pacote (TCP), atraso, ECN.</li>
+          <li><b>Sem fio</b>: perdas por ruído não são congestionamento, mas o TCP as interpreta como se fossem e reduz a taxa à toa. Por isso o enlace sem fio tenta mascará-las com retransmissões locais.</li>
+        </ul>
+
+        <h2>6.4 UDP</h2>
+        <p>Cabeçalho de 8 bytes: porta de origem, porta de destino, comprimento e checksum (que cobre um pseudocabeçalho IP). Não há conexão, ordem, retransmissão ou controle de fluxo. Serve para consultas curtas (DNS), mídia em tempo real (onde atraso importa mais que perda) e para quem quer implementar a própria confiabilidade.</p>
+        <ul>
+          <li><b>RPC</b> (chamada remota de procedimento): o cliente chama um procedimento local (stub) que empacota os parâmetros (<i>marshaling</i>) e os envia ao servidor. Problemas: ponteiros, tipos fracos, variáveis globais. Usa UDP quando a chamada é idempotente e cabe num pacote.</li>
+          <li><b>RTP</b> (transporte de tempo real): sobre UDP, com número de sequência, carimbo de tempo e tipo de carga; o RTCP faz o controle (realimentação de qualidade, sincronização). O receptor usa um <b>buffer de reprodução</b> para absorver o jitter.</li>
+        </ul>
+
+        <h2>6.5 TCP</h2>
+        <h3>Cabeçalho e serviço</h3>
+        <p>Fluxo de bytes full-duplex, confiável e ordenado, ponto a ponto. Cabeçalho de 20 bytes + opções: portas, <b>número de sequência</b> (do primeiro byte de dados), <b>número de confirmação</b> (próximo byte esperado; ACKs cumulativos), comprimento do cabeçalho, bits (URG, ACK, PSH, RST, SYN, FIN, ECE, CWR), <b>janela</b> (bytes que o receptor aceita), checksum e ponteiro de urgência. Opções: MSS, escala de janela, carimbo de tempo, SACK (confirmação seletiva).</p>
+        <p class="callout">▶ <a href="../visualizacoes/tcp.html">Visualização: abertura em três vias, encerramento, janela de congestionamento e estimativa de RTT</a></p>
+        <h3>Conexão</h3>
+        <p>Abertura em três vias (SYN; SYN + ACK; ACK) e encerramento com FIN em cada direção, terminando em TIME WAIT (2 × o tempo de vida máximo). A máquina de estados tem 11 estados (CLOSED, LISTEN, SYN RCVD, SYN SENT, ESTABLISHED, FIN WAIT 1, FIN WAIT 2, TIME WAIT, CLOSING, CLOSE WAIT, LAST ACK).</p>
+        <h3>Janela deslizante e eficiência</h3>
+        <ul>
+          <li><b>Algoritmo de Nagle</b>: com dados pequenos chegando um a um (digitação), envia o primeiro e acumula o resto até chegar o ACK.</li>
+          <li><b>Síndrome da janela boba</b> (Clark): o receptor que libera 1 byte de cada vez provoca segmentos de 1 byte; solução: só anunciar janela quando houver espaço para um segmento máximo ou meio buffer.</li>
+          <li>ACKs atrasados (até ~500 ms) para pegar carona em dados no sentido contrário.</li>
+        </ul>
+        <h3>Temporizadores</h3>
+        <p>O RTO precisa se adaptar ao RTT, que varia muito. Média exponencial: $SRTT = \alpha \cdot SRTT + (1 - \alpha)R$, com $\alpha = 7/8$ (o livro também usa 0,9 nos exercícios). Jacobson acrescentou a variação: $RTTVAR = \beta \cdot RTTVAR + (1-\beta)|SRTT - R|$ e $RTO = SRTT + 4 \times RTTVAR$. <b>Algoritmo de Karn</b>: não use amostras de segmentos retransmitidos e dobre o RTO a cada timeout. Há também o temporizador de persistência (para janelas zero) e o de keepalive.</p>
+        <h3>Controle de congestionamento do TCP</h3>
+        <ul>
+          <li>A <b>janela de congestionamento</b> (cwnd) limita o que está em trânsito, junto com a janela do receptor: envia-se $\min(cwnd, rwnd)$.</li>
+          <li><b>Partida lenta</b>: começa com 1 MSS (hoje até 10) e dobra a cada RTT até o <b>limiar</b> (ssthresh); depois, <b>aumento aditivo</b> de 1 MSS por RTT.</li>
+          <li><b>Timeout</b>: limiar = cwnd/2 e cwnd = 1 MSS (TCP Tahoe).</li>
+          <li><b>Retransmissão rápida</b>: 3 ACKs duplicados indicam um segmento perdido (os seguintes chegaram); retransmite sem esperar o timeout. <b>Recuperação rápida</b> (TCP Reno): cwnd = limiar = cwnd/2 e segue em aumento aditivo, o dente de serra do AIMD.</li>
+          <li>Evoluções: SACK, ECN, CUBIC (o padrão do Linux), BBR (baseado em atraso e banda medidos).</li>
+        </ul>
+
+        <h2>6.6 Desempenho</h2>
+        <ul>
+          <li>O produto <b>banda × atraso</b> diz quantos bits cabem "no cano"; a janela precisa ser pelo menos esse tamanho para manter o enlace cheio. Com 64 KB de janela, enlaces rápidos e longos ficam ociosos: daí a opção de <b>escala de janela</b>.</li>
+          <li>Em redes rápidas, os 32 bits de número de sequência dão a volta depressa: proteção com carimbos de tempo (PAWS).</li>
+          <li>O custo por pacote (interrupções, cópias, trocas de contexto) domina o custo por byte: <b>previsão de cabeçalho</b> (fast path), menos cópias.</li>
+        </ul>
+
+        <h2>Exercícios do capítulo resolvidos</h2>
+        <p class="c-muted">Enunciados resumidos, identificados pelo assunto; as contas são conferidas por <code>codigo/redes2.py</code>.</p>
+
+        <details class="prob exam"><summary><b>Maior carga útil de um segmento TCP</b>.</summary>
+          <p>O datagrama IP tem no máximo 65 535 bytes; tirando 20 do cabeçalho IP e 20 do TCP: <b>65 495 bytes</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Janela de 64 KB num enlace de 1 Gbps</b> com 10 ms de atraso em cada sentido. Vazão máxima e eficiência?</summary>
+          <p>Cabe uma janela por ida e volta (20 ms): $65\,535 \times 8 / 0{,}020 \approx$ <b>26,2 Mbps</b>, ou 2,6% do enlace. Para encher o cano seria preciso uma janela de $10^9 \times 0{,}02 / 8 = 2{,}5$ MB, só possível com escala de janela.</p>
+        </details>
+        <details class="prob"><summary><b>Números de sequência dando a volta</b> a 1 Gbps.</summary>
+          <p>São $2^{32}$ bytes; a 125 MB/s: $2^{32} / 1{,}25 \times 10^8 \approx$ <b>34 s</b>, menos que os 120 s de tempo de vida máximo de um segmento. Daí a opção de carimbo de tempo (PAWS).</p>
+        </details>
+        <details class="prob"><summary><b>Taxa máxima para não reutilizar números de sequência</b>, com tempo de vida de 120 s.</summary>
+          <p>$2^{32}$ bytes em 120 s ≈ 35,8 MB/s ≈ <b>286 Mbps</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Estimativa de RTT</b>. RTT atual 30 ms; chegam ACKs depois de 26, 32 e 24 ms. Nova estimativa com $\alpha = 0{,}9$?</summary>
+          <p>$0{,}9 \times 30 + 0{,}1 \times 26 = 29{,}6$; $0{,}9 \times 29{,}6 + 0{,}1 \times 32 = 29{,}84$; $0{,}9 \times 29{,}84 + 0{,}1 \times 24 = $ <b>29,256 ms</b>.</p>
+        </details>
+        <details class="prob exam"><summary><b>Janela após timeout</b>. A janela de congestionamento é 18 KB e ocorre um timeout. Qual a janela depois de 4 rajadas bem-sucedidas (MSS = 1 KB)?</summary>
+          <p>O limiar vira 9 KB e a janela, 1 KB. As rajadas de 1, 2, 4 e 8 KB fariam a janela dobrar até 16 KB, mas a partida lenta para no limiar: <b>9 KB</b>. A partir daí, cresce 1 KB por rajada.</p>
+        </details>
+        <details class="prob"><summary><b>RPC sobre UDP numa fibra de 100 km a 1 Gbps</b>, pedido de 128 bytes. Eficiência da linha durante a chamada?</summary>
+          <p>Ida e volta em 100 km de fibra: ≈ 1 ms (a $2 \times 10^8$ m/s). Transmitir 1024 bits leva ≈ 1 μs. A linha fica ocupada ≈ 0,1% do tempo: em redes rápidas e longas, a latência domina.</p>
+        </details>
+        <details class="prob"><summary><b>Por que existe o UDP</b>, se poderia se usar o IP direto?</summary>
+          <p>O IP endereça hospedeiros, não processos. O UDP acrescenta o mínimo: as portas (multiplexação) e um checksum opcional.</p>
+        </details>
+        <details class="prob"><summary><b>Abertura em duas vias</b> bastaria?</summary>
+          <p>Não: uma duplicata atrasada de pedido de conexão abriria uma conexão que ninguém pediu, porque o servidor não teria como confirmar que o pedido é atual. O terceiro passo (o cliente confirmar o número inicial do servidor) é o que detecta isso.</p>
+        </details>
+        <details class="prob"><summary><b>Por que o TCP espera 3 ACKs duplicados</b> (e não 1) para a retransmissão rápida?</summary>
+          <p>Segmentos podem chegar fora de ordem sem terem sido perdidos, e isso já gera um ou dois ACKs duplicados. Três é um bom indício de perda, sem retransmitir à toa.</p>
+        </details>
+
+        <h2>Teste seu entendimento</h2>
+        <div id="quiz"></div>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../../engine/page.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    buildToc($('#toc'), $('#content'));
+    mountQuiz($('#quiz'), [
+      { q: 'O que o número de confirmação do TCP indica?', options: ['O próximo byte esperado (todos os anteriores chegaram)', 'O último segmento recebido', 'O número de segmentos recebidos', 'A janela livre'], answer: 0, explain: 'ACKs cumulativos.' },
+      { q: 'Na partida lenta, a janela…', options: ['dobra a cada RTT', 'cresce 1 MSS por RTT', 'fica constante', 'cai pela metade'], answer: 0, explain: 'Cresce 1 MSS por ACK, o que dobra a cada ida e volta.' },
+      { q: 'Qual a diferença entre controle de fluxo e de congestionamento?', options: ['Fluxo protege o receptor; congestionamento protege a rede', 'São a mesma coisa', 'Fluxo é do UDP', 'Congestionamento é feito pelos roteadores apenas'], answer: 0, explain: 'A janela do receptor e a janela de congestionamento são combinadas pelo mínimo.' },
+      { q: 'O que o algoritmo de Karn proíbe?', options: ['Usar amostras de RTT de segmentos retransmitidos', 'Retransmitir antes do timeout', 'ACKs atrasados', 'Janelas maiores que 64 KB'], answer: 0, explain: 'O ACK pode ser da transmissão original ou da retransmissão: a amostra é ambígua.' },
+      { q: 'Por que o TCP sobre enlaces sem fio pode ter desempenho ruim?', options: ['Interpreta perdas por ruído como congestionamento e reduz a taxa', 'Porque o cabeçalho é grande', 'Porque não há portas', 'Porque o UDP tem prioridade'], answer: 0, explain: 'Daí as retransmissões locais na camada de enlace.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decisões sob incerteza · Introdução à IA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+    .ctl { display: grid; grid-template-columns: 1fr 3.8em; gap: 6px 8px; font-size: 14px; color: var(--muted); padding: 8px 14px 14px; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; }
+    .readout { padding: 6px 14px 14px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ia">Introdução à IA</a>
+      <span class="sep">/</span><span>Decisões sob incerteza</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Inteligência Artificial</div>
+    <h1>Processos de decisão de Markov: o mundo 4 × 3</h1>
+    <p class="lead">Um robô anda numa grade em que as ações falham: ele vai na direção pretendida com probabilidade 0,8 e escorrega para um dos lados com 0,1 cada. Há uma saída que vale +1 e um buraco que vale −1, e cada passo custa um pouco. Qual a melhor <b>política</b> (ação em cada casa)? A <b>iteração de valor</b> responde, aplicando a equação de Bellman até convergir.</p>
+
+    <div class="two">
+      <div class="stage"><svg id="g" aria-label="Mundo 4 por 3"></svg></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Parâmetros</div><div class="ctl">
+          <span>recompensa por passo R</span><output id="R-o"></output><input id="R" type="range" min="-2" max="0.2" step="0.01" value="-0.04">
+          <span>chance de ir para onde quer</span><output id="p-o"></output><input id="p" type="range" min="0.34" max="1" step="0.01" value="0.8">
+          <span>desconto γ</span><output id="gm-o"></output><input id="gm" type="range" min="0.5" max="1" step="0.01" value="1">
+          <span>iteração</span><output id="k-o"></output><input id="k" type="range" min="0" max="40" value="40">
+          <span style="grid-column:1/-1"><button class="btn small" data-r="-0.04">R = −0,04 (livro)</button> <button class="btn small" data-r="-2">R = −2</button> <button class="btn small" data-r="-0.01">R = −0,01</button> <button class="btn small" data-r="0.1">R = +0,1</button></span>
+        </div></div>
+        <div class="panel"><div class="panel-title">O que observar</div><div class="readout" id="note"></div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>A equação de Bellman</h2>
+      <p>$$U(s) = R(s) + \gamma \max_a \sum_{s'} P(s' \mid s, a)\, U(s')$$</p>
+      <p>A utilidade de um estado é a recompensa imediata mais a melhor utilidade esperada do próximo. A <b>iteração de valor</b> começa com $U = 0$ e aplica a equação como atualização; com $\gamma &lt; 1$ (ou um estado terminal sempre alcançável), converge para a solução única. A política ótima escolhe, em cada estado, a ação que atinge o máximo. Com R = −0,04, o resultado é o do livro (Russell e Norvig): 0,812 / 0,868 / 0,918 na fileira de cima, e na casa (3, 1) o agente prefere ir para a <b>esquerda</b>, o caminho longo, a arriscar escorregar no buraco.</p>
+      <p>Mude R e veja a política mudar: com R muito negativo (viver dói), o agente se joga até no buraco para acabar logo; com R positivo, ele evita as saídas para sempre. É a base do <b>aprendizado por reforço</b> (Q-learning), em que o agente não conhece $P$ e precisa estimar os valores experimentando.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt } from '../../../engine/page.js';
+    import { GRID43, valueIteration } from './ia.js';
+
+    const W = 640, H = 500, CS = 140, X0 = 40, Y0 = 40;
+    const scene = new Scene($('#g'), { width: W, height: H });
+    scene.setAnimated(false);
+    let res = null;
+
+    function compute() {
+      res = valueIteration({ R: +$('#R').value, pMain: +$('#p').value, gamma: +$('#gm').value, iters: 200 });
+      $('#k').max = res.iterations;
+      $('#k').value = res.iterations;
+      draw();
+    }
+    function draw() {
+      for (const id of ['R', 'p', 'gm', 'k']) $(`#${id}-o`).value = $(`#${id}`).value;
+      const k = +$('#k').value, U = res.history[k];
+      const vals = Object.values(U);
+      const lo = Math.min(...vals, -1), hi = Math.max(...vals, 1);
+      scene.frame(s => {
+        for (let x = 0; x < 4; x++) for (let y = 0; y < 3; y++) {
+          const px = X0 + x * CS, py = Y0 + (2 - y) * CS, key = `${x},${y}`;
+          if (x === GRID43.wall[0] && y === GRID43.wall[1]) { s.rect(`c${key}`, { x: px, y: py, w: CS - 4, h: CS - 4, rx: 8, fill: COLORS.surface3, stroke: COLORS.border, sw: 1 }); continue; }
+          const u = U[key], term = key in GRID43.terminals;
+          const t = (u - lo) / (hi - lo || 1);
+          const fill = `hsl(${Math.round(t * 120)}, 45%, ${18 + t * 14}%)`;
+          s.rect(`c${key}`, { x: px, y: py, w: CS - 4, h: CS - 4, rx: 8, fill, stroke: term ? COLORS.text : COLORS.border, sw: term ? 2.5 : 1 });
+          s.text(`u${key}`, fmt(u, 3), { x: px + CS / 2 - 2, y: py + (term ? CS / 2 : CS - 26), size: term ? 26 : 17, mono: true, weight: 700 });
+          s.text(`xy${key}`, `(${x + 1},${y + 1})`, { x: px + 22, y: py + 16, size: 10, mono: true, fill: COLORS.muted });
+          if (!term && k === res.iterations) s.text(`a${key}`, res.policy[key], { x: px + CS / 2 - 2, y: py + CS / 2 - 12, size: 38, weight: 800, fill: COLORS.yellow });
+          else s.text(`a${key}`, '', { x: 0, y: 0 });
+        }
+      });
+      const R = +$('#R').value;
+      $('#note').innerHTML = `${res.iterations} iterações até convergir. ${k < res.iterations ? `Na iteração ${k}, os valores ainda estão se espalhando a partir das saídas: cada iteração leva a informação uma casa adiante.` : 'Setas: política ótima.'}<br><br>${R <= -1.6 ? 'Com R tão negativo, cada passo custa mais que cair no buraco: o agente vai direto para a saída mais próxima, mesmo que seja −1.' : R > 0 ? 'Com R positivo, viver é bom: o agente evita as duas saídas (as setas fogem delas).' : Math.abs(R + 0.04) < 1e-9 && Math.abs(+$('#p').value - 0.8) < 1e-9 && +$('#gm').value === 1 ? 'Valores e política do livro. Repare em (3, 1) e (4, 1): o agente prefere o caminho longo para não escorregar no buraco.' : 'Compare com R = −0,04 e veja onde a política muda.'}`;
+    }
+    for (const id of ['#R', '#p', '#gm']) $(id).addEventListener('input', compute);
+    $('#k').addEventListener('input', draw);
+    $$('[data-r]').forEach(b => b.addEventListener('click', () => { $('#R').value = b.dataset.r; compute(); }));
+    compute();
+
+    mountQuiz($('#quiz'), [
+      { q: 'O que é uma política?', options: ['Uma ação escolhida para cada estado', 'Uma sequência fixa de ações', 'A função de recompensa', 'A probabilidade de transição'], answer: 0, explain: 'Como o ambiente é estocástico, um plano fixo não serve: o agente precisa saber o que fazer onde quer que esteja.' },
+      { q: 'Por que a iteração de valor espalha os valores "a partir das saídas"?', options: ['A k-ésima iteração dá o valor ótimo considerando só k passos à frente', 'Porque começa pelos terminais por ordem', 'Por causa do desconto', 'Não espalha'], answer: 0, explain: 'É programação dinâmica no horizonte.' },
+      { q: 'O que muda quando o desconto γ diminui?', options: ['Recompensas distantes valem menos: o agente fica mais imediatista', 'Nada', 'O agente fica mais cuidadoso', 'As transições ficam determinísticas'], answer: 0, explain: 'Uma recompensa a k passos vale $\\gamma^k$.' },
+    ]);
+  </script>
+</body>
+</html>

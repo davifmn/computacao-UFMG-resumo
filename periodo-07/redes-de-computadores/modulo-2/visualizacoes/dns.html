@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DNS · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .msg { padding: 10px 14px 14px; font-size: 15px; min-height: 110px; }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+    table.t td, table.t th { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    table.t th { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>DNS</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · cap. 7</div>
+    <h1>DNS: a lista telefônica distribuída</h1>
+    <p class="lead">Ninguém guarda todos os nomes da Internet. O DNS é uma base de dados <b>hierárquica e distribuída</b>: a raiz sabe quem cuida de cada domínio de topo, o <code>.br</code> sabe quem cuida de <code>ufmg.br</code>, e assim por diante. Veja a resolução de <code>www.dcc.ufmg.br</code> nos dois modos e com diferentes estados do cache.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Modo">
+        <button class="btn" data-m="iterativa">Iterativa</button>
+        <button class="btn" data-m="recursiva">Recursiva</button>
+      </div>
+      <label>o resolvedor já tem em cache
+        <select id="cache">
+          <option value="nada">nada</option>
+          <option value="tld">o servidor de .br</option>
+          <option value="ufmg">o servidor de ufmg.br</option>
+          <option value="tudo">a resposta</option>
+        </select>
+      </label>
+      <button class="btn" id="prev">◀</button><button class="btn primary" id="next">próxima mensagem ▶</button>
+      <span class="c-muted" id="count"></span>
+    </div>
+
+    <div class="two">
+      <div class="stage"><svg id="g" aria-label="Servidores DNS e mensagens"></svg></div>
+      <div class="panel"><div class="panel-title">O que está acontecendo</div><div class="msg" id="msg"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Registros de recursos</h2>
+      <table class="t">
+        <tr><th>tipo</th><th>significado</th><th>exemplo</th></tr>
+        <tr><td>A / AAAA</td><td>endereço IPv4 / IPv6 de um nome</td><td>www.dcc.ufmg.br. A 150.164.0.10</td></tr>
+        <tr><td>NS</td><td>servidor de nomes de um domínio</td><td>ufmg.br. NS ns.ufmg.br.</td></tr>
+        <tr><td>MX</td><td>servidor de correio do domínio (com prioridade)</td><td>ufmg.br. MX 10 mail.ufmg.br.</td></tr>
+        <tr><td>CNAME</td><td>apelido para outro nome</td><td>www → servidor1</td></tr>
+        <tr><td>PTR</td><td>nome a partir do endereço (DNS reverso)</td><td>10.0.164.150.in-addr.arpa.</td></tr>
+        <tr><td>SOA, TXT, SRV</td><td>início de autoridade, texto livre, serviços</td><td></td></tr>
+      </table>
+      <p class="c-muted" style="font-size:13px">(Os endereços desta página são ilustrativos.)</p>
+      <h2>Por que assim</h2>
+      <ul>
+        <li><b>Escala e administração</b>: cada zona é administrada por quem a possui; a raiz não precisa saber de cada máquina.</li>
+        <li><b>Cache com TTL</b>: a maioria das consultas é respondida sem sair do resolvedor local. O TTL controla quanto tempo uma resposta vale; mudar um endereço demora até os caches expirarem.</li>
+        <li><b>UDP na porta 53</b>: consulta e resposta cabem num datagrama e a troca é de uma ida e volta; se a resposta se perde, o cliente simplesmente pergunta de novo (TCP é usado para respostas grandes e transferências de zona).</li>
+        <li>Na prática, servidores raiz e de domínio de topo só respondem de forma <b>iterativa</b>; a recursão fica com o resolvedor local, que centraliza o trabalho e o cache.</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    import { $, $$ } from '../../../../engine/page.js';
+    import { DNS_SERVERS, dnsSteps } from './redes2.js';
+
+    const W = 720, H = 460;
+    const scene = new Scene($('#g'), { width: W, height: H });
+    const POS = [[90, 380], [300, 380], [180, 90], [400, 90], [620, 90]];
+    let mode = 'iterativa', steps = [], k = 0;
+
+    function draw() {
+      $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === mode));
+      scene.frame(s => {
+        DNS_SERVERS.forEach((nm, i) => {
+          const [x, y] = POS[i];
+          const act = k > 0 && (steps[k - 1].from === i || steps[k - 1].to === i);
+          s.rect(`s${i}`, { x: x - 72, y: y - 26, w: 144, h: 52, rx: 10, fill: act ? '#3d3a22' : COLORS.surface2, stroke: act ? COLORS.yellow : i < 2 ? COLORS.blue : COLORS.purple, sw: act ? 2.5 : 1.5 });
+          s.text(`st${i}`, nm, { x, y, size: 14, weight: 700 });
+        });
+        steps.slice(0, k).forEach((m, j) => {
+          const [x1, y1] = POS[m.from], [x2, y2] = POS[m.to];
+          const off = (m.kind === 'r' ? 1 : -1) * 9;
+          const L = Math.hypot(x2 - x1, y2 - y1), nx = -(y2 - y1) / L, ny = (x2 - x1) / L;
+          const sx = x1 + nx * off + (x2 - x1) / L * 76, sy = y1 + ny * off + (y2 - y1) / L * 30;
+          const ex = x2 + nx * off - (x2 - x1) / L * 76, ey = y2 + ny * off - (y2 - y1) / L * 30;
+          const cur = j === k - 1;
+          s.line(`m${j}`, sx, sy, ex, ey, { stroke: cur ? COLORS.yellow : m.kind === 'r' ? COLORS.green : COLORS.muted, sw: cur ? 3 : 1.5, arrow: true, opacity: cur ? 1 : 0.6 });
+          s.circle(`mn${j}`, { x: (sx + ex) / 2, y: (sy + ey) / 2, r: 10, fill: cur ? COLORS.yellow : COLORS.surface3, stroke: 'none', sw: 0, layer: 'fx' });
+          s.text(`mt${j}`, j + 1, { x: (sx + ex) / 2, y: (sy + ey) / 2, size: 11, weight: 800, fill: cur ? COLORS.bg : COLORS.text, layer: 'fx' });
+        });
+        if (k > 0) s.text('lbl', `${k}. ${steps[k - 1].label}`, { x: W / 2, y: H - 14, size: 14, mono: true, weight: 700, fill: COLORS.yellow });
+        else s.text('lbl', '', { x: W / 2, y: H - 14 });
+      });
+      $('#msg').innerHTML = k ? steps[k - 1].msg || '—' : 'Avance para ver as mensagens.';
+      $('#count').textContent = `${k} / ${steps.length} mensagens`;
+      $('#prev').disabled = k === 0; $('#next').disabled = k === steps.length;
+    }
+    function reset() { steps = dnsSteps(mode, $('#cache').value); k = 0; draw(); }
+    $$('[data-m]').forEach(b => b.addEventListener('click', () => { mode = b.dataset.m; reset(); }));
+    $('#cache').addEventListener('change', reset);
+    $('#prev').addEventListener('click', () => { k = Math.max(0, k - 1); draw(); });
+    $('#next').addEventListener('click', () => { k = Math.min(steps.length, k + 1); draw(); });
+    reset();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Numa resolução iterativa a partir do cache vazio, quantas mensagens o resolvedor local troca para obter www.dcc.ufmg.br?', options: ['6 (pergunta e indicação/resposta para raiz, .br e ufmg.br)', '2', '4', '8'], answer: 0, explain: 'Mais as 2 mensagens entre o host e o resolvedor: 8 no total.' },
+      { q: 'Que registro diz para onde enviar e-mail de fulano@ufmg.br?', options: ['MX', 'A', 'CNAME', 'PTR'], answer: 0, explain: 'O MX aponta o servidor de correio do domínio, com uma prioridade.' },
+      { q: 'Por que o DNS usa UDP?', options: ['Uma consulta cabe num datagrama, e estabelecer conexão TCP custaria mais uma ida e volta', 'Porque UDP é confiável', 'Porque TCP não funciona na porta 53', 'Por segurança'], answer: 0, explain: 'A confiabilidade fica a cargo da aplicação: se não vier resposta, pergunta de novo.' },
+    ]);
+  </script>
+</body>
+</html>

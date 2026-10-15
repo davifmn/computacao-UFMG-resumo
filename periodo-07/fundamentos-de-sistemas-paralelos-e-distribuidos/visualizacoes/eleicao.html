@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eleição de líder · Sistemas Paralelos e Distribuídos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 440px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#fspd">Sistemas Paralelos e Distribuídos</a>
+      <span class="sep">/</span><span>Eleição de líder</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos de Sistemas Paralelos e Distribuídos</div>
+    <h1>Eleição de líder: quando o coordenador cai</h1>
+    <p class="lead">Muitos algoritmos distribuídos ficam mais simples com um coordenador (quem ordena as escritas, quem distribui tarefas). Quando ele falha, os outros precisam concordar sobre um substituto. Compare o <b>algoritmo do valentão</b> (o maior vivo ganha, por força bruta) com a <b>eleição em anel</b>, contando as mensagens.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Algoritmo">
+        <button class="btn" data-a="bully">Valentão</button>
+        <button class="btn" data-a="ring">Anel</button>
+      </div>
+      <span class="c-muted">caíram:</span><span class="chips" id="downs"></span>
+      <label>quem percebe <select id="starter"></select></label>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>ELEIÇÃO</span><span><i style="background:#83c167"></i>OK</span><span><i style="background:#b189f5"></i>COORDENADOR</span><span><i style="background:#fc6255"></i>mensagem para processo morto (sem resposta)</span></div>
+
+    <section class="prose">
+      <h2>Os dois algoritmos</h2>
+      <ul>
+        <li><b>Valentão</b> (Garcia-Molina): quem percebe a falha manda ELEIÇÃO a todos de id maior. Se algum responde OK, ele desiste: o maior assume a disputa. Se ninguém responde (dentro de um timeout), ele vence e anuncia COORDENADOR a todos. Pior caso (o menor começa): $O(n^2)$ mensagens; melhor caso (o segundo maior percebe): $n - 1$, uma ELEIÇÃO sem resposta e $n - 2$ anúncios.</li>
+        <li><b>Anel</b>: a mensagem ELEIÇÃO dá a volta acumulando os ids dos vivos; quando volta a quem já está na lista, o maior é o líder e uma segunda volta o anuncia. $2n$ mensagens, mas um tempo proporcional a $n$. A variante de Chang e Roberts só repassa ids maiores que o seu, economizando mensagens.</li>
+      </ul>
+      <h2>Por que isso é difícil de verdade</h2>
+      <p>Os dois supõem que dá para detectar falhas com timeouts, ou seja, um sistema <b>síncrono</b>. Num sistema assíncrono, um processo lento é indistinguível de um morto, e o resultado de <b>FLP</b> (Fischer, Lynch e Paterson) mostra que nenhum algoritmo determinístico garante consenso se um processo puder falhar. Na prática, algoritmos como <b>Paxos</b> e <b>Raft</b> garantem segurança (nunca dois líderes no mesmo mandato, graças a maiorias e números de mandato) e só dependem de sincronia para progredir. O <b>teorema CAP</b> diz que, durante uma partição de rede, é preciso escolher entre consistência e disponibilidade.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$ } from '../../../engine/page.js';
+    import { BULLY_CODE, RING_CODE, bullySteps, ringSteps } from './fspd.js';
+
+    const W = 720, H = 460, N = 6;
+    let alg = 'bully';
+    const down = new Set([6]);
+    const P = id => { const a = -Math.PI / 2 + (2 * Math.PI * (id - 1)) / N; return [W / 2 + 170 * Math.cos(a), H / 2 + 170 * Math.sin(a)]; };
+    const KC = { 'ELEIÇÃO': COLORS.yellow, OK: COLORS.green, COORDENADOR: COLORS.purple };
+
+    const player = new StepPlayer($('#player'), {
+      width: W, height: H, codeTitle: 'eleição (pseudocódigo)', lang: 'python',
+      render(step, s) {
+        const prevCount = player.steps[player.index - 1]?.msgs.length ?? 0;
+        step.msgs.forEach((m, k) => {
+          const [x1, y1] = P(m.from), [x2, y2] = P(m.to);
+          const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+          const off = m.kind === 'OK' ? 6 : m.kind === 'COORDENADOR' ? -6 : 0;
+          const fresh = k >= prevCount;
+          const col = !m.ok ? COLORS.red : KC[m.kind];
+          s.line(`m${k}`, x1 + ux * 30 - uy * off, y1 + uy * 30 + ux * off, x2 - ux * 32 - uy * off, y2 - uy * 32 + ux * off, { stroke: col, sw: fresh ? 3 : 1.2, arrow: true, opacity: fresh ? 1 : 0.25, dash: m.ok ? null : '5 4' });
+        });
+        for (let id = 1; id <= N; id++) {
+          const [x, y] = P(id), dead = down.has(id), act = step.active?.includes(id), win = step.winner === id;
+          s.circle(`p${id}`, { x, y, r: 26, fill: win ? '#2a1f3a' : act ? '#3d3a22' : dead ? '#3a1d1d' : COLORS.surface2, stroke: win ? COLORS.purple : act ? COLORS.yellow : dead ? COLORS.red : COLORS.border, sw: win || act ? 3 : 1.5, opacity: dead ? 0.6 : 1 });
+          s.text(`pt${id}`, dead ? `${id} ✝` : win ? `${id} ★` : id, { x, y, size: 16, weight: 800, fill: dead ? COLORS.red : COLORS.text });
+        }
+        s.text('cnt', `${step.count} mensagens`, { x: W - 20, y: 26, size: 15, anchor: 'end', mono: true, weight: 700, fill: COLORS.muted });
+        if (alg === 'ring' && step.list) s.text('lst', `lista: [${step.list.join(', ')}]`, { x: 20, y: 26, size: 14, anchor: 'start', mono: true, fill: COLORS.yellow });
+        else s.text('lst', '', { x: 20, y: 26 });
+      },
+    });
+
+    function run() {
+      $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === alg));
+      $$('[data-d]').forEach(b => b.setAttribute('aria-pressed', down.has(+b.dataset.d)));
+      const alive = [...Array(N).keys()].map(i => i + 1).filter(i => !down.has(i));
+      const cur = +$('#starter').value;
+      $('#starter').innerHTML = alive.map(i => `<option${i === cur ? ' selected' : ''}>${i}</option>`).join('');
+      const st = +$('#starter').value || alive[0];
+      player.setCode(alg === 'bully' ? BULLY_CODE : RING_CODE, 'python');
+      player.load(alg === 'bully' ? bullySteps(N, down, st) : ringSteps(N, down, st));
+    }
+    $('#downs').innerHTML = [...Array(N).keys()].map(i => `<button class="btn small" data-d="${i + 1}">${i + 1}</button>`).join('');
+    $$('[data-d]').forEach(b => b.addEventListener('click', () => {
+      const id = +b.dataset.d;
+      if (down.has(id)) down.delete(id); else if (down.size < N - 1) down.add(id);
+      run();
+    }));
+    $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = b.dataset.a; run(); }));
+    $('#starter').addEventListener('change', run);
+    $('#starter').innerHTML = '<option selected>1</option>';
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'No valentão com n processos, quantas mensagens há se o segundo maior percebe a falha do maior?', options: ['n − 1: uma ELEIÇÃO sem resposta e n − 2 anúncios de COORDENADOR', 'n²', '2n', '1'], answer: 0, explain: 'É o melhor caso. Escolha "quem percebe" = 5 com o 6 caído e confira: 5 mensagens.' },
+      { q: 'Por que os algoritmos de eleição dependem de timeouts?', options: ['Para decidir que um processo que não responde falhou', 'Para ordenar as mensagens', 'Para economizar banda', 'Não dependem'], answer: 0, explain: 'Num sistema assíncrono, lento e morto são indistinguíveis (FLP).' },
+      { q: 'Quantas mensagens a eleição em anel usa com n processos vivos?', options: ['2n', 'n', 'n²', 'n log n'], answer: 0, explain: 'Uma volta de ELEIÇÃO e uma de COORDENADOR.' },
+    ]);
+  </script>
+</body>
+</html>

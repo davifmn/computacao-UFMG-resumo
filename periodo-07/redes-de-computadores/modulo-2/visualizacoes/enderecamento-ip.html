@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Endereçamento IP · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .card2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin: 14px 0; }
+    .card2 h2 { margin-top: 0; }
+    .bits { font-family: var(--mono); font-size: 17px; letter-spacing: .04em; margin: 8px 0; }
+    .bits .n { color: var(--blue); } .bits .h { color: var(--orange); }
+    .kv { display: grid; grid-template-columns: 11em 1fr; gap: 4px 12px; font-family: var(--mono); font-size: 14px; }
+    .kv span:nth-child(odd) { color: var(--muted); font-family: var(--font); }
+    input.ip { font-family: var(--mono); width: 200px; }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
+    table.t td, table.t th { border-bottom: 1px solid var(--border); padding: 5px 10px; text-align: left; }
+    table.t th { color: var(--muted); font-weight: 600; }
+    tr.best td { background: rgba(131, 193, 103, .15); color: var(--green); }
+    tr.match td { color: var(--text); } tr.nomatch td { color: var(--faint); }
+    .bar { display: flex; height: 38px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 10px 0; }
+    .bar div { display: grid; place-items: center; font-size: 12px; font-family: var(--mono); border-right: 1px solid var(--bg); }
+    #err { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Endereçamento IP</span>
+    </nav>
+  </header>
+
+  <main class="page page-narrow" style="max-width:1100px">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · cap. 5</div>
+    <h1>Endereçamento IPv4: prefixos, máscaras e fragmentos</h1>
+    <p class="lead">Um endereço IPv4 são 32 bits divididos em <b>prefixo</b> (a rede) e <b>sufixo</b> (o host). Com o CIDR, o tamanho do prefixo é livre (<code>/n</code>), e roteadores encaminham pelo <b>maior prefixo</b> que casa. Quatro calculadoras para os exercícios mais cobrados do capítulo.</p>
+
+    <div class="card2">
+      <h2>1. Calculadora CIDR</h2>
+      <label>endereço/prefixo <input class="ip" id="cidr" value="192.168.10.77/20"></label> <span id="err"></span>
+      <div class="bits" id="bits"></div>
+      <div class="kv" id="info"></div>
+    </div>
+
+    <div class="card2">
+      <h2>2. Encaminhamento pelo maior prefixo</h2>
+      <p class="c-muted" style="margin-top:0">Tabela do exercício clássico do capítulo (edite à vontade: uma entrada por linha, "prefixo próximo-salto").</p>
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start">
+        <textarea id="rt" spellcheck="false" style="width:100%;min-height:120px;font-family:var(--mono);background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px">135.46.56.0/22 Interface 0
+135.46.60.0/22 Interface 1
+192.53.40.0/23 Roteador 1
+default Roteador 2</textarea>
+        <div>
+          <label>pacote para <input class="ip" id="dest" value="135.46.63.10"></label>
+          <span class="chips" id="dests"></span>
+          <div id="lpm" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card2">
+      <h2>3. Alocação de blocos</h2>
+      <p class="c-muted" style="margin-top:0">Cada organização recebe um bloco de tamanho potência de 2 e <b>alinhado</b> (o endereço inicial é múltiplo do tamanho), na ordem dos pedidos.</p>
+      <label>início <input class="ip" id="astart" value="198.16.0.0"></label>
+      <label>pedidos <input id="areq" value="A 4000, B 2000, C 4000, D 8000" style="width:300px;font-family:var(--mono)"></label>
+      <div class="bar" id="abar"></div>
+      <table class="t" id="atab"></table>
+    </div>
+
+    <div class="card2">
+      <h2>4. Fragmentação</h2>
+      <p class="c-muted" style="margin-top:0">Um datagrama atravessa enlaces de MTUs diferentes. Cada fragmento leva um cabeçalho IP de 20 bytes; os dados de todo fragmento, exceto o último, são múltiplos de 8 (o deslocamento é contado em unidades de 8 bytes).</p>
+      <label>dados no datagrama (bytes) <input id="fdata" type="number" value="920" style="width:90px"></label>
+      <label>carga IP máxima de cada enlace <input id="fmtu" value="1010, 504, 500" style="width:180px;font-family:var(--mono)"></label>
+      <div id="ftab" style="margin-top:10px"></div>
+    </div>
+
+    <section class="prose">
+      <h2>Lembretes</h2>
+      <ul>
+        <li>Endereços especiais: rede (sufixo todo 0), difusão (sufixo todo 1), 127.0.0.0/8 (loopback), e os privados 10.0.0.0/8, 172.16.0.0/12 e 192.168.0.0/16, usados atrás de <b>NAT</b>.</li>
+        <li>Uma máscara /n deixa $2^{32-n} - 2$ endereços de host (tirando rede e difusão).</li>
+        <li><b>Agregação</b>: blocos vizinhos com o mesmo próximo salto viram um prefixo mais curto, se juntos formarem um bloco alinhado. Exceções dentro do agregado não precisam desfazê-lo: o maior prefixo resolve.</li>
+        <li>No IPv6 não há fragmentação nos roteadores: quem envia descobre a MTU do caminho (path MTU discovery) e o roteador devolve um ICMP "pacote muito grande".</li>
+      </ul>
+      <h2>Exercícios gerados</h2>
+    </section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountGenerator } from '../../../../engine/quiz.js';
+    import { $, randInt, pick } from '../../../../engine/page.js';
+    import { cidrInfo, ipStr, bin, longestPrefix, allocate, fragmentPath } from './redes2.js';
+
+    function cidr() {
+      $('#err').textContent = '';
+      let i;
+      try { i = cidrInfo($('#cidr').value); } catch (e) { $('#err').textContent = e.message; return; }
+      // bits de rede em azul e de host em laranja, com um ponto a cada byte
+      let html = '';
+      [...bin(i.ip, '')].forEach((ch, k) => {
+        if (k && k % 8 === 0) html += '.';
+        html += `<span class="${k < i.len ? 'n' : 'h'}">${ch}</span>`;
+      });
+      $('#bits').innerHTML = html + `  <span class="c-muted" style="font-size:13px">azul: ${i.len} bits de rede · laranja: ${32 - i.len} de host</span>`;
+      $('#info').innerHTML = [
+        ['máscara', `${ipStr(i.mask)}`], ['rede', `${ipStr(i.net)}/${i.len}`], ['difusão', ipStr(i.bcast)],
+        ['hosts', `${ipStr(i.first)} … ${ipStr(i.last)}  (${i.hosts.toLocaleString('pt-BR')})`], ['tamanho do bloco', `2^${32 - i.len} = ${i.size.toLocaleString('pt-BR')} endereços`],
+        ['o endereço é', i.aligned ? 'o próprio endereço de rede' : 'um host dentro do bloco'],
+      ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
+    }
+
+    function lpm() {
+      const table = $('#rt').value.trim().split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [prefix, ...h] = l.split(/\s+/); return { prefix, hop: h.join(' ') }; });
+      let r;
+      try { r = longestPrefix(table, $('#dest').value); } catch (e) { $('#lpm').innerHTML = `<span class="c-red">${e.message}</span>`; return; }
+      $('#lpm').innerHTML = `<table class="t"><tr><th>prefixo</th><th>/n</th><th>casa?</th><th>próximo salto</th></tr>${r.checks.map(c => `<tr class="${c === r.checks.find(x => x.prefix === r.best?.prefix) ? 'best' : c.match ? 'match' : 'nomatch'}"><td>${c.prefix}</td><td>${c.len}</td><td>${c.match ? 'sim' : 'não'}</td><td>${c.hop}</td></tr>`).join('')}</table>
+        <p>Destino <b>${$('#dest').value}</b> → <b class="c-green">${r.best ? r.best.hop : 'descartar (sem rota)'}</b>${r.best ? ` (prefixo mais longo que casa: /${r.best.len})` : ''}.</p>`;
+    }
+
+    function alloc() {
+      let reqs;
+      try { reqs = $('#areq').value.split(',').map(x => { const [nome, n] = x.trim().split(/\s+/); if (!(+n > 0)) throw 0; return { nome, n: +n }; }); } catch { return; }
+      let blocks;
+      try { blocks = allocate($('#astart').value, reqs); } catch (e) { $('#atab').innerHTML = `<tr><td class="c-red">${e.message}</td></tr>`; return; }
+      const start = blocks[0].first - blocks[0].gap, end = blocks.at(-1).last + 1, span = end - start;
+      const COL = ['var(--blue)', 'var(--green)', 'var(--orange)', 'var(--purple)', 'var(--pink)', 'var(--teal)'];
+      let cur = start;
+      $('#abar').innerHTML = blocks.map((b, k) => {
+        const gap = b.first - cur; cur = b.last + 1;
+        return `${gap ? `<div style="width:${100 * gap / span}%;background:var(--surface-3);color:var(--faint)">livre</div>` : ''}<div style="width:${100 * b.size / span}%;background:${COL[k % 6]};color:var(--bg)">${b.nome}</div>`;
+      }).join('');
+      $('#atab').innerHTML = `<tr><th>org.</th><th>pediu</th><th>recebe</th><th>primeiro</th><th>último</th><th>prefixo</th></tr>${blocks.map(b => `<tr><td>${b.nome}</td><td>${b.n}</td><td>${b.size}</td><td>${ipStr(b.first)}</td><td>${ipStr(b.last)}</td><td>${ipStr(b.first)}/${b.len}</td></tr>`).join('')}`;
+    }
+
+    function frag() {
+      const data = +$('#fdata').value, mtus = $('#fmtu').value.split(',').map(Number).filter(x => x > 28);
+      if (!(data > 0) || !mtus.length) return;
+      const res = fragmentPath(data, mtus);
+      $('#ftab').innerHTML = res.map((fs, k) => `<p style="margin:8px 0 4px"><b>Enlace ${k + 1}</b> <span class="c-muted">(carga IP máx. ${mtus[k]} bytes → dados por fragmento ≤ ${Math.floor((mtus[k] - 20) / 8) * 8})</span></p>
+        <table class="t"><tr><th>fragmento</th><th>comprimento total</th><th>dados</th><th>MF</th><th>deslocamento</th></tr>${fs.map((f, i) => `<tr><td>${i + 1}</td><td>${f.total}</td><td>${f.data}</td><td>${f.mf ? 1 : 0}</td><td>${f.offset} <span class="c-muted">(${f.offset * 8} bytes)</span></td></tr>`).join('')}</table>`).join('') +
+        '<p class="c-muted">Em todos: mesma identificação, DF = 0. Fragmentos de fragmentos usam o deslocamento em relação ao datagrama original, e a remontagem só acontece no destino.</p>';
+    }
+
+    $('#cidr').addEventListener('input', cidr);
+    $('#rt').addEventListener('input', lpm);
+    $('#dest').addEventListener('input', lpm);
+    $('#dests').innerHTML = ['135.46.63.10', '135.46.57.14', '135.46.52.2', '192.53.40.7', '192.53.56.7'].map(a => `<button class="btn small" data-a="${a}">${a}</button>`).join('');
+    $('#dests').addEventListener('click', e => { const a = e.target.closest('[data-a]')?.dataset.a; if (a) { $('#dest').value = a; lpm(); } });
+    for (const id of ['#astart', '#areq']) $(id).addEventListener('input', alloc);
+    for (const id of ['#fdata', '#fmtu']) $(id).addEventListener('input', frag);
+    cidr(); lpm(); alloc(); frag();
+
+    mountGenerator($('#gen'), {
+      label: 'Nova questão',
+      generate() {
+        const kind = pick(['hosts', 'rede', 'difusao']);
+        const len = randInt(18, 29);
+        const ip = [randInt(10, 223), randInt(0, 255), randInt(0, 255), randInt(1, 254)].join('.');
+        const i = cidrInfo(`${ip}/${len}`);
+        if (kind === 'hosts') return { q: `Quantos endereços de host cabem numa sub-rede /${len}?`, input: true, answer: String(i.hosts), explain: `$2^{${32 - len}} - 2 = ${i.hosts}$.` };
+        if (kind === 'rede') return { q: `Qual o endereço de rede de <code>${ip}/${len}</code>?`, input: true, answer: ipStr(i.net), explain: `Zere os ${32 - len} bits de host: ${ipStr(i.net)} (máscara ${ipStr(i.mask)}).` };
+        return { q: `Qual o endereço de difusão de <code>${ip}/${len}</code>?`, input: true, answer: ipStr(i.bcast), explain: `Ligue os ${32 - len} bits de host: ${ipStr(i.bcast)}.` };
+      },
+    });
+  </script>
+</body>
+</html>

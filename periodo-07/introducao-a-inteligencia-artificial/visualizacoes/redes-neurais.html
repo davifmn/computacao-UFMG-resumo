@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perceptron e redes neurais · Introdução à IA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .ctl { display: grid; grid-template-columns: 1fr 3.5em; gap: 6px 8px; font-size: 14px; color: var(--muted); padding: 8px 14px 14px; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); }
+    canvas { display: block; width: 100%; height: auto; border-radius: var(--radius); cursor: crosshair; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ia">Introdução à IA</a>
+      <span class="sep">/</span><span>Perceptron e redes neurais</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Inteligência Artificial</div>
+    <h1>Do perceptron à rede neural: o problema do XOR</h1>
+    <p class="lead">Um <b>perceptron</b> separa as classes com uma reta: aprende qualquer coisa linearmente separável, e nada além disso. Em 1969, Minsky e Papert mostraram que ele não aprende nem o XOR. Uma <b>camada escondida</b> treinada por <b>retropropagação</b> resolve: a rede dobra o plano até as classes ficarem separáveis. Treine os dois e compare. Clique para pôr pontos (com <kbd>Shift</kbd>, da outra classe).</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Dados">
+        <button class="btn" data-d="linear">Linearmente separável</button>
+        <button class="btn" data-d="xor">XOR</button>
+        <button class="btn" data-d="circulo">Círculo</button>
+      </div>
+      <div class="chips" role="group" aria-label="Modelo">
+        <button class="btn" data-m="perc">Perceptron</button>
+        <button class="btn" data-m="mlp">Rede com camada escondida</button>
+      </div>
+      <button class="btn primary" id="train">▶ Treinar</button>
+      <button class="btn" id="reset">Reiniciar pesos</button>
+    </div>
+
+    <div class="two">
+      <div class="stage"><canvas id="cv" width="640" height="640" aria-label="Regiões de decisão"></canvas></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Treino</div><div class="readout" id="out"></div></div>
+        <div class="panel"><div class="panel-title">Rede</div><div class="ctl">
+          <span>neurônios escondidos</span><output id="h-o"></output><input id="h" type="range" min="1" max="12" value="6">
+          <span>taxa de aprendizado</span><output id="lr-o"></output><input id="lr" type="range" min="0.05" max="2" step="0.05" value="0.5">
+        </div></div>
+      </div>
+    </div>
+
+    <section class="prose">
+      <h2>O perceptron</h2>
+      <p>Saída $y = 1$ se $w_1 x_1 + w_2 x_2 + b > 0$, senão 0. Regra de aprendizado: para cada exemplo errado, $w \leftarrow w + \eta\,(t - y)\,x$. O <b>teorema de convergência</b> garante que, se os dados são linearmente separáveis, o perceptron acha uma reta separadora num número finito de passos. Se não são, como no XOR, ele oscila para sempre.</p>
+      <h2>Redes de várias camadas</h2>
+      <p>Cada neurônio escondido calcula $h_k = \tanh(w_k \cdot x + b_k)$, uma "dobra" suave do plano, e a saída combina as dobras com uma sigmoide, dando uma probabilidade. O treino minimiza a <b>entropia cruzada</b> por descida do gradiente; a <b>retropropagação</b> calcula as derivadas camada por camada pela regra da cadeia, da saída para a entrada. Com neurônios suficientes, uma camada escondida aproxima qualquer função contínua (teorema da aproximação universal); na prática, redes mais profundas aprendem representações melhores com menos neurônios.</p>
+      <div class="callout warn"><p><b>Sobreajuste.</b> Muitos neurônios para poucos dados decoram o ruído: a fronteira fica cheia de curvas que não generalizam. Por isso se separa um conjunto de teste (veja a página de k-NN de Ciência dos Dados) e se usa regularização.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, fmt } from '../../../engine/page.js';
+    import { makeData, MLP } from './ia.js';
+
+    const cv = $('#cv'), ctx = cv.getContext('2d');
+    const S = cv.width;
+    let data = [], kind = 'xor', model = 'perc', net = null, w = [0, 0, 0], epoch = 0, running = false, lastLoss = null, errors = null;
+    const toPx = v => ((v + 1) / 2) * S, toV = p => (p / S) * 2 - 1;
+
+    function reset() {
+      epoch = 0; lastLoss = null; errors = null;
+      w = [0, 0, 0];
+      net = new MLP(+$('#h').value, 3);
+      draw();
+    }
+    function predict(x, y) { return model === 'perc' ? (w[0] * x + w[1] * y + w[2] > 0 ? 1 : 0) : net.predict(x, y); }
+    function step() {
+      if (model === 'perc') {
+        errors = 0;
+        for (const p of data) {
+          const out = w[0] * p.x + w[1] * p.y + w[2] > 0 ? 1 : 0, err = p.c - out;
+          if (err) { errors++; w = [w[0] + 0.1 * err * p.x, w[1] + 0.1 * err * p.y, w[2] + 0.1 * err]; }
+        }
+      } else {
+        for (let k = 0; k < 40; k++) lastLoss = net.epoch(data, +$('#lr').value);
+      }
+      epoch += model === 'perc' ? 1 : 40;
+    }
+    function draw() {
+      const N = 48, cs = S / N;
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const x = toV((i + 0.5) * cs), y = -toV((j + 0.5) * cs);
+        const p = predict(x, y);
+        ctx.fillStyle = `rgba(${Math.round(255 * p)}, ${Math.round(110 + 40 * (1 - Math.abs(p - 0.5) * 2))}, ${Math.round(255 * (1 - p))}, 0.55)`;
+        ctx.fillRect(i * cs, j * cs, cs + 0.5, cs + 0.5);
+      }
+      ctx.fillStyle = '#0e1116';
+      ctx.globalAlpha = 0.25; ctx.fillRect(0, 0, S, S); ctx.globalAlpha = 1;
+      for (const p of data) {
+        ctx.beginPath();
+        ctx.arc(toPx(p.x), toPx(-p.y), 7, 0, 2 * Math.PI);
+        ctx.fillStyle = p.c ? '#ff9f43' : '#58c4dd';
+        ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = '#e6e8eb'; ctx.stroke();
+      }
+      const acc = data.length ? data.filter(p => (predict(p.x, p.y) > 0.5 ? 1 : 0) === p.c).length / data.length : 0;
+      $('#out').innerHTML = `<div>época <b>${epoch}</b></div><div>acurácia <b>${fmt(100 * acc, 1)}%</b></div>${model === 'perc' ? `<div>erros na última época: <b>${errors ?? '—'}</b></div><div class="c-muted">${errors === 0 ? 'Convergiu: todos os pontos do lado certo da reta.' : kind !== 'linear' && epoch > 30 ? 'Não converge: nenhuma reta separa estas classes.' : ''}</div>` : `<div>perda (entropia cruzada): <b>${lastLoss == null ? '—' : fmt(lastLoss, 3)}</b></div>`}`;
+      $$('[data-d]').forEach(b => b.setAttribute('aria-pressed', b.dataset.d === kind));
+      $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === model));
+      $('#h-o').value = $('#h').value; $('#lr-o').value = $('#lr').value;
+    }
+    function loop() {
+      if (!running) return;
+      step(); draw();
+      if (model === 'perc' && errors === 0) { stop(); return; }
+      setTimeout(loop, model === 'perc' ? 120 : 30);
+    }
+    function stop() { running = false; $('#train').textContent = '▶ Treinar'; }
+    $('#train').addEventListener('click', () => { running = !running; $('#train').textContent = running ? '⏸ Pausar' : '▶ Treinar'; loop(); });
+    $('#reset').addEventListener('click', () => { stop(); reset(); });
+    $$('[data-d]').forEach(b => b.addEventListener('click', () => { stop(); kind = b.dataset.d; data = makeData(kind, 80, 7); reset(); }));
+    $$('[data-m]').forEach(b => b.addEventListener('click', () => { stop(); model = b.dataset.m; reset(); }));
+    $('#h').addEventListener('input', () => { stop(); reset(); });
+    $('#lr').addEventListener('input', draw);
+    cv.addEventListener('click', e => {
+      const r = cv.getBoundingClientRect();
+      const x = toV((e.clientX - r.left) / r.width * S), y = -toV((e.clientY - r.top) / r.height * S);
+      data.push({ x, y, c: e.shiftKey ? 0 : 1 });
+      draw();
+    });
+    data = makeData(kind, 80, 7);
+    reset();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que um perceptron não aprende o XOR?', options: ['Nenhuma reta separa os pontos (0,1),(1,0) de (0,0),(1,1)', 'Porque a taxa de aprendizado é baixa', 'Porque precisa de mais épocas', 'Porque o XOR não é uma função'], answer: 0, explain: 'O perceptron só representa fronteiras lineares.' },
+      { q: 'O que a retropropagação calcula?', options: ['O gradiente da perda em relação a todos os pesos, pela regra da cadeia', 'A saída da rede', 'O número ideal de neurônios', 'A taxa de aprendizado'], answer: 0, explain: 'Com o gradiente, a descida atualiza os pesos.' },
+      { q: 'Uma rede sem função de ativação não linear, com várias camadas, equivale a…', options: ['um único modelo linear', 'uma rede profunda mais poderosa', 'uma árvore de decisão', 'um k-NN'], answer: 0, explain: 'A composição de funções lineares é linear: as camadas colapsariam numa só.' },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TCP · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .msg { padding: 10px 14px 14px; font-size: 15px; min-height: 90px; }
+    .ctl { display: grid; grid-template-columns: 1fr 3em; gap: 6px 8px; font-size: 14px; color: var(--muted); padding: 8px 14px 14px; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 13px; width: 100%; }
+    table.t td, table.t th { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: right; }
+    table.t th { color: var(--muted); }
+    .stage svg#cw { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>TCP</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · cap. 6</div>
+    <h1>TCP: conexão, congestionamento e temporizadores</h1>
+    <p class="lead">O TCP transforma a entrega de melhor esforço do IP num fluxo de bytes confiável e ordenado. Três mecanismos concentram as questões de prova: o <b>estabelecimento e encerramento</b> da conexão, o <b>controle de congestionamento</b> (a janela que cresce e despenca) e a <b>estimativa do tempo de ida e volta</b> para os temporizadores.</p>
+
+    <h2>1. Abertura em três vias e encerramento</h2>
+    <div class="two">
+      <div class="stage"><svg id="hs" aria-label="Diagrama de tempo da conexão TCP"></svg></div>
+      <div class="side">
+        <div class="panel"><div class="panel-title">Passo <span id="hsn"></span></div><div class="msg" id="hsmsg"></div>
+          <div style="display:flex;gap:8px;padding:0 14px 14px"><button class="btn" id="hsprev">◀</button><button class="btn primary" id="hsnext">próximo ▶</button></div></div>
+      </div>
+    </div>
+
+    <h2>2. Controle de congestionamento</h2>
+    <p class="c-muted">Clique numa rodada para marcar uma perda (clique de novo para alternar entre <b>timeout</b>, <b>3 ACKs duplicados</b> e nenhuma).</p>
+    <div class="two">
+      <div class="stage"><svg id="cw" aria-label="Janela de congestionamento por rodada"></svg></div>
+      <div class="side">
+        <div class="panel"><div class="panel-title">Parâmetros</div><div class="ctl">
+          <span>limiar inicial (ssthresh, em MSS)</span><output id="th-o"></output><input id="th" type="range" min="4" max="64" value="32">
+          <span>rodadas</span><output id="r-o"></output><input id="r" type="range" min="10" max="40" value="26">
+          <span style="grid-column:1/-1"><label><input type="radio" name="v" value="reno" checked> TCP Reno</label> <label><input type="radio" name="v" value="tahoe"> TCP Tahoe</label></span>
+          <span style="grid-column:1/-1"><button class="btn small" id="classic">Exemplo clássico</button> <button class="btn small" id="clear">Sem perdas</button></span>
+        </div></div>
+        <div class="panel"><div class="panel-title">O que aconteceu</div><div class="msg" id="cwmsg"></div></div>
+      </div>
+    </div>
+
+    <h2>3. Estimativa do RTT e do temporizador</h2>
+    <div class="two">
+      <div>
+        <label>amostras de RTT (ms) <input id="rtt" value="30, 26, 32, 24, 80, 31, 29" style="width:320px;font-family:var(--mono)"></label>
+        <div class="stage" style="margin-top:10px"><svg id="rg" aria-label="Estimativas de RTT"></svg></div>
+      </div>
+      <div class="panel"><div class="panel-title">Jacobson/Karels (RFC 6298)</div><div style="padding:8px 14px 14px" id="rtab"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Resumo</h2>
+      <ul>
+        <li><b>Partida lenta</b>: a janela começa em 1 MSS e <b>dobra</b> a cada RTT (cresce 1 MSS por ACK) até o limiar. Nada de "lenta" no crescimento: o nome vem de não despejar a janela inteira de uma vez.</li>
+        <li><b>Prevenção de congestionamento</b>: acima do limiar, cresce <b>1 MSS por RTT</b> (aumento aditivo).</li>
+        <li><b>Timeout</b>: limiar = metade da janela; janela volta a 1 (Tahoe e Reno).</li>
+        <li><b>3 ACKs duplicados</b> (retransmissão rápida): no Reno, limiar = metade e a janela vai para o limiar (<b>recuperação rápida</b>), sem voltar à partida lenta; o Tahoe trata como timeout. Daí o "dente de serra" AIMD.</li>
+        <li><b>Temporizador</b>: $SRTT \leftarrow (1-\alpha)SRTT + \alpha R$, $RTTVAR \leftarrow (1-\beta)RTTVAR + \beta|SRTT - R|$, com $\alpha = 1/8$ e $\beta = 1/4$, e $RTO = SRTT + 4\,RTTVAR$. O livro também usa a forma simples $SRTT \leftarrow \alpha SRTT + (1-\alpha)R$ com $\alpha = 0{,}9$. <b>Algoritmo de Karn</b>: não atualize o RTT com amostras de segmentos retransmitidos (não dá para saber a qual transmissão o ACK responde) e dobre o RTO a cada timeout.</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS } from '../../../../engine/scene.js';
+    import { Plot } from '../../../../engine/plot.js';
+    import { mountQuiz } from '../../../../engine/quiz.js';
+    import { $, fmt } from '../../../../engine/page.js';
+    import { HANDSHAKE, congestion, rttEstimates } from './redes2.js';
+
+    // ---------- handshake ----------
+    const HW = 620, HH = 520;
+    const hs = new Scene($('#hs'), { width: HW, height: HH });
+    let hi = 0;
+    function drawHS() {
+      const XA = 130, XB = 490, y0 = 50, dy = 50;
+      hs.frame(s => {
+        s.text('ha', 'cliente', { x: XA, y: 22, size: 15, weight: 800, fill: COLORS.blue });
+        s.text('hb', 'servidor', { x: XB, y: 22, size: 15, weight: 800, fill: COLORS.orange });
+        s.line('la', XA, 34, XA, HH - 10, { stroke: COLORS.blue, sw: 2, opacity: 0.6 });
+        s.line('lb', XB, 34, XB, HH - 10, { stroke: COLORS.orange, sw: 2, opacity: 0.6 });
+        HANDSHAKE.slice(0, hi + 1).forEach((m, k) => {
+          const ya = y0 + k * dy, yb = ya + 34;
+          const [x1, y1, x2, y2] = m.from === 0 ? [XA, ya, XB, yb] : [XB, ya, XA, yb];
+          const cur = k === hi;
+          s.line(`m${k}`, x1, y1, x2, y2, { stroke: cur ? COLORS.yellow : COLORS.muted, sw: cur ? 2.5 : 1.5, arrow: true });
+          s.text(`ml${k}`, m.label, { x: (XA + XB) / 2, y: (y1 + y2) / 2 - 9, size: 12, mono: true, fill: cur ? COLORS.yellow : COLORS.text });
+          s.text(`sa${k}`, m.estadoA, { x: XA - 12, y: yb, size: 10.5, anchor: 'end', mono: true, fill: COLORS.blue });
+          s.text(`sb${k}`, m.estadoB, { x: XB + 12, y: yb, size: 10.5, anchor: 'start', mono: true, fill: COLORS.orange });
+        });
+      });
+      $('#hsn').textContent = `${hi + 1} de ${HANDSHAKE.length}`;
+      $('#hsmsg').textContent = HANDSHAKE[hi].msg;
+      $('#hsprev').disabled = hi === 0; $('#hsnext').disabled = hi === HANDSHAKE.length - 1;
+    }
+    $('#hsprev').addEventListener('click', () => { hi = Math.max(0, hi - 1); drawHS(); });
+    $('#hsnext').addEventListener('click', () => { hi = Math.min(HANDSHAKE.length - 1, hi + 1); drawHS(); });
+    drawHS();
+
+    // ---------- congestionamento ----------
+    const CW = 620, CH = 380;
+    const cw = new Scene($('#cw'), { width: CW, height: CH });
+    cw.setAnimated(false);
+    const plot = new Plot(cw, { x: [0, 27], y: [0, 50], box: [46, 14, CW - 14, CH - 34] });
+    let events = {};
+    const CLASSIC = { 9: 'timeout', 17: '3dup', 23: '3dup' };
+    function drawCW() {
+      const th = +$('#th').value, rounds = +$('#r').value, variant = document.querySelector('input[name=v]:checked').value;
+      $('#th-o').value = th; $('#r-o').value = rounds;
+      const data = congestion({ rounds, ssthresh: th, events, variant });
+      const ymax = Math.max(...data.map(d => Math.max(d.cwnd, d.th))) * 1.15;
+      plot.setView([0, rounds + 1], [0, ymax]);
+      cw.frame(s => {
+        plot.axes(s, { xLabel: 'rodada (RTT)', yLabel: 'janela (MSS)' });
+        s.path('th', data.map((d, k) => `${k ? 'L' : 'M'} ${plot.X(d.r - 0.5)} ${plot.Y(d.th)} L ${plot.X(d.r + 0.5)} ${plot.Y(d.th)}`).join(' '), { stroke: COLORS.purple, sw: 1.5, dash: '6 5' });
+        s.path('cw', data.map((d, k) => `${k ? 'L' : 'M'} ${plot.X(d.r)} ${plot.Y(d.cwnd)}`).join(' '), { stroke: COLORS.yellow, sw: 3 });
+        data.forEach(d => {
+          const col = d.ev === 'timeout' ? COLORS.red : d.ev === '3dup' ? COLORS.orange : d.phase === 'partida lenta' ? COLORS.blue : COLORS.green;
+          s.circle(`p${d.r}`, { x: plot.X(d.r), y: plot.Y(d.cwnd), r: d.ev ? 7 : 4.5, fill: col, stroke: d.ev ? COLORS.text : 'none', sw: d.ev ? 1.5 : 0 });
+          if (d.ev) s.text(`pe${d.r}`, d.ev === 'timeout' ? 'timeout' : '3 dup', { x: plot.X(d.r), y: plot.Y(d.cwnd) - 16, size: 11, weight: 700, fill: col });
+        });
+        s.text('leg', 'azul: partida lenta · verde: prevenção · tracejado: limiar', { x: CW - 16, y: 26, size: 11, anchor: 'end', fill: COLORS.muted });
+      });
+      const evs = data.filter(d => d.ev);
+      $('#cwmsg').innerHTML = evs.length ? evs.map(d => `Rodada ${d.r}: ${d.ev === 'timeout' ? 'timeout' : '3 ACKs duplicados'} com janela ${d.cwnd} → limiar ${Math.max(2, Math.floor(d.cwnd / 2))}, janela ${d.ev === 'timeout' || variant === 'tahoe' ? 1 : Math.max(2, Math.floor(d.cwnd / 2))}.`).join('<br>') : 'Sem perdas: partida lenta até o limiar, depois crescimento linear.';
+    }
+    $('#cw').addEventListener('click', e => {
+      const pt = $('#cw').createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const r = Math.round(plot.invX(pt.matrixTransform($('#cw').getScreenCTM().inverse()).x));
+      if (r < 1 || r > +$('#r').value) return;
+      events[r] = events[r] == null ? 'timeout' : events[r] === 'timeout' ? '3dup' : undefined;
+      if (!events[r]) delete events[r];
+      drawCW();
+    });
+    for (const id of ['#th', '#r']) $(id).addEventListener('input', drawCW);
+    document.querySelectorAll('input[name=v]').forEach(r => r.addEventListener('change', drawCW));
+    $('#classic').addEventListener('click', () => { events = { ...CLASSIC }; drawCW(); });
+    $('#clear').addEventListener('click', () => { events = {}; drawCW(); });
+    events = { ...CLASSIC };
+    drawCW();
+
+    // ---------- RTT ----------
+    const RW = 620, RH = 260;
+    const rg = new Scene($('#rg'), { width: RW, height: RH });
+    rg.setAnimated(false);
+    const rplot = new Plot(rg, { x: [0, 8], y: [0, 100], box: [40, 12, RW - 12, RH - 28] });
+    function drawRTT() {
+      const xs = $('#rtt').value.split(',').map(Number).filter(x => x > 0);
+      if (!xs.length) return;
+      const est = rttEstimates(xs);
+      rplot.setView([0, xs.length + 1], [0, Math.max(...est.map(e => e.rto), ...xs) * 1.1]);
+      rg.frame(s => {
+        rplot.axes(s, { xLabel: 'amostra', yLabel: 'ms' });
+        const path = f => est.map((e, k) => `${k ? 'L' : 'M'} ${rplot.X(k + 1)} ${rplot.Y(f(e))}`).join(' ');
+        s.path('rto', path(e => e.rto), { stroke: COLORS.red, sw: 2, dash: '6 4' });
+        s.path('srtt', path(e => e.srtt), { stroke: COLORS.yellow, sw: 3 });
+        est.forEach((e, k) => s.circle(`m${k}`, { x: rplot.X(k + 1), y: rplot.Y(e.m), r: 5, fill: COLORS.blue, stroke: 'none', sw: 0 }));
+        s.text('lg', 'pontos: amostras · amarelo: SRTT · vermelho: RTO', { x: RW - 14, y: 22, size: 11, anchor: 'end', fill: COLORS.muted });
+      });
+      $('#rtab').innerHTML = `<table class="t"><tr><th>R</th><th>SRTT</th><th>RTTVAR</th><th>RTO</th></tr>${est.map(e => `<tr><td>${e.m}</td><td>${fmt(e.srtt, 2)}</td><td>${fmt(e.rttvar, 2)}</td><td>${fmt(e.rto, 1)}</td></tr>`).join('')}</table><p class="c-muted" style="font-size:13px">Repare na amostra de 80 ms: o SRTT mal se mexe, mas a variância (e o RTO) sobe bastante.</p>`;
+    }
+    $('#rtt').addEventListener('input', drawRTT);
+    drawRTT();
+
+    mountQuiz($('#quiz'), [
+      { q: 'A janela de congestionamento é 18 KB (MSS = 1 KB) quando ocorre um timeout. Qual a janela depois de 4 rajadas bem-sucedidas?', options: ['9 KB', '16 KB', '18 KB', '4 KB'], answer: 0, explain: 'O limiar vira 9 KB e a janela, 1 KB. As rajadas de 1, 2, 4 e 8 KB fazem a janela dobrar até 16, mas a partida lenta para no limiar: 9 KB.' },
+      { q: 'Por que o SYN usa um número de sequência inicial aleatório, e não sempre 0?', options: ['Para que segmentos atrasados de uma conexão antiga não sejam aceitos numa nova (e dificultar ataques)', 'Por causa da criptografia', 'Para balancear carga', 'Não há motivo'], answer: 0, explain: 'Duplicatas atrasadas com números plausíveis poderiam corromper a nova conexão.' },
+      { q: 'Uma janela de 65 535 bytes num enlace de 1 Gbps com 10 ms de atraso em cada sentido dá vazão máxima de…', options: ['≈ 26 Mbps (2,6% do enlace)', '1 Gbps', '65 Mbps', '6,5 Mbps'], answer: 0, explain: 'Uma janela por RTT: 65 535 × 8 / 0,02 s ≈ 26,2 Mbps. Por isso existe a opção de escala de janela.' },
+      { q: 'Por que o estado TIME WAIT dura 2 × o tempo de vida máximo do segmento?', options: ['Para reenviar o último ACK caso ele se perca, e deixar morrerem os segmentos velhos da conexão', 'Para economizar portas', 'Para medir o RTT', 'Para esperar o FIN do cliente'], answer: 0, explain: 'Assim uma nova conexão com as mesmas portas não recebe restos da anterior.' },
+    ]);
+  </script>
+</body>
+</html>

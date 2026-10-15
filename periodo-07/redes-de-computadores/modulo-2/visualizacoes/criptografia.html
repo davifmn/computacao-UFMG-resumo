@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Criptografia · Redes</title>
+  <link rel="icon" href="../../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../../engine/theme.css">
+  <style>
+    .card2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin: 14px 0; }
+    .card2 h2 { margin-top: 0; }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .row input { width: 80px; font-family: var(--mono); }
+    .dh { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .dh > div { border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 15px; }
+    .dh .pub { border-color: var(--yellow); }
+    .dh b { color: var(--yellow); font-family: var(--mono); }
+    .dh .sec { color: var(--red); font-family: var(--mono); }
+    table.t { border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
+    table.t td, table.t th { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: right; }
+    table.t th { color: var(--muted); }
+    .ok { color: var(--green); } .bad { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../../index.html#redes2">Redes · Módulo 2</a>
+      <span class="sep">/</span><span>Criptografia</span>
+    </nav>
+  </header>
+
+  <main class="page page-narrow" style="max-width:1100px">
+    <div class="eyebrow">Redes de Computadores · Módulo 2 · cap. 8</div>
+    <h1>Chaves públicas: Diffie-Hellman e RSA</h1>
+    <p class="lead">Como duas pessoas que nunca se encontraram combinam uma chave secreta por um canal que todo mundo escuta? A resposta são funções fáceis de calcular e difíceis de inverter, como a <b>exponenciação modular</b>. Os números aqui são pequenos, os mesmos dos exemplos do livro, para dar para conferir à mão.</p>
+
+    <div class="card2">
+      <h2>Troca de chaves de Diffie-Hellman</h2>
+      <div class="row">
+        <label>primo n <input id="n" type="number" value="47"></label>
+        <label>gerador g <input id="g" type="number" value="3"></label>
+        <label>segredo de Alice x <input id="x" type="number" value="8"></label>
+        <label>segredo de Bob y <input id="y" type="number" value="10"></label>
+        <span id="dherr" class="bad"></span>
+      </div>
+      <div class="dh">
+        <div><div class="c-blue"><b style="color:var(--blue)">Alice</b></div><div>sabe x = <span class="sec" id="ax"></span></div><div>calcula $g^x \bmod n$ = <b id="A"></b></div><div>recebe B e calcula $B^x \bmod n$ = <b id="kA"></b></div></div>
+        <div class="pub"><div class="c-yellow"><b>o que Trudy vê</b></div><div>n = <b id="pn"></b>, g = <b id="pg"></b></div><div>A = <b id="pA"></b>, B = <b id="pB"></b></div><div class="c-muted" style="font-size:13px" id="brute"></div></div>
+        <div><div><b style="color:var(--orange)">Bob</b></div><div>sabe y = <span class="sec" id="by"></span></div><div>calcula $g^y \bmod n$ = <b id="B"></b></div><div>recebe A e calcula $A^y \bmod n$ = <b id="kB"></b></div></div>
+      </div>
+      <p id="dhok" style="margin-bottom:0"></p>
+    </div>
+
+    <div class="card2">
+      <h2>RSA</h2>
+      <div class="row">
+        <label>p <input id="p" type="number" value="3"></label>
+        <label>q <input id="q" type="number" value="11"></label>
+        <label>d (coprimo com z) <input id="d" type="number" value="7"></label>
+        <label>mensagem <input id="msg" value="SUZANNE" style="width:160px"></label>
+        <span id="rsaerr" class="bad"></span>
+      </div>
+      <p id="keys"></p>
+      <table class="t" id="rsatab"></table>
+      <p class="c-muted" style="font-size:14px">Cada letra vira um número (A = 1, …, Z = 26) e é cifrada separadamente, por isso n precisa ser maior que 26. Isso é só para ver as contas: cifrar letra a letra é uma cifra de substituição, quebrável por frequência. Na prática, o RSA cifra blocos grandes (com preenchimento aleatório) ou só uma chave de sessão.</p>
+    </div>
+
+    <section class="prose">
+      <h2>As ideias do capítulo 8</h2>
+      <ul>
+        <li><b>Chave simétrica</b> (AES, DES): a mesma chave cifra e decifra, e é rápida. O problema é distribuir a chave.</li>
+        <li><b>Chave pública</b>: $D(E(P)) = P$, e é inviável deduzir $D$ a partir de $E$. RSA: $n = pq$, $z = (p-1)(q-1)$, $d$ coprimo com $z$, $e \cdot d \equiv 1 \pmod z$. Cifra $C = P^e \bmod n$, decifra $P = C^d \bmod n$. A segurança vem da dificuldade de fatorar $n$.</li>
+        <li><b>Diffie-Hellman</b>: a segurança vem do logaritmo discreto: com $g^x \bmod n$, achar $x$ exige busca. Não autentica ninguém: sem certificados, é vulnerável ao ataque do <b>homem no meio</b> (Trudy faz uma troca com Alice e outra com Bob).</li>
+        <li><b>Assinatura digital</b>: Alice "cifra" um resumo (hash, como SHA-256) com a sua chave privada; qualquer um confere com a pública. Garante autenticidade, integridade e não repúdio.</li>
+        <li><b>Certificados</b> (X.509): uma autoridade certificadora assina "esta chave pública é de fulano". O <b>TLS</b> (o "S" do HTTPS) usa certificados para autenticar o servidor, troca de chaves (Diffie-Hellman efêmero) para a chave de sessão e cifra simétrica para os dados.</li>
+      </ul>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { mountQuiz, mountGenerator } from '../../../../engine/quiz.js';
+    import { $, randInt, pick, renderMath } from '../../../../engine/page.js';
+    import { diffieHellman, modpow, rsaKeys, gcd, isPrime } from './redes2.js';
+
+    function dh() {
+      const n = +$('#n').value, g = +$('#g').value, x = +$('#x').value, y = +$('#y').value;
+      $('#dherr').textContent = !isPrime(n) ? 'n deveria ser primo' : g <= 1 || g >= n ? 'escolha 1 < g < n' : '';
+      if (!(n > 2 && g > 0 && x > 0 && y > 0)) return;
+      const r = diffieHellman(n, g, x, y);
+      $('#ax').textContent = x; $('#by').textContent = y;
+      $('#A').textContent = r.A; $('#B').textContent = r.B; $('#kA').textContent = r.kA; $('#kB').textContent = r.kB;
+      $('#pn').textContent = n; $('#pg').textContent = g; $('#pA').textContent = r.A; $('#pB').textContent = r.B;
+      let found = null;
+      for (let k = 1; k < n && found == null; k++) if (modpow(g, k, n) === r.A) found = k;
+      $('#brute').textContent = found != null ? `Com n tão pequeno, Trudy acha um x' = ${found} com g^x' = A testando ${found} expoentes. Com n de 2048 bits, isso levaria mais que a idade do universo.` : '';
+      $('#dhok').innerHTML = r.kA === r.kB ? `<span class="ok">Os dois chegaram à mesma chave: <b>${r.kA}</b> = g<sup>xy</sup> mod n, sem que x ou y tenham passado pela rede.</span>` : '';
+    }
+
+    function rsa() {
+      const p = +$('#p').value, q = +$('#q').value, d = +$('#d').value;
+      $('#rsaerr').textContent = '';
+      if (!isPrime(p) || !isPrime(q) || p === q) { $('#rsaerr').textContent = 'p e q devem ser primos distintos'; return; }
+      const k = rsaKeys(p, q, { d });
+      if (gcd(d, k.z) !== 1 || k.e == null) { $('#rsaerr').textContent = `d = ${d} não é coprimo com z = ${k.z}`; return; }
+      if (k.n <= 26) { $('#rsaerr').textContent = `n = ${k.n} precisa ser maior que 26`; return; }
+      $('#keys').innerHTML = `$n = pq = ${k.n}$, $z = (p-1)(q-1) = ${k.z}$, $d = ${d}$, e como $e \\cdot d \\equiv 1 \\pmod{${k.z}}$, $e = ${k.e}$ (${k.e} × ${d} = ${k.e * d} = ${Math.floor(k.e * d / k.z)} × ${k.z} + 1). Chave pública $(e, n) = (${k.e}, ${k.n})$, privada $(d, n) = (${d}, ${k.n})$.`;
+      renderMath($('#keys'));
+      const letters = [...$('#msg').value.toUpperCase().replace(/[^A-Z]/g, '')].slice(0, 12);
+      $('#rsatab').innerHTML = `<tr><th>letra</th><th>P</th><th>C = P<sup>${k.e}</sup> mod ${k.n}</th><th>C<sup>${d}</sup> mod ${k.n}</th><th>volta?</th></tr>` + letters.map(ch => {
+        const P = ch.charCodeAt(0) - 64, C = modpow(P, k.e, k.n), P2 = modpow(C, d, k.n);
+        return `<tr><td>${ch}</td><td>${P}</td><td>${C}</td><td>${P2}</td><td class="${P2 === P ? 'ok' : 'bad'}">${P2 === P ? String.fromCharCode(64 + P2) : '✖'}</td></tr>`;
+      }).join('');
+    }
+    for (const id of ['#n', '#g', '#x', '#y']) $(id).addEventListener('input', dh);
+    for (const id of ['#p', '#q', '#d', '#msg']) $(id).addEventListener('input', rsa);
+    dh(); rsa();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que Diffie-Hellman sozinho não protege contra o homem no meio?', options: ['Porque não autentica: Alice não sabe se B veio de Bob ou de Trudy', 'Porque a chave é pequena', 'Porque usa chaves simétricas', 'Protege sim'], answer: 0, explain: 'Trudy combina uma chave com cada lado e repassa as mensagens. Assinaturas e certificados resolvem.' },
+      { q: 'No RSA, o que precisa ser mantido em segredo?', options: ['d (e os fatores p e q)', 'e', 'n', 'a mensagem cifrada'], answer: 0, explain: 'Quem fatora n consegue calcular z e, dele, d.' },
+      { q: 'Para assinar um documento, Alice usa…', options: ['a sua chave privada sobre o hash do documento', 'a chave pública de Bob', 'a sua chave pública', 'uma chave simétrica'], answer: 0, explain: 'Qualquer um verifica com a chave pública dela; só ela poderia ter produzido a assinatura.' },
+    ]);
+
+    mountGenerator($('#gen'), {
+      label: 'Nova troca',
+      generate() {
+        const n = pick([23, 29, 31, 37, 41, 43, 47, 53]), g = pick([2, 3, 5]);
+        const x = randInt(2, 12), y = randInt(2, 12);
+        const r = diffieHellman(n, g, x, y);
+        return { q: `Diffie-Hellman com n = ${n}, g = ${g}, x = ${x} (Alice) e y = ${y} (Bob). Qual a chave compartilhada?`, input: true, answer: String(r.kA), explain: `A = ${g}^${x} mod ${n} = ${r.A}; B = ${g}^${y} mod ${n} = ${r.B}; chave = ${r.B}^${x} mod ${n} = ${r.A}^${y} mod ${n} = ${r.kA}.` };
+      },
+    });
+  </script>
+</body>
+</html>

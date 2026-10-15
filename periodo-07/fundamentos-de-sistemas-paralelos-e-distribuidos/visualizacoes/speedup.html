@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speedup e DAGs · Sistemas Paralelos e Distribuídos</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .ctl { display: grid; grid-template-columns: 1fr 3.5em; gap: 6px 8px; font-size: 14px; color: var(--muted); padding: 8px 14px 14px; }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .ctl input[type=range], .ctl select { grid-column: 1 / -1; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .readout b { color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#fspd">Sistemas Paralelos e Distribuídos</a>
+      <span class="sep">/</span><span>Speedup e DAGs</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Fundamentos de Sistemas Paralelos e Distribuídos</div>
+    <h1>Quanto mais rápido com mais processadores?</h1>
+    <p class="lead">Dobrar os processadores raramente dobra a velocidade. A parte do programa que não paraleliza limita tudo (<b>Amdahl</b>), a não ser que o problema cresça junto com a máquina (<b>Gustafson</b>). E, dentro de um algoritmo, o que limita é o <b>caminho crítico</b> do grafo de dependências.</p>
+
+    <h2>1. Amdahl × Gustafson</h2>
+    <div class="two">
+      <div class="stage"><svg id="sp" aria-label="Curvas de speedup"></svg></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel"><div class="panel-title">Parâmetros</div><div class="ctl">
+          <span>fração serial s</span><output id="s-o"></output><input id="s" type="range" min="0" max="0.5" step="0.01" value="0.1">
+          <span>processadores p</span><output id="p-o"></output><input id="p" type="range" min="1" max="128" value="16">
+        </div></div>
+        <div class="panel"><div class="panel-title">Resultado</div><div class="readout" id="out"></div></div>
+      </div>
+    </div>
+
+    <h2>2. Trabalho, caminho crítico e escalonamento guloso</h2>
+    <div class="toolbar">
+      <select id="dag" aria-label="Grafo"><option value="red">Soma em árvore (16 números)</option><option value="fj">Parte serial + 6 tarefas paralelas</option></select>
+      <label>processadores <input id="np" type="range" min="1" max="8" value="2"><output id="np-o"></output></label>
+      <label>passo <input id="ts" type="range" min="0" max="20" value="0"><output id="ts-o"></output></label>
+      <button class="btn small" id="play">▶</button>
+    </div>
+    <div class="two">
+      <div class="stage"><svg id="g" aria-label="DAG de tarefas"></svg></div>
+      <div class="panel"><div class="panel-title">Medidas</div><div class="readout" id="dagout"></div></div>
+    </div>
+
+    <section class="prose">
+      <h2>As leis</h2>
+      <ul>
+        <li><b>Amdahl</b>: com fração serial $s$, $S(p) = \dfrac{1}{s + (1-s)/p} \le \dfrac{1}{s}$. Com 10% serial, nem um milhão de processadores passa de 10×.</li>
+        <li><b>Gustafson</b>: se o tempo é fixo e o problema escala com $p$, $S(p) = p - s(p - 1)$: o speedup cresce linearmente. As duas não se contradizem: medem coisas diferentes (problema fixo × tempo fixo).</li>
+        <li><b>Eficiência</b> = $S(p)/p$. <b>Escalabilidade forte</b>: problema fixo, mais processadores; <b>fraca</b>: problema cresce com os processadores.</li>
+      </ul>
+      <h2>Modelo trabalho-caminho</h2>
+      <p>Num DAG de tarefas, o <b>trabalho</b> $T_1$ é a soma dos custos (o tempo com 1 processador) e o <b>caminho crítico</b> (span) $T_\infty$ é o caminho mais longo (o tempo com infinitos processadores). Limites inferiores: $T_p \ge T_1/p$ e $T_p \ge T_\infty$. O <b>paralelismo</b> é $T_1/T_\infty$: mais processadores que isso não ajudam. O <b>teorema de Brent</b> garante que qualquer escalonador guloso (nunca deixa um processador parado havendo tarefa pronta) atinge $T_p \le T_1/p + T_\infty$, a menos de um fator 2 do ótimo.</p>
+      <p>A soma de $n$ números em árvore tem trabalho $n - 1$ e caminho $\log_2 n$: paralelismo $n / \log n$. É o padrão de <b>redução</b> (OpenMP <code>reduction</code>, MPI_Reduce, CUDA).</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { Scene, COLORS, tween, ease } from '../../../engine/scene.js';
+    import { Plot } from '../../../engine/plot.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, fmt } from '../../../engine/page.js';
+    import { amdahl, gustafson, reductionDAG, forkJoinDAG, workSpan, greedySchedule } from './fspd.js';
+
+    // ---- curvas ----
+    const W = 640, H = 380;
+    const sp = new Scene($('#sp'), { width: W, height: H });
+    sp.setAnimated(false);
+    const plot = new Plot(sp, { x: [0, 128], y: [0, 128], box: [44, 14, W - 14, H - 30] });
+    function curves() {
+      const s = +$('#s').value, p = +$('#p').value;
+      $('#s-o').value = s; $('#p-o').value = p;
+      sp.frame(g => {
+        plot.axes(g, { xLabel: 'processadores', yLabel: 'speedup' });
+        plot.fn(g, 'ideal', x => x, { stroke: COLORS.faint, sw: 1.5, dash: '6 5' });
+        plot.fn(g, 'gus', x => gustafson(s, Math.max(1, x)), { stroke: COLORS.green, sw: 3 });
+        plot.fn(g, 'amd', x => amdahl(s, Math.max(1, x)), { stroke: COLORS.yellow, sw: 3 });
+        if (s > 0) g.line('lim', plot.X(0), plot.Y(1 / s), plot.X(128), plot.Y(1 / s), { stroke: COLORS.red, sw: 1, dash: '3 5' });
+        g.circle('pa', { x: plot.X(p), y: plot.Y(amdahl(s, p)), r: 6, fill: COLORS.yellow, stroke: COLORS.text, sw: 1.5, layer: 'fx' });
+        g.circle('pg', { x: plot.X(p), y: plot.Y(gustafson(s, p)), r: 6, fill: COLORS.green, stroke: COLORS.text, sw: 1.5, layer: 'fx' });
+        g.text('la', 'Amdahl (problema fixo)', { x: W - 20, y: plot.Y(amdahl(s, 128)) - 12, size: 12, anchor: 'end', fill: COLORS.yellow });
+        g.text('lg', 'Gustafson (problema cresce)', { x: plot.X(70), y: plot.Y(gustafson(s, 70)) - 14, size: 12, anchor: 'end', fill: COLORS.green });
+      });
+      const a = amdahl(s, p);
+      $('#out').innerHTML = `<div>Amdahl: <b>${fmt(a, 2)}×</b> (eficiência ${fmt(100 * a / p, 0)}%)</div><div>Gustafson: <b>${fmt(gustafson(s, p), 1)}×</b></div><div>limite de Amdahl: 1/s = <b>${s > 0 ? fmt(1 / s, 1) + '×' : '∞'}</b></div>`;
+    }
+    $('#s').addEventListener('input', curves); $('#p').addEventListener('input', curves);
+    curves();
+
+    // ---- DAG ----
+    const GW = 640, GH = 400;
+    const gs = new Scene($('#g'), { width: GW, height: GH });
+    let dag = null, pos = null, ws = null;
+    const PCOL = [COLORS.blue, COLORS.green, COLORS.orange, COLORS.purple, COLORS.pink, COLORS.teal, COLORS.yellow, COLORS.red];
+    function layout() {
+      // nível = maior distância a partir de uma fonte
+      const n = dag.nodes.length, preds = Array.from({ length: n }, () => []);
+      for (const [a, b] of dag.edges) preds[b].push(a);
+      const lvl = Array(n).fill(null);
+      const L = v => (lvl[v] ??= preds[v].length ? 1 + Math.max(...preds[v].map(L)) : 0);
+      for (let v = 0; v < n; v++) L(v);
+      const by = {};
+      for (let v = 0; v < n; v++) (by[lvl[v]] ??= []).push(v);
+      const maxL = Math.max(...lvl);
+      pos = [];
+      for (const [l, vs] of Object.entries(by)) vs.forEach((v, k) => { pos[v] = [40 + (k + 0.5) * (GW - 80) / vs.length, 30 + (+l) * (GH - 60) / Math.max(1, maxL)]; });
+    }
+    function loadDag() {
+      dag = $('#dag').value === 'red' ? reductionDAG(16) : forkJoinDAG(3, 6, 4);
+      ws = workSpan(dag);
+      layout();
+      drawDag();
+    }
+    function drawDag() {
+      const p = +$('#np').value;
+      $('#np-o').value = p;
+      const sch = greedySchedule(dag, p);
+      $('#ts').max = sch.T;
+      const t = Math.min(+$('#ts').value, sch.T);
+      $('#ts-o').value = t;
+      const crit = new Set(ws.crit);
+      gs.frame(s => {
+        for (const [a, b] of dag.edges) s.line(`e${a}-${b}`, ...pos[a], ...pos[b], { stroke: crit.has(a) && crit.has(b) ? COLORS.red : COLORS.faint, sw: crit.has(a) && crit.has(b) ? 2.5 : 1.3, arrow: true });
+        dag.nodes.forEach((nd, v) => {
+          const st = sch.start[v], en = sch.end[v];
+          const done = en != null && en <= t;   // já executou até o passo t
+          const proc = sch.steps[st]?.busy.indexOf(v);
+          const col = proc != null && proc >= 0 ? PCOL[proc % 8] : COLORS.border;
+          s.circle(`n${v}`, { x: pos[v][0], y: pos[v][1], r: 14, fill: done ? col : COLORS.surface2, stroke: done ? col : crit.has(v) ? COLORS.red : COLORS.muted, sw: 2, opacity: done ? 0.9 : 1 });
+          s.text(`nt${v}`, done ? st + 1 : nd.label, { x: pos[v][0], y: pos[v][1], size: 10.5, mono: true, weight: 700, fill: done ? COLORS.bg : COLORS.text });
+        });
+      });
+      const bound = ws.work / p + ws.span;
+      $('#dagout').innerHTML = `<div>trabalho $T_1$ = <b>${ws.work}</b></div><div>caminho crítico $T_\\infty$ = <b>${ws.span}</b> (em vermelho)</div><div>paralelismo $T_1/T_\\infty$ = <b>${fmt(ws.parallelism, 2)}</b></div><div>com ${p} processador(es): <b>${sch.T}</b> passos</div><div class="c-muted">limites: $\\max(T_1/p, T_\\infty)$ = ${fmt(Math.max(ws.work / p, ws.span), 2)} ≤ $T_p$ ≤ $T_1/p + T_\\infty$ = ${fmt(bound, 2)}</div><div class="c-muted">número no nó = passo em que rodou; cor = processador</div>`;
+      window.renderMathInElement?.($('#dagout'), { delimiters: [{ left: '$', right: '$', display: false }] });
+    }
+    let anim = null;
+    $('#dag').addEventListener('change', () => { $('#ts').value = 0; loadDag(); });
+    $('#np').addEventListener('input', drawDag);
+    $('#ts').addEventListener('input', drawDag);
+    $('#play').addEventListener('click', () => {
+      anim?.cancel();
+      const T = +$('#ts').max;
+      anim = tween(T * 450, k => { $('#ts').value = Math.round(k * T); drawDag(); }, ease.linear);
+    });
+    loadDag();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Um programa tem 5% de parte serial. Qual o speedup máximo, com qualquer número de processadores?', options: ['20×', '95×', '5×', 'ilimitado'], answer: 0, explain: '1/s = 1/0,05.' },
+      { q: 'Um DAG tem trabalho 1000 e caminho crítico 10. Vale a pena usar 500 processadores?', options: ['Não: o paralelismo é 100, mais que ~100 processadores não ajuda', 'Sim, o tempo cai para 2', 'Sim, sempre', 'Depende só da memória'], answer: 0, explain: '$T_p \\ge T_\\infty = 10$, e já com 100 processadores $T_1/p = 10$.' },
+      { q: 'Qual a diferença entre escalabilidade forte e fraca?', options: ['Forte: problema fixo; fraca: problema cresce com os processadores', 'Forte usa mais memória', 'Fraca é para GPUs', 'Não há diferença'], answer: 0, explain: 'Amdahl descreve a forte; Gustafson, a fraca.' },
+    ]);
+  </script>
+</body>
+</html>
