@@ -97,7 +97,7 @@ python3 -m http.server 8000     # ou: npx serve
 | [Algoritmos II](periodo-05/algoritmos-2/) · DCC207 | Casamento de padrões (KMP, Horspool) · Huffman e LZW · Envoltória convexa · NP-completude e aproximação | C++ |
 | [Linguagens de Programação](periodo-05/linguagens-de-programacao/) · DCC024 | Cálculo lambda · Inferência de tipos (Hindley-Milner) · Escopo e passagem de parâmetros · Prolog | Python (redutor λ, algoritmo W, mini-Prolog) |
 | [Pesquisa Operacional](periodo-05/pesquisa-operacional/) · DCC035 | Método gráfico · Simplex · Branch and bound · Fluxo máximo | Python |
-| [Equações Diferenciais C](periodo-05/equacoes-diferenciais-c/) · MAT040 | Campo de direções e RK4 · Oscilador massa-mola · Plano de fase | Python |
+| [Equações Diferenciais C](periodo-05/equacoes-diferenciais-c/) · MAT040 | Campo de direções e RK4 · Oscilador massa-mola · Plano de fase · Treino para as provas · Guia da prova | Python, JS |
 
 ### 6º período
 
