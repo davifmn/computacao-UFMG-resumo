@@ -48,6 +48,8 @@
     .ansrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .ansrow input { flex: 1; min-width: 320px; font: 15px var(--mono); padding: 8px 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
     .ansrow input:focus { outline: none; border-color: var(--blue); }
+    .ansrow .vlabel { min-width: 52px; }
+    .ansrow + .preview + .ansrow { margin-top: 10px; }
     .preview { min-height: 34px; margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 14px; }
     .preview .err { color: var(--red); }
     ol.steps { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 8px; }
@@ -74,7 +76,7 @@
   <main class="page">
     <div class="eyebrow">Equações Diferenciais C · MAT040</div>
     <h1>Treino para as provas</h1>
-    <p class="lead">Questões infinitas no formato das três listas da disciplina, corrigidas na hora: digite a fórmula (como numa calculadora) e o treino confere se ela é equivalente à resposta. Cada habilidade sobe de nível como na Khan Academy. A teoria e o gabarito das listas estão no <a href="../tutoriais/guia-da-prova.html">guia da prova</a>.</p>
+    <p class="lead">Questões infinitas no formato das quatro listas que o professor passou para as provas, corrigidas na hora: digite a fórmula (como numa calculadora) e o treino confere se ela é equivalente à resposta. Cada habilidade sobe de nível como na Khan Academy. A teoria e o gabarito das listas estão no <a href="../tutoriais/guia-da-prova.html">guia da prova</a>.</p>
 
     <div class="how">
       <div class="card"><h3>🎯 Domínio</h3><p>Rodadas de 5 questões. 100% leva a <b>Proficiente</b>, 70% ou mais a <b>Familiar</b>. No simulado, cada acerto sobe um nível (de Proficiente para <b>Dominado</b>) e cada erro desce um.</p></div>
@@ -84,8 +86,8 @@
     </div>
 
     <div class="toolbar">
-      <label>Prova <span class="seg" id="prova">
-        <button data-p="P1">P1 · 1ª ordem</button><button data-p="P2">P2 · 2ª ordem</button><button data-p="P3">P3 · Laplace</button><button data-p="todas">Todas</button>
+      <label>Lista <span class="seg" id="prova">
+        <button data-p="P1">1 · 1ª ordem</button><button data-p="P2">2 · 2ª ordem</button><button data-p="P3">3 · Laplace</button><button data-p="P4">4 · Sistemas</button><button data-p="todas">Todas</button>
       </span></label>
       <label>Data da prova <input type="date" id="exam"></label>
       <span id="plan" class="c-muted"></span>
@@ -110,6 +112,7 @@
         <tr><td>cos(x) ln(cos x) + x sen x</td><td>$\cos x\ln(\cos x) + x\operatorname{sen} x$</td></tr>
         <tr><td>u_2(t)*(t - 2)</td><td>$u_2(t)\,(t - 2)$, o degrau em $t = 2$ (ou <code>u(t-2)</code>)</td></tr>
         <tr><td>e^(-2s)/s</td><td>$\frac{e^{-2s}}{s}$ (respostas de transformada são funções de $s$)</td></tr>
+        <tr><td>e^t(cos(2t) - sen(2t))</td><td>uma componente de sistema: nos sistemas há um campo para $x(t)$ e outro para $y(t)$</td></tr>
         <tr><td>x^2y + xy^2</td><td>$\psi(x, y) = x^2y + xy^2$ nas exatas (pode escrever <code>= C</code>)</td></tr>
       </table>
       <p class="c-muted">Funções: <code>sen sin cos tg tan sec cossec cotg exp ln sqrt abs senh cosh arctg</code>; constantes <code>e</code> e <code>pi</code>. Use parênteses em frações: <code>1/(2s)</code> é $\frac{1}{2s}$, mas <code>1/2s</code> é $\frac{1}{2}s$.</p>
@@ -128,6 +131,8 @@
     const sk = id => (state.skills[id] ??= { level: 0, last: 0 });
     const inProva = s => state.prova === 'todas' || s.prova === state.prova;
     const GUIA = id => `../tutoriais/guia-da-prova.html#r-${id}`;
+    const GROUP = { P1: 'Lista 1: equações de 1ª ordem', P2: 'Lista 2: lineares de 2ª ordem', P3: 'Lista 3: transformada de Laplace', P4: 'Lista 4: sistemas lineares 2×2' };
+    const LISTA = { P1: 'Lista 1', P2: 'Lista 2', P3: 'Lista 3', P4: 'Lista 4', todas: 'todas as listas' };
 
     // ---------- painel ----------
     function renderPanel() {
@@ -136,9 +141,9 @@
       const due = new Set(T.dueSkills(state));
       const grid = $('#skills');
       grid.replaceChildren();
-      for (const p of ['P1', 'P2', 'P3']) {
+      for (const p of ['P1', 'P2', 'P3', 'P4']) {
         if (state.prova !== 'todas' && state.prova !== p) continue;
-        grid.append(h('div', { class: 'group-title' }, { P1: 'Prova 1 · Lista 1: equações de 1ª ordem', P2: 'Prova 2 · Lista 2: lineares de 2ª ordem', P3: 'Prova 3 · Lista 3: transformada de Laplace' }[p]));
+        grid.append(h('div', { class: 'group-title' }, GROUP[p]));
         for (const s of T.SKILLS.filter(x => x.prova === p)) {
           const st = sk(s.id);
           const peso = s.peso ? '●'.repeat(Math.min(5, Math.ceil(s.peso / 2.6))) : '';
@@ -189,7 +194,7 @@
         const counted = ok && !usedHint;
         feedback.className = `feedback ${ok ? 'ok' : 'bad'}`;
         feedback.innerHTML = ok ? `<b>Correto!</b> ${usedHint ? '(com dica: não conta como acerto para o nível)' : ''}` : `<b>Ainda não.</b> ${extra}`;
-        if (q.ans.tex && !ok) feedback.insertAdjacentHTML('beforeend', ` Resposta: $${q.ans.tex}$`);
+        if (q.ans.tex && !ok) feedback.insertAdjacentHTML('beforeend', Array.isArray(q.ans.tex) ? ` Resposta: ${q.ans.labels.map((l, i) => `$${l} = ${q.ans.tex[i]}$`).join(', ')}` : ` Resposta: $${q.ans.tex}$`);
         while (shown < q.steps.length) showStep();
         hintBtn.remove();
         renderMath(feedback);
@@ -214,15 +219,30 @@
           opts.append(b);
         }
         card.append(opts);
+      } else if (!reveal && q.ans.kind === 'vec') {
+        const rows = q.ans.labels.map(label => {
+          const input = h('input', { type: 'text', placeholder: `${label} = …`, 'aria-label': label, autocomplete: 'off', spellcheck: 'false' });
+          const preview = h('div', { class: 'preview' }, `${label} interpretada aparece aqui.`);
+          input.addEventListener('input', () => livePreview(input, preview, q.ans.vars));
+          input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+          return { label, input, preview };
+        });
+        const submit = () => {
+          if (done || rows.some(rw => !rw.input.value.trim())) return;
+          const res = T.check(q.ans, rows.map(rw => rw.input.value));
+          if (res.error) { res.parts.forEach((p, i) => { if (p.error) rows[i].preview.replaceChildren(h('span', { class: 'err' }, p.error)); }); return; }
+          rows.forEach(rw => { rw.input.disabled = true; }); btn.disabled = true;
+          const wrong = res.parts.map((p, i) => (p.ok ? null : rows[i].label)).filter(Boolean);
+          finish(res.ok, wrong.length ? `Confira ${wrong.join(' e ')}.` : '');
+        };
+        const btn = h('button', { class: 'btn primary small', onclick: submit }, 'Verificar');
+        rows.forEach((rw, i) => card.append(h('div', { class: 'ansrow' }, h('span', { class: 'vlabel' }, `$${rw.label} =$`), rw.input, i === rows.length - 1 ? btn : null), rw.preview));
+        setTimeout(() => rows[0].input.focus(), 0);
       } else if (!reveal) {
         const vars = q.ans.vars;
         const input = h('input', { type: 'text', placeholder: `sua resposta em ${vars.join(', ')}`, 'aria-label': 'Resposta', autocomplete: 'off', spellcheck: 'false' });
         const preview = h('div', { class: 'preview' }, 'A fórmula interpretada aparece aqui.');
-        input.addEventListener('input', () => {
-          if (!input.value.trim()) { preview.textContent = 'A fórmula interpretada aparece aqui.'; return; }
-          try { const ast = T.parse(input.value, vars); preview.replaceChildren(); const span = h('span'); preview.append(span); tex(span, toTexSafe(ast), false); }
-          catch (e) { preview.replaceChildren(h('span', { class: 'err' }, e.message)); }
-        });
+        input.addEventListener('input', () => livePreview(input, preview, vars));
         const submit = () => {
           if (done || !input.value.trim()) return;
           const res = T.check(q.ans, input.value);
@@ -245,6 +265,11 @@
       return card;
     }
     const toTexSafe = ast => { try { return T.toTex(ast); } catch { return '?'; } };
+    function livePreview(input, preview, vars) {
+      if (!input.value.trim()) { preview.textContent = 'A fórmula interpretada aparece aqui.'; return; }
+      try { const ast = T.parse(input.value, vars); preview.replaceChildren(); const span = h('span'); preview.append(span); tex(span, toTexSafe(ast), false); }
+      catch (e) { preview.replaceChildren(h('span', { class: 'err' }, e.message)); }
+    }
 
     // ---------- sessões ----------
     let timerId = null;
@@ -265,7 +290,7 @@
       }
       let ids, title;
       if (mode === 'pratica') { ids = Array(T.SESSION).fill(id); title = `Praticar · ${T.skillById(id).nome}`; }
-      else if (mode === 'simulado') { ids = T.interleave(pool, 6); title = `Simulado intercalado · ${state.prova === 'todas' ? 'todas as provas' : state.prova}`; }
+      else if (mode === 'simulado') { ids = T.interleave(pool, 6); title = `Simulado intercalado · ${LISTA[state.prova]}`; }
       else {
         const due = T.dueSkills(state).filter(x => inProva(T.skillById(x)));
         ids = T.interleave(due.length ? due : pool, 6);

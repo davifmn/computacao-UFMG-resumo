@@ -119,6 +119,25 @@ test('correção: aceita formas equivalentes e recusa erradas', () => {
   assert.ok(T.check(pot, 'x^2 y + x y^2 + 7').ok && T.check(pot, '2x^2y + 2xy^2 = C').ok && !T.check(pot, 'x^2y').ok);
   assert.ok(T.check({ kind: 'number', value: Math.E ** 2 / 4 }, 'e^2/4').ok);
   assert.ok(T.check({ kind: 'choice', correct: 1, accept: [2] }, 2).ok);
+  // resposta vetorial: as duas componentes precisam bater
+  const v = { kind: 'vec', vars: ['t'], fs: [e => Math.exp(e.t), e => -Math.exp(e.t)], domain: { t: [0, 1.5] } };
+  assert.ok(T.check(v, ['e^t', '-e^t']).ok && !T.check(v, ['e^t', 'e^t']).ok && T.check(v, ['e^t', '-(e^t']).error);
+});
+
+test('Lista 4: o caso de cada matriz da lista (Δ = tr² − 4 det)', () => {
+  const caso = ([[a, b], [c, d]]) => { const D = (a + d) ** 2 - 4 * (a * d - b * c); return Math.abs(D) < 1e-12 ? 'repetido' : D > 0 ? 'reais' : 'complexos'; };
+  const L4 = {
+    reais: [[[3, -2], [2, -2]], [[1, -2], [3, -4]], [[2, -1], [3, -2]], [[1, 1], [4, -2]], [[-2, 1], [1, -2]], [[5 / 4, 3 / 4], [3 / 4, 5 / 4]], [[1, 1], [4, 1]], [[4, -3], [8, -6]], [[2, 10], [-1, -5]], [[3, 6], [-1, -2]]],
+    complexos: [[[3, -2], [4, -1]], [[-1, -4], [1, -1]], [[2, -5 / 2], [9 / 5, -1]], [[1, -1], [5, -3]]],
+    repetido: [[[3, -4], [1, -1]], [[4, -2], [8, -4]], [[-3 / 2, 1], [-1 / 4, -1 / 2]], [[-3, 5 / 2], [-5 / 2, 2]]],
+  };
+  for (const [k, ms] of Object.entries(L4)) for (const m of ms) assert.equal(caso(m), k, JSON.stringify(m));
+  // errata da 3(a): com o y do gabarito, x' ≠ 3x − 2y; com o corrigido, bate
+  const x = t => Math.exp(t) * Math.cos(2 * t);
+  const yGab = t => Math.exp(t) * (Math.cos(2 * t) - Math.sin(2 * t)), yCerto = t => Math.exp(t) * (Math.cos(2 * t) + Math.sin(2 * t));
+  assert.ok(!near(d1(x, 0.7), 3 * x(0.7) - 2 * yGab(0.7), 1e-6));
+  assert.ok(near(d1(x, 0.7), 3 * x(0.7) - 2 * yCerto(0.7), 1e-6));
+  assert.ok(near(d1(yCerto, 0.7), 4 * x(0.7) - yCerto(0.7), 1e-6));
 });
 
 test('cada questão gerada tem a resposta certa para o próprio enunciado', () => {
@@ -171,6 +190,16 @@ test('cada questão gerada tem a resposta certa para o próprio enunciado', () =
           assert.ok(near(d1(u => s.psi(u, yy), x), s.M(x, yy), 1e-6), `${sk.id}: ψ_x = M em ${q.eq}`);
           assert.ok(near(d1(u => s.psi(x, u), yy), s.N(x, yy), 1e-6), `${sk.id}: ψ_y = N em ${q.eq}`);
         }
+      } else if (s.type === 'system') {
+        const [[a, b], [c, d]] = s.A;
+        assert.ok(near(s.sol(0)[0], s.X0[0], 1e-9) && near(s.sol(0)[1], s.X0[1], 1e-9), `${sk.id}: X(0) em ${q.eq}`);
+        for (const t of pts([0, 1.5])) {
+          const [x, y] = s.sol(t);
+          const sc = 1 + Math.abs(a * x) + Math.abs(b * y) + Math.abs(c * x) + Math.abs(d * y);
+          assert.ok(Math.abs(d1(u => s.sol(u)[0], t) - (a * x + b * y)) < 1e-6 * sc, `${sk.id}: x' em ${q.eq}`);
+          assert.ok(Math.abs(d1(u => s.sol(u)[1], t) - (c * x + d * y)) < 1e-6 * sc, `${sk.id}: y' em ${q.eq}`);
+        }
+        assert.ok(T.check(q.ans, ['0', '0']).ok === (s.X0[0] === 0 && s.X0[1] === 0));
       } else if (s.type === 'wronskian') {
         for (const x of pts(dom)) assert.ok(near(s.f1(x) * d1(s.f2, x) - d1(s.f1, x) * s.f2(x), s.W(x), 1e-6), `${sk.id}: W de ${q.eq}`);
       } else if (s.type === 'laplace' && i % 4 === 0) {
@@ -191,7 +220,7 @@ test('cada questão gerada tem a resposta certa para o próprio enunciado', () =
       }
     }
   }
-  for (const k of ['ode1', 'ode2', 'particular', 'exact', 'wronskian', 'laplace', 'inverse', 'conv']) assert.ok(counts[k] > 20, `poucos testes do tipo ${k}`);
+  for (const k of ['ode1', 'ode2', 'particular', 'exact', 'wronskian', 'laplace', 'inverse', 'conv', 'system']) assert.ok(counts[k] > 20, `poucos testes do tipo ${k}`);
 });
 
 test('a própria resposta (como função) passa na correção', () => {
@@ -201,6 +230,7 @@ test('a própria resposta (como função) passa na correção', () => {
       const q = T.generate(sk.id, r);
       if (q.ans.kind === 'expr') assert.ok(T.sameFunction(q.ans.f, q.ans.f, q.ans.domain, { avoid: q.ans.avoid }), `${sk.id}: ${q.eq}`);
       if (q.ans.kind === 'ode') assert.ok(T.satisfiesOde(e => q.spec.yp(e[q.ans.v]), q.ans), `${sk.id}: ${q.eq}`);
+      if (q.ans.kind === 'vec') q.ans.fs.forEach(f => assert.ok(T.sameFunction(f, f, q.ans.domain), `${sk.id}: ${q.eq}`));
     }
   }
 });

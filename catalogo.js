@@ -279,7 +279,7 @@ export const PERIODOS = [
           { titulo: 'Oscilador massa-mola', arquivo: 'oscilador.html', descricao: 'Amortecimento sub, crítico e super, batimentos, ressonância e a curva de resposta A(ω).' },
           { titulo: 'Plano de fase', arquivo: 'plano-de-fase.html', descricao: 'Partículas seguindo x\' = Ax, autovetores e o diagrama traço-determinante.' },
           { titulo: 'Treino para as provas', arquivo: 'treino.html', descricao: 'Questões infinitas no formato das listas, correção de fórmulas, níveis de domínio, simulado intercalado e revisão espaçada.' },
-          { titulo: 'Guia da prova', arquivo: 'guia-da-prova.html', tipo: 'tutorial', descricao: 'O que cai em cada prova, receitas por tipo de questão e as listas 1, 2 e 3 resolvidas e conferidas.' },
+          { titulo: 'Guia da prova', arquivo: 'guia-da-prova.html', tipo: 'tutorial', descricao: 'O que cai em cada prova, receitas por tipo de questão e as listas 1 a 4 resolvidas e conferidas.' },
         ],
       },
     ],
