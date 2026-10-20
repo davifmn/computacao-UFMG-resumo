@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Treino para as provas · EDO C</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .how { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 18px; }
+    .how .card h3 { font-size: 15px; }
+    .how .card p { font-size: 13.5px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { background: var(--surface-2); color: var(--muted); border: 0; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed=true] { background: var(--blue); color: #0b1a20; font-weight: 600; }
+    #plan { font-size: 14px; }
+    .today { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--yellow); border-radius: var(--radius); padding: 12px 16px; margin: 0 0 16px; }
+    .today.empty { border-left-color: var(--green); }
+    .skill-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .group-title { grid-column: 1 / -1; margin: 10px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .skill { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .skill.due { border-color: rgba(244, 211, 94, .55); }
+    .skill h3 { margin: 0; font-size: 15px; }
+    .skill .meta { color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 8px; }
+    .bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+    .bar i { height: 6px; border-radius: 3px; background: var(--surface-3); }
+    .lv1 .bar i:nth-child(-n+1) { background: var(--orange); }
+    .lv2 .bar i:nth-child(-n+2) { background: var(--yellow); }
+    .lv3 .bar i:nth-child(-n+3) { background: var(--green); }
+    .lv4 .bar i { background: var(--blue); }
+    .lvname { font-size: 12px; font-weight: 600; }
+    .lv0 .lvname { color: var(--faint); } .lv1 .lvname { color: var(--orange); } .lv2 .lvname { color: var(--yellow); }
+    .lv3 .lvname { color: var(--green); } .lv4 .lvname { color: var(--blue); }
+    .skill .acts { display: flex; gap: 6px; margin-top: auto; }
+    .arena { margin: 22px 0; scroll-margin-top: 70px; }
+    .arena-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .arena-head h2 { margin: 0; font-size: 20px; }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 12px; height: 12px; border-radius: 50%; background: var(--surface-3); border: 1px solid var(--border); }
+    .dots i.ok { background: var(--green); } .dots i.bad { background: var(--red); } .dots i.hint { background: var(--yellow); } .dots i.cur { border-color: var(--blue); }
+    .timer { font-family: var(--mono); color: var(--muted); font-size: 13px; }
+    .q-card .q { font-size: 17px; line-height: 1.6; }
+    .q-card .q .katex { font-size: 1.12em; }
+    .ansrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .ansrow input { flex: 1; min-width: 320px; font: 15px var(--mono); padding: 8px 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+    .ansrow input:focus { outline: none; border-color: var(--blue); }
+    .preview { min-height: 34px; margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 14px; }
+    .preview .err { color: var(--red); }
+    ol.steps { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 8px; }
+    ol.steps li { line-height: 1.6; }
+    ol.steps li::marker { color: var(--blue); font-weight: 700; }
+    .q-tools { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+    .q-tools .note { color: var(--muted); font-size: 13px; }
+    .summary table.data td, .summary table.data th { font-family: var(--font); text-align: left; }
+    .idle { color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); padding: 22px; text-align: center; }
+    .prose table.syntax td, .prose table.syntax th { text-align: left; font-family: var(--font); }
+    .prose table.syntax td:first-child { font-family: var(--mono); color: var(--yellow); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#edc">Equações Diferenciais C</a>
+      <span class="sep">/</span><span>Treino para as provas</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Equações Diferenciais C · MAT040</div>
+    <h1>Treino para as provas</h1>
+    <p class="lead">Questões infinitas no formato das três listas da disciplina, corrigidas na hora: digite a fórmula (como numa calculadora) e o treino confere se ela é equivalente à resposta. Cada habilidade sobe de nível como na Khan Academy. A teoria e o gabarito das listas estão no <a href="../tutoriais/guia-da-prova.html">guia da prova</a>.</p>
+
+    <div class="how">
+      <div class="card"><h3>🎯 Domínio</h3><p>Rodadas de 5 questões. 100% leva a <b>Proficiente</b>, 70% ou mais a <b>Familiar</b>. No simulado, cada acerto sobe um nível (de Proficiente para <b>Dominado</b>) e cada erro desce um.</p></div>
+      <div class="card"><h3>💡 Dicas em passos</h3><p>Cada dica revela <b>um passo</b> da solução: é um exemplo resolvido que some aos poucos. Usou dica? A questão não conta como acerto.</p></div>
+      <div class="card"><h3>🔀 Intercalado</h3><p>O simulado <b>mistura</b> os tipos de questão, como a prova. É o que treina a parte difícil: <b>reconhecer o método</b>.</p></div>
+      <div class="card"><h3>📅 Revisão espaçada</h3><p>Cada habilidade volta para revisão depois de 1, 2, 4 ou 8 dias, conforme o nível. O progresso fica salvo neste navegador.</p></div>
+    </div>
+
+    <div class="toolbar">
+      <label>Prova <span class="seg" id="prova">
+        <button data-p="P1">P1 · 1ª ordem</button><button data-p="P2">P2 · 2ª ordem</button><button data-p="P3">P3 · Laplace</button><button data-p="todas">Todas</button>
+      </span></label>
+      <label>Data da prova <input type="date" id="exam"></label>
+      <span id="plan" class="c-muted"></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="sim">Simulado intercalado (6 questões)</button>
+      <button class="btn small" id="reset">Zerar progresso</button>
+    </div>
+
+    <div id="today" class="today"></div>
+    <div id="skills" class="skill-grid"></div>
+
+    <section id="arena" class="arena" aria-live="polite"><div class="idle">Escolha uma habilidade para praticar, veja um exemplo resolvido ou comece um simulado.</div></section>
+
+    <section class="prose">
+      <h2>Como digitar as respostas</h2>
+      <p>Multiplicação pode ficar implícita. O campo mostra, enquanto você digita, <b>como a fórmula foi entendida</b>: confira antes de enviar.</p>
+      <table class="data syntax">
+        <tr><th>Digite</th><th>Para</th></tr>
+        <tr><td>2e^(3t) - sen(2t)/4</td><td>$2e^{3t} - \frac{\operatorname{sen} 2t}{4}$ (também vale <code>sin</code>; <code>e^-2t</code> e <code>e^2t</code> põem o $t$ no expoente)</td></tr>
+        <tr><td>t^2 e^(-t)/2</td><td>$\frac{t^2e^{-t}}{2}$</td></tr>
+        <tr><td>sqrt(x^2 + 3)</td><td>$\sqrt{x^2 + 3}$</td></tr>
+        <tr><td>cos(x) ln(cos x) + x sen x</td><td>$\cos x\ln(\cos x) + x\operatorname{sen} x$</td></tr>
+        <tr><td>u_2(t)*(t - 2)</td><td>$u_2(t)\,(t - 2)$, o degrau em $t = 2$ (ou <code>u(t-2)</code>)</td></tr>
+        <tr><td>e^(-2s)/s</td><td>$\frac{e^{-2s}}{s}$ (respostas de transformada são funções de $s$)</td></tr>
+        <tr><td>x^2y + xy^2</td><td>$\psi(x, y) = x^2y + xy^2$ nas exatas (pode escrever <code>= C</code>)</td></tr>
+      </table>
+      <p class="c-muted">Funções: <code>sen sin cos tg tan sec cossec cotg exp ln sqrt abs senh cosh arctg</code>; constantes <code>e</code> e <code>pi</code>. Use parênteses em frações: <code>1/(2s)</code> é $\frac{1}{2s}$, mas <code>1/2s</code> é $\frac{1}{2}s$.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { $, h, renderMath, tex, shuffle } from '../../../engine/page.js';
+    import * as T from './treino.js';
+
+    // ---------- estado salvo (só neste navegador) ----------
+    const KEY = 'edc-treino-v1';
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) ?? {}; } catch { return {}; } };
+    let state = Object.assign({ skills: {}, prova: 'P1', exam: '' }, load());
+    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* modo privado: segue sem salvar */ } };
+    const sk = id => (state.skills[id] ??= { level: 0, last: 0 });
+    const inProva = s => state.prova === 'todas' || s.prova === state.prova;
+    const GUIA = id => `../tutoriais/guia-da-prova.html#r-${id}`;
+
+    // ---------- painel ----------
+    function renderPanel() {
+      for (const b of $('#prova').children) b.setAttribute('aria-pressed', b.dataset.p === state.prova);
+      $('#exam').value = state.exam || '';
+      const due = new Set(T.dueSkills(state));
+      const grid = $('#skills');
+      grid.replaceChildren();
+      for (const p of ['P1', 'P2', 'P3']) {
+        if (state.prova !== 'todas' && state.prova !== p) continue;
+        grid.append(h('div', { class: 'group-title' }, { P1: 'Prova 1 · Lista 1: equações de 1ª ordem', P2: 'Prova 2 · Lista 2: lineares de 2ª ordem', P3: 'Prova 3 · Lista 3: transformada de Laplace' }[p]));
+        for (const s of T.SKILLS.filter(x => x.prova === p)) {
+          const st = sk(s.id);
+          const peso = s.peso ? '●'.repeat(Math.min(5, Math.ceil(s.peso / 2.6))) : '';
+          grid.append(h('div', { class: `skill lv${st.level}${due.has(s.id) ? ' due' : ''}` },
+            h('h3', {}, s.nome),
+            h('div', { class: 'meta' }, h('span', {}, s.lista), h('span', { title: 'quanto aparece nas listas' }, peso)),
+            h('div', { class: 'bar' }, h('i'), h('i'), h('i'), h('i')),
+            h('div', { class: 'meta' }, h('span', { class: 'lvname' }, T.LEVELS[st.level]), due.has(s.id) ? h('span', { class: 'c-yellow' }, 'revisar hoje') : h('a', { href: GUIA(s.id) }, 'receita ↗')),
+            h('div', { class: 'acts' },
+              h('button', { class: 'btn small primary', onclick: () => start('pratica', s.id) }, 'Praticar'),
+              h('button', { class: 'btn small', onclick: () => start('exemplo', s.id) }, 'Exemplo resolvido')),
+          ));
+        }
+      }
+      // revisão do dia
+      const today = $('#today');
+      const dueHere = [...due].filter(id => inProva(T.skillById(id)));
+      today.className = `today${dueHere.length ? '' : ' empty'}`;
+      today.replaceChildren(dueHere.length
+        ? h('span', {}, h('b', {}, `${dueHere.length} habilidade${dueHere.length > 1 ? 's' : ''} para revisar hoje: `), dueHere.map(id => T.skillById(id).nome).join(', '), '.')
+        : h('span', {}, h('b', {}, 'Nada vencido para revisar. '), 'Pratique algo novo ou faça um simulado.'));
+      if (dueHere.length) today.append(h('button', { class: 'btn small primary', onclick: () => start('revisao') }, 'Revisão intercalada'));
+      renderPlan();
+    }
+
+    function renderPlan() {
+      const el = $('#plan');
+      if (!state.exam) { el.textContent = ''; return; }
+      const days = Math.ceil((new Date(`${state.exam}T12:00:00`) - Date.now()) / 864e5);
+      const pend = T.SKILLS.filter(s => inProva(s) && sk(s.id).level < 3).length;
+      if (days < 0) el.textContent = 'a data já passou';
+      else if (days === 0) el.textContent = 'é hoje! Releia as pegadinhas do guia e faça um simulado curto.';
+      else el.textContent = `faltam ${days} dia${days > 1 ? 's' : ''} · ${pend} habilidade${pend === 1 ? '' : 's'} abaixo de Proficiente` + (pend ? ` → ${Math.ceil(pend / Math.max(1, days - 1))} por dia, e deixe o último dia para simulados` : ' → faça simulados');
+    }
+
+    // ---------- uma questão ----------
+    function questionCard(q, { hints = true, reveal = false, onDone }) {
+      const card = h('div', { class: 'q-card' });
+      card.append(h('div', { class: 'q', html: q.q }));
+      const steps = h('ol', { class: 'steps' });
+      let shown = 0, usedHint = false, done = false;
+      const showStep = () => { if (shown < q.steps.length) { steps.append(h('li', { html: q.steps[shown++] })); renderMath(steps); } };
+      const feedback = h('div', { class: 'feedback' });
+      const tools = h('div', { class: 'q-tools' });
+
+      const finish = (ok, extra = '') => {
+        done = true;
+        const counted = ok && !usedHint;
+        feedback.className = `feedback ${ok ? 'ok' : 'bad'}`;
+        feedback.innerHTML = ok ? `<b>Correto!</b> ${usedHint ? '(com dica: não conta como acerto para o nível)' : ''}` : `<b>Ainda não.</b> ${extra}`;
+        if (q.ans.tex && !ok) feedback.insertAdjacentHTML('beforeend', ` Resposta: $${q.ans.tex}$`);
+        while (shown < q.steps.length) showStep();
+        hintBtn.remove();
+        renderMath(feedback);
+        onDone?.({ ok: counted, hint: usedHint && ok });
+      };
+
+      const hintBtn = h('button', { class: 'btn small', onclick: () => { usedHint = true; showStep(); hintBtn.textContent = shown < q.steps.length ? `💡 Próximo passo (${shown}/${q.steps.length})` : 'Todos os passos à vista'; if (shown >= q.steps.length) hintBtn.disabled = true; } }, `💡 Dica: mostrar o 1º passo`);
+
+      if (q.ans.kind === 'choice') {
+        const order = q.ans.shuffle === false ? q.ans.options.map((_, i) => i) : shuffle(q.ans.options.map((_, i) => i));
+        const opts = h('div', { class: 'opts' });
+        for (const i of order) {
+          const b = h('button', { class: 'opt', html: q.ans.options[i] });
+          b.addEventListener('click', () => {
+            if (done) return;
+            const ok = T.check(q.ans, i).ok;
+            for (const o of opts.children) o.disabled = true;
+            b.classList.add(ok ? 'right' : 'wrong');
+            if (!ok) opts.children[order.indexOf(q.ans.correct)].classList.add('right');
+            finish(ok);
+          });
+          opts.append(b);
+        }
+        card.append(opts);
+      } else if (!reveal) {
+        const vars = q.ans.vars;
+        const input = h('input', { type: 'text', placeholder: `sua resposta em ${vars.join(', ')}`, 'aria-label': 'Resposta', autocomplete: 'off', spellcheck: 'false' });
+        const preview = h('div', { class: 'preview' }, 'A fórmula interpretada aparece aqui.');
+        input.addEventListener('input', () => {
+          if (!input.value.trim()) { preview.textContent = 'A fórmula interpretada aparece aqui.'; return; }
+          try { const ast = T.parse(input.value, vars); preview.replaceChildren(); const span = h('span'); preview.append(span); tex(span, toTexSafe(ast), false); }
+          catch (e) { preview.replaceChildren(h('span', { class: 'err' }, e.message)); }
+        });
+        const submit = () => {
+          if (done || !input.value.trim()) return;
+          const res = T.check(q.ans, input.value);
+          if (res.error) { preview.replaceChildren(h('span', { class: 'err' }, res.error)); return; }
+          input.disabled = true; btn.disabled = true;
+          finish(res.ok, q.ans.kind === 'ode' ? 'Sua função não satisfaz a equação.' : '');
+        };
+        const btn = h('button', { class: 'btn primary small', onclick: submit }, 'Verificar');
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+        card.append(h('div', { class: 'ansrow' }, input, btn), preview);
+        setTimeout(() => input.focus(), 0);
+      }
+      if (reveal) {
+        while (shown < q.steps.length) showStep();
+        if (q.ans.kind === 'choice') card.querySelectorAll('.opt').forEach((o, k) => { o.disabled = true; });
+      } else if (hints) tools.append(hintBtn);
+      else tools.append(h('span', { class: 'note' }, 'Simulado: sem dicas, como na prova. A solução aparece depois.'));
+      card.append(tools, steps, feedback);
+      renderMath(card);
+      return card;
+    }
+    const toTexSafe = ast => { try { return T.toTex(ast); } catch { return '?'; } };
+
+    // ---------- sessões ----------
+    let timerId = null;
+    function start(mode, id) {
+      clearInterval(timerId);
+      const arena = $('#arena');
+      const pool = T.SKILLS.filter(s => inProva(s) && !s.id.startsWith('metodo')).map(s => s.id);
+      if (mode === 'exemplo') {
+        const s = T.skillById(id), q = T.generate(id);
+        arena.replaceChildren(
+          h('div', { class: 'arena-head' }, h('h2', {}, `Exemplo resolvido · ${s.nome}`)),
+          h('p', { class: 'c-muted' }, 'Leia cada passo e tente explicar a si mesmo por que ele vem ali (é a autoexplicação, que faz o exemplo render). Depois resolva um parecido sozinho.'),
+          questionCard(q, { reveal: true }),
+          h('div', { class: 'q-tools' }, h('button', { class: 'btn primary', onclick: () => start('pratica', id) }, 'Agora tente um parecido →'), h('button', { class: 'btn', onclick: () => start('exemplo', id) }, 'Outro exemplo'), h('a', { href: GUIA(id) }, 'receita no guia ↗')),
+        );
+        arena.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      let ids, title;
+      if (mode === 'pratica') { ids = Array(T.SESSION).fill(id); title = `Praticar · ${T.skillById(id).nome}`; }
+      else if (mode === 'simulado') { ids = T.interleave(pool, 6); title = `Simulado intercalado · ${state.prova === 'todas' ? 'todas as provas' : state.prova}`; }
+      else {
+        const due = T.dueSkills(state).filter(x => inProva(T.skillById(x)));
+        ids = T.interleave(due.length ? due : pool, 6);
+        title = 'Revisão espaçada';
+      }
+      const results = [];
+      const t0 = Date.now();
+      const dots = h('div', { class: 'dots' }, ids.map(() => h('i')));
+      const timer = h('span', { class: 'timer' });
+      if (mode !== 'pratica') timerId = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); timer.textContent = `⏱ ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 1000);
+      const slot = h('div');
+      arena.replaceChildren(h('div', { class: 'arena-head' }, h('h2', {}, title), dots, timer), slot);
+      arena.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      const next = i => {
+        [...dots.children].forEach((d, k) => d.classList.toggle('cur', k === i));
+        if (i >= ids.length) return summary(mode, ids, results, t0);
+        const q = T.generate(ids[i]);
+        const label = mode === 'pratica' ? null : h('div', { class: 'c-muted', style: 'font-size:13px;margin-bottom:6px' }, `Questão ${i + 1} de ${ids.length}`);
+        const card = questionCard(q, {
+          hints: mode !== 'simulado',
+          onDone: ({ ok, hint }) => {
+            results.push({ id: ids[i], ok });
+            dots.children[i].classList.add(ok ? 'ok' : hint ? 'hint' : 'bad');
+            card.append(h('div', { class: 'q-tools' }, h('button', { class: 'btn primary', onclick: () => next(i + 1) }, i + 1 < ids.length ? 'Próxima →' : 'Ver resultado')));
+          },
+        });
+        slot.replaceChildren(...[label, card].filter(Boolean));
+      };
+      next(0);
+    }
+
+    function summary(mode, ids, results, t0) {
+      clearInterval(timerId);
+      const now = Date.now();
+      const rows = [];
+      if (mode === 'pratica') {
+        const id = ids[0], st = sk(id), before = st.level;
+        const right = results.filter(r => r.ok).length;
+        st.level = T.levelAfterPractice(before, right, ids.length);
+        st.last = now;
+        rows.push([id, before, st.level, `${right} / ${ids.length}`]);
+      } else {
+        const by = {};
+        for (const r of results) (by[r.id] ??= []).push(r.ok);
+        for (const [id, oks] of Object.entries(by)) {
+          const st = sk(id), before = st.level;
+          for (const ok of oks) st.level = T.levelAfterTest(st.level, ok);
+          st.last = now;
+          rows.push([id, before, st.level, `${oks.filter(Boolean).length} / ${oks.length}`]);
+        }
+      }
+      save();
+      const total = results.filter(r => r.ok).length;
+      const mins = Math.round((now - t0) / 60000);
+      const weak = rows.filter(([, , after]) => after < 3).map(([id]) => id);
+      $('#arena').replaceChildren(h('div', { class: 'summary' },
+        h('div', { class: 'arena-head' }, h('h2', {}, `Resultado: ${total} de ${results.length}`), mode !== 'pratica' ? h('span', { class: 'timer' }, `${mins} min`) : null),
+        h('table', { class: 'data' },
+          h('tr', {}, h('th', {}, 'Habilidade'), h('th', {}, 'Acertos'), h('th', {}, 'Nível'), h('th', {}, '')),
+          rows.map(([id, b, a, sc]) => h('tr', {},
+            h('td', {}, T.skillById(id).nome), h('td', {}, sc),
+            h('td', { html: `${T.LEVELS[b]} → <b class="${a > b ? 'c-green' : a < b ? 'c-red' : ''}">${T.LEVELS[a]}</b>` }),
+            h('td', {}, h('a', { href: GUIA(id) }, 'receita ↗'))))),
+        h('p', { class: 'c-muted' }, weak.length ? `Próximo passo: releia a receita de ${weak.map(id => T.skillById(id).nome).join(', ')}, veja um exemplo resolvido e pratique de novo. Errar agora é o que faz lembrar na prova.` : 'Tudo no nível Proficiente ou acima: faça um simulado intercalado para chegar a Dominado.'),
+        h('div', { class: 'q-tools' },
+          mode === 'pratica' ? h('button', { class: 'btn primary', onclick: () => start('pratica', ids[0]) }, 'Praticar de novo') : h('button', { class: 'btn primary', onclick: () => start(mode) }, 'Outra rodada'),
+          h('button', { class: 'btn', onclick: () => start('simulado') }, 'Simulado intercalado')),
+      ));
+      renderPanel();
+    }
+
+    // ---------- controles ----------
+    $('#prova').addEventListener('click', e => { const p = e.target.dataset?.p; if (!p) return; state.prova = p; save(); renderPanel(); });
+    $('#exam').addEventListener('change', e => { state.exam = e.target.value; save(); renderPlan(); });
+    $('#sim').addEventListener('click', () => start('simulado'));
+    let armed = false;
+    $('#reset').addEventListener('click', e => {
+      if (!armed) { armed = true; e.target.textContent = 'Clique de novo para confirmar'; setTimeout(() => { armed = false; e.target.textContent = 'Zerar progresso'; }, 3000); return; }
+      state.skills = {}; save(); armed = false; e.target.textContent = 'Zerar progresso'; renderPanel();
+    });
+    renderPanel();
+  </script>
+</body>
+</html>

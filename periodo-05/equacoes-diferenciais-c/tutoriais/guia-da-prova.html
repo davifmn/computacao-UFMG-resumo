@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guia da prova · EDO C</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .prose table.data td, .prose table.data th { white-space: normal; text-align: left; font-family: var(--font); }
+    .prose table.data { margin: 14px 0; }
+    .prose h3 { scroll-margin-top: 70px; }
+    details.prob { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--purple); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+    details.prob summary { cursor: pointer; line-height: 1.6; }
+    details.prob[open] summary { margin-bottom: 8px; }
+    details.prob p, details.prob ol, details.prob ul { margin: 6px 0; }
+    .exam { border-left-color: var(--red) !important; }
+    .exam > summary::before { content: '📌 '; }
+    .errata { border-left-color: var(--yellow) !important; }
+    .recipe { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 18px 10px; margin: 12px 0 20px; }
+    .recipe h3 { margin-top: 14px; }
+    .recipe .tag { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .recipe .go { float: right; margin-top: 16px; font-size: 14px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .recipe table.data td { padding: 8px 12px; }
+    .recipe table.data .katex { font-size: 1.08em; }
+    .loop { counter-reset: passo; list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .loop li { counter-increment: passo; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 14px; }
+    .loop li::before { content: counter(passo); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--blue); color: #0b1a20; font-weight: 700; margin-right: 6px; }
+    .flow { display: grid; gap: 8px; }
+    .flow .q { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+    .flow .q b.y { color: var(--green); } .flow .q b.n { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-05">5º período</a>
+      <span class="sep">/</span><a href="../../../index.html#edc">Equações Diferenciais C</a>
+      <span class="sep">/</span><span>Guia da prova</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Equações Diferenciais C · MAT040 · listas 1, 2 e 3</div>
+    <h1>Guia da prova</h1>
+    <p class="lead">As três listas que o professor passou para as provas, transformadas num roteiro: o que cai e com que frequência, uma <b>receita</b> para cada tipo de questão, as listas <b>resolvidas e conferidas no computador</b> e um <a href="../visualizacoes/treino.html">treino</a> com questões infinitas do mesmo formato.</p>
+
+    <div class="with-toc">
+      <nav class="toc" id="toc" aria-label="Sumário"></nav>
+      <article class="prose" id="content">
+
+        <h2>Como estudar com este material</h2>
+        <p>Reler a matéria e grifar dão sensação de estudo, mas quase não ajudam na prova. O que funciona, segundo a pesquisa em psicologia da aprendizagem, é <b>resolver sem olhar</b>, <b>espaçar</b> as sessões e <b>misturar</b> os tipos de questão. O ciclo sugerido para cada tipo de questão:</p>
+        <ol class="loop">
+          <li><b>Receita</b> (5 min): leia como reconhecer o tipo e os passos, nesta página.</li>
+          <li><b>Exemplo resolvido</b>: no treino, leia passo a passo explicando a si mesmo o porquê de cada um.</li>
+          <li><b>Prática</b> até <b>Proficiente</b> (5 de 5 sem dica). Travou? Peça só o próximo passo.</li>
+          <li><b>Simulado intercalado</b>: tipos misturados, sem dicas, como na prova.</li>
+          <li><b>Revisão espaçada</b>: volte quando o treino avisar (1, 2, 4, 8 dias).</li>
+        </ol>
+        <table class="data">
+          <tr><th>Princípio</th><th>Referência</th><th>Onde está aqui</th></tr>
+          <tr><td><b>Domínio por níveis</b>: só avance quando acertar com folga; o nível pode cair se você errar depois</td><td>Khan Academy: níveis Tentado (&lt; 70%), Familiar, Proficiente (100%) e Dominado (acertar de novo no teste da unidade) (<a href="https://support.khanacademy.org/hc/articles/115002552631-What-are-Course-and-Unit-Mastery-">central de ajuda</a>)</td><td>Os mesmos quatro níveis no <a href="../visualizacoes/treino.html">treino</a>; o simulado faz o papel do teste da unidade</td></tr>
+          <tr><td><b>Testar a memória</b> e <b>espaçar</b> as sessões</td><td>Dunlosky et al. (2013) compararam dez técnicas de estudo; só essas duas receberam a nota máxima de utilidade. Reler, resumir e grifar ficaram com nota baixa (<a href="https://doi.org/10.1177/1529100612453266">Psychological Science in the Public Interest</a>)</td><td>Questões que você resolve antes de ver a solução; revisão em 1, 2, 4 e 8 dias</td></tr>
+          <tr><td><b>Prática intercalada</b>: misturar os tipos em vez de fazer 10 iguais seguidos</td><td>Rohrer et al. (2020), ensaio com 54 turmas: num teste surpresa um mês depois, 61% de acerto com prática intercalada contra 38% com prática em blocos (<a href="https://ies.ed.gov/use-work/awards/efficacy-study-interleaved-mathematics-practice">IES</a>). O ganho vem de aprender a <b>escolher o método</b></td><td>Simulado intercalado, revisão e as habilidades "Qual método?"</td></tr>
+          <tr><td><b>Exemplos resolvidos que desaparecem aos poucos</b></td><td>Renkl e Atkinson (2003): primeiro o exemplo completo, depois exemplos com passos faltando, até o problema inteiro (<a href="https://openlearning.mit.edu/mit-faculty/research-based-learning-findings/worked-and-faded-examples">MIT Open Learning</a>)</td><td>"Exemplo resolvido" seguido de "agora tente um parecido"; cada dica revela um passo só</td></tr>
+          <tr><td><b>Sessão = teoria curta + problema resolvido + prática</b></td><td>MIT 18.03SC (EDO para estudo independente): cada sessão tem notas, aula, vídeo de resolução de problema e exercícios (<a href="https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/">OCW</a>)</td><td>Receita → exemplo → treino, para cada tipo</td></tr>
+          <tr><td><b>Reconhecer o tipo antes de resolver</b> e ter a tabela na cabeça</td><td>Paul's Online Notes, a referência de EDO mais usada nos EUA, organiza cada capítulo por "como identificar" e traz a tabela de Laplace com problemas resolvidos (<a href="https://tutorial.math.lamar.edu/Classes/DE/LaplaceTransforms.aspx">Lamar University</a>)</td><td><a href="#metodo">Fluxograma</a> e a <a href="#r-laplaceDireta">tabela</a> abaixo</td></tr>
+          <tr><td><b>Conferir a resposta</b></td><td>Pólya, <i>A arte de resolver problemas</i>: o retrospecto é a 4ª etapa. Em EDO conferir é barato: substitua a solução na equação</td><td>Cada receita termina com "Confira"</td></tr>
+        </table>
+
+        <h2>O que cai: o mapa das listas</h2>
+        <p>Não encontrei provas antigas da MAT040 publicadas, então o mapa vem das três listas, que o professor passou justamente para as provas. A coluna "itens" conta quantos itens de cada tipo aparecem; 📌 marca os tipos que mais aparecem.</p>
+        <div class="grid2">
+          <table class="data">
+            <tr><th colspan="3">Lista 1 · equações de 1ª ordem (26 questões)</th></tr>
+            <tr><th>Tipo de questão</th><th>Questões</th><th>Itens</th></tr>
+            <tr><td>📌 <a href="#r-teu">Existência e unicidade / maior intervalo</a></td><td>20–26, e pedido junto em 3, 6, 7, 8, 11, 13</td><td>7 + 6</td></tr>
+            <tr><td>📌 <a href="#r-linear1">Linear: fator integrante</a></td><td>1–7</td><td>7</td></tr>
+            <tr><td>📌 <a href="#r-exata">Exatas</a></td><td>14–19</td><td>6</td></tr>
+            <tr><td><a href="#r-separavel">Separáveis</a></td><td>8, 10, 11, 13</td><td>4</td></tr>
+            <tr><td><a href="#r-autonoma">Equilíbrios e comportamento qualitativo</a></td><td>9, 12</td><td>2</td></tr>
+          </table>
+          <table class="data">
+            <tr><th colspan="3">Lista 2 · lineares de 2ª ordem (17 questões)</th></tr>
+            <tr><th>Tipo de questão</th><th>Questões</th><th>Itens</th></tr>
+            <tr><td>📌 <a href="#r-homogenea2">Homogênea: equação característica (PVI)</a></td><td>5–10</td><td>7</td></tr>
+            <tr><td><a href="#r-wronskiano">Superposição, Wronskiano, Abel</a></td><td>1–4</td><td>4</td></tr>
+            <tr><td><a href="#r-variacao">Variação de parâmetros</a></td><td>14–17</td><td>4</td></tr>
+            <tr><td><a href="#r-coefIndet">Coeficientes a determinar</a></td><td>11–13</td><td>3</td></tr>
+          </table>
+        </div>
+        <table class="data">
+          <tr><th colspan="3">Lista 3 · transformada de Laplace (11 questões, 41 itens)</th></tr>
+          <tr><th>Tipo de questão</th><th>Questões</th><th>Itens</th></tr>
+          <tr><td>📌 <a href="#r-laplaceDireta">Transformada direta, inclusive degrau e delta</a></td><td>1, 4, 7</td><td>13</td></tr>
+          <tr><td>📌 <a href="#r-laplacePvi">PVI por Laplace (sem forçamento, com degrau, com impulso)</a></td><td>3, 5, 8</td><td>12</td></tr>
+          <tr><td>📌 <a href="#r-laplaceInversa">Inversa: frações parciais, completar quadrado, deslocamento</a></td><td>2, 6</td><td>9</td></tr>
+          <tr><td><a href="#r-convolucao">Convolução</a></td><td>9, 10, 11</td><td>7</td></tr>
+        </table>
+        <div class="callout tip"><p><b>O padrão que se repete:</b> quase toda questão da Lista 1 pede, além da solução, o <b>intervalo de validade</b>. Esse costuma ser o ponto perdido por quem resolve certo e esquece de justificar o domínio. Na Lista 3, os itens com <b>degrau e delta</b> (questões 4 a 8) são mais da metade.</p></div>
+
+        <h2 id="metodo">Qual método? O fluxograma</h2>
+        <p>A habilidade que a prova cobra sem avisar é <b>reconhecer o tipo</b>. Siga as perguntas na ordem. Treine com "Qual método?" no <a href="../visualizacoes/treino.html">treino</a>.</p>
+        <div class="flow" id="r-metodoP1">
+          <div class="q"><b>1ª ordem</b> ($y' = f(x, y)$):</div>
+          <div class="q">1. Dá para escrever $y' = g(x)\,h(y)$? <b class="y">Sim</b> → <a href="#r-separavel">separável</a>. (Teste: $4^{2x - y} = 4^{2x}4^{-y}$ separa; $\operatorname{sen}(x + y)$ não.)</div>
+          <div class="q">2. $y$ e $y'$ aparecem só na 1ª potência, sem produto entre eles? <b class="y">Sim</b> → <a href="#r-linear1">linear</a>: forma padrão e fator integrante.</div>
+          <div class="q">3. Veio como $M\,dx + N\,dy = 0$? Calcule $M_y$ e $N_x$: iguais → <a href="#r-exata">exata</a>.</div>
+          <div class="q">4. Nenhum dos três (ex.: $y' = y^2 + x$) → fora do que as listas cobram; desconfie de erro de conta.</div>
+        </div>
+        <div class="flow" id="r-metodoP2" style="margin-top:12px">
+          <div class="q"><b>2ª ordem com coeficientes constantes</b> ($ay'' + by' + cy = g$):</div>
+          <div class="q">1. $g = 0$ → <a href="#r-homogenea2">equação característica</a>.</div>
+          <div class="q">2. $g$ é polinômio, exponencial, seno/cosseno (ou produto deles) → <a href="#r-coefIndet">coeficientes a determinar</a>, mais rápido.</div>
+          <div class="q">3. $g$ tem $\sec$, $\operatorname{tg}$, $\operatorname{cossec}$, $\ln$, divisão por $x$... → <a href="#r-variacao">variação de parâmetros</a> (que funciona sempre, mas dá mais trabalho).</div>
+        </div>
+        <div class="flow" id="r-metodoP3" style="margin-top:12px">
+          <div class="q"><b>Inversa de Laplace</b> $F(s)$:</div>
+          <div class="q">1. Tem fator $e^{-cs}$? → <a href="#r-laplaceInversa">deslocamento em $t$</a>: tire o fator, inverta o resto, troque $t$ por $t - c$ e multiplique por $u_c(t)$.</div>
+          <div class="q">2. Denominador com raízes reais → frações parciais. Com $\Delta &lt; 0$ → completar quadrado.</div>
+          <div class="q">3. Produto de duas transformadas conhecidas, ou fator complexo repetido como $(s^2 + 1)^2$ → <a href="#r-convolucao">convolução</a>.</div>
+        </div>
+
+        <h2>Receitas da prova 1 (Lista 1)</h2>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-linear1">Linear de 1ª ordem: fator integrante</h3>
+          <p><span class="tag">Reconheça</span> $y' + p(x)\,y = q(x)$, talvez disfarçada: $ty' + 2y = \frac{\cos t}{t}$ precisa ser dividida por $t$.</p>
+          <ol>
+            <li><b>Forma padrão</b>: coeficiente de $y'$ igual a 1. Leia $p$ e $q$.</li>
+            <li>$\mu = e^{\int p\,dx}$ (sem constante). Simplifique: $e^{2\ln x} = x^2$, $e^{\int \operatorname{tg} x} = \sec x$.</li>
+            <li>$(\mu y)' = \mu q$. Integre os dois lados e <b>não esqueça o $+C$</b> antes de dividir por $\mu$.</li>
+            <li>Condição inicial → $C$.</li>
+            <li><b>Intervalo</b>: o maior intervalo aberto que contém $x_0$ onde $p$ e $q$ são contínuas.</li>
+          </ol>
+          <p><span class="tag">Pegadinhas</span> $\mu$ errado por não estar na forma padrão; $+C$ somado depois de dividir; esquecer o intervalo. Se a integral de $\mu q$ não é elementar (L1 q.6), deixe-a indicada com limites: $\int_{x_0}^{x}$.</p>
+          <p><span class="tag">Confira</span> derive sua resposta e substitua; teste $y(x_0)$.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-separavel">Separáveis</h3>
+          <p><span class="tag">Reconheça</span> $y' = g(x)h(y)$.</p>
+          <ol>
+            <li>Ache as <b>soluções constantes</b> primeiro: $h(y) = 0$. A divisão por $h(y)$ as perde.</li>
+            <li>Separe $\frac{dy}{h(y)} = g(x)\,dx$ e integre (frações parciais quando $h$ é produto).</li>
+            <li>Condição inicial; isole $y$ se der, escolhendo o sinal da raiz pelo $y_0$.</li>
+            <li>Intervalo: onde a fórmula faz sentido (raiz $\ge 0$, denominador $\ne 0$, log de positivo) e que contém $x_0$.</li>
+          </ol>
+          <p><span class="tag">Pegadinhas</span> $\ln|y|$ com módulo; $\pm$ da raiz; explosão em tempo finito em $y' = y^2$ (o intervalo é limitado mesmo com $f$ suave).</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-exata">Exatas</h3>
+          <p><span class="tag">Reconheça</span> $M(x, y)\,dx + N(x, y)\,dy = 0$.</p>
+          <ol>
+            <li><b>Teste</b>: $M_y = N_x$? Escreva as duas derivadas na prova: o teste vale ponto.</li>
+            <li>$\psi = \int M\,dx + h(y)$ (integrando em $x$ com $y$ constante).</li>
+            <li>$\psi_y = N$ → $h'(y)$ → $h(y)$. Se sobrar $x$ em $h'(y)$, houve erro de conta.</li>
+            <li>Solução implícita $\psi(x, y) = C$; a condição inicial dá $C$.</li>
+          </ol>
+          <p><span class="tag">Pegadinhas</span> contar duas vezes o termo misto ($x^2y$ aparece integrando $M$ e integrando $N$: some só uma vez). Na q.19(c): $y$ é função de $x$ perto do ponto onde $\psi_y = N \ne 0$ (Teorema da Função Implícita).</p>
+          <p><span class="tag">Confira</span> derive $\psi$ em $x$ e em $y$.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-teu">Existência, unicidade e maior intervalo</h3>
+          <p><span class="tag">Enunciado</span> Se $f$ e $\frac{\partial f}{\partial y}$ são contínuas num retângulo em volta de $(x_0, y_0)$, o PVI $y' = f(x, y)$, $y(x_0) = y_0$ tem solução <b>única</b> em algum intervalo $|x - x_0| \le h$ (local).</p>
+          <ol>
+            <li><b>Equação linear</b>: existe e é única no maior intervalo aberto que contém $x_0$ onde $p$ e $q$ são contínuas. Liste os pontos ruins (zeros de denominador, $\operatorname{tg}$ em $\pm\frac{\pi}{2}$, domínio de $\ln$ e raiz) e escolha o pedaço que contém $x_0$.</li>
+            <li><b>Não linear</b>: calcule $f_y$ e veja se é contínua em $(x_0, y_0)$. Caso clássico: $y' = \sqrt{y}$, $y' = 3|y|^{2/3}$ com $y(0) = 0$: $f$ contínua, $f_y$ explode → existência sim, unicidade não garantida, e de fato há infinitas soluções (fique em 0 até $a$ e depois saia).</li>
+            <li>O teorema é <b>local</b>: o tamanho do intervalo depende do retângulo ($h = \min(a, b/K)$ com $K = \max|f|$); o maior intervalo só sai resolvendo.</li>
+          </ol>
+          <p><span class="tag">Pegadinhas</span> "o teorema não se aplica" não quer dizer "não há solução única", só que o teorema não garante. E a solução pode existir além do intervalo garantido (q.21: $y = 2x$).</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-autonoma">Autônomas: equilíbrios e linha de fase</h3>
+          <p>$y' = g(y)$. Equilíbrios: $g(y) = 0$. Desenhe a reta de $y$ com o sinal de $g$ entre os zeros: setas para cima onde $g &gt; 0$. <b>Estável</b>: setas entram dos dois lados ($g' &lt; 0$); <b>instável</b>: saem; <b>semiestável</b>: uma entra e outra sai (raiz dupla, como $(y - 1)^2$). Pela unicidade, nenhuma solução cruza ou alcança um equilíbrio em tempo finito: ela se aproxima assintoticamente.</p>
+          <p>Veja também o <a href="../visualizacoes/campo-de-direcoes.html">campo de direções</a> com $y' = y(1 - y)$.</p>
+        </div>
+
+        <h2>Receitas da prova 2 (Lista 2)</h2>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-wronskiano">Superposição, Wronskiano e Abel</h3>
+          <ul>
+            <li><b>Superposição</b>: $L[y] = y'' + p\,y' + q\,y$ é linear, então $L[c_1y_1 + c_2y_2] = c_1L[y_1] + c_2L[y_2] = 0$.</li>
+            <li>$W(y_1, y_2) = y_1y_2' - y_1'y_2$. Soluções da mesma EDO formam um conjunto fundamental se e só se $W \ne 0$.</li>
+            <li><b>Abel</b>: $W(x) = C\,e^{-\int p\,dx}$, com $p$ da <b>forma padrão</b>. Logo $W$ é identicamente nulo ou nunca se anula no intervalo. Para coeficientes constantes com $b = 0$ ($y'' + 4y = 0$), $W$ é constante.</li>
+          </ul>
+          <p><span class="tag">Memorize</span> $W(e^{ax}, e^{bx}) = (b - a)e^{(a+b)x}$, $W(e^{rx}, xe^{rx}) = e^{2rx}$, $W(\cos kx, \operatorname{sen} kx) = k$, $W(x^m, x^n) = (n - m)x^{m+n-1}$.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-homogenea2">Homogênea com coeficientes constantes</h3>
+          <p>$ay'' + by' + cy = 0$ → característica $ar^2 + br + c = 0$:</p>
+          <table class="data">
+            <tr><th>Raízes</th><th>Solução geral</th></tr>
+            <tr><td>reais distintas $r_1 \ne r_2$</td><td>$c_1e^{r_1x} + c_2e^{r_2x}$</td></tr>
+            <tr><td>dupla $r$</td><td>$(c_1 + c_2x)e^{rx}$</td></tr>
+            <tr><td>complexas $\alpha \pm \beta i$</td><td>$e^{\alpha x}(c_1\cos\beta x + c_2\operatorname{sen}\beta x)$</td></tr>
+          </table>
+          <p><span class="tag">PVI</span> monte o sistema em $c_1, c_2$ com $y(x_0)$ e $y'(x_0)$. Derive com cuidado o produto $e^{\alpha x}(\dots)$. Se $x_0 \ne 0$ (q.10, $x_0 = \frac{\pi}{2}$), avalie senos e cossenos <b>antes</b> de resolver.</p>
+          <p>Veja o <a href="../visualizacoes/oscilador.html">oscilador massa-mola</a>: os três casos são os regimes super, crítico e subamortecido.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-coefIndet">Coeficientes a determinar</h3>
+          <table class="data">
+            <tr><th>$g(x)$</th><th>Chute para $y_p$</th></tr>
+            <tr><td>polinômio de grau $n$</td><td>polinômio completo de grau $n$: $A_nx^n + \dots + A_0$</td></tr>
+            <tr><td>$Ge^{kx}$</td><td>$Ae^{kx}$</td></tr>
+            <tr><td>$G\cos kx$ ou $G\operatorname{sen} kx$</td><td>$A\cos kx + B\operatorname{sen} kx$ (sempre os dois)</td></tr>
+            <tr><td>produtos (ex.: $xe^{kx}$)</td><td>produto dos chutes: $(Ax + B)e^{kx}$</td></tr>
+          </table>
+          <p><span class="tag">A regra que mais cai</span> se algum termo do chute <b>já resolve a homogênea</b>, multiplique o chute por $x$ (por $x^2$ se a raiz for dupla). Ex.: $y'' + 4y = 3\cos 2x$ → $y_p = x(A\cos 2x + B\operatorname{sen} 2x)$ (ressonância).</p>
+          <p><span class="tag">Confira</span> substitua $y_p$: deve sair exatamente $g$. Resposta final: $y = y_h + y_p$.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-variacao">Variação de parâmetros</h3>
+          <p>Na <b>forma padrão</b> $y'' + p\,y' + q\,y = g$, com $y_1, y_2$ da homogênea e $W = W(y_1, y_2)$:</p>
+          <p>$$u_1' = -\frac{y_2\,g}{W},\qquad u_2' = \frac{y_1\,g}{W},\qquad y_p = u_1y_1 + u_2y_2.$$</p>
+          <p><span class="tag">Pegadinhas</span> esquecer de dividir pelo coeficiente de $y''$ antes de ler $g$; esquecer o sinal de menos em $u_1'$; $\int \operatorname{tg} = -\ln|\cos|$; termos de $y_p$ que são da homogênea podem ser descartados. Integrais que aparecem: $\int \operatorname{cotg}(kx) = \frac{1}{k}\ln|\operatorname{sen} kx|$, $\int \frac{dw}{1 - 2w^2} = \frac{1}{2\sqrt 2}\ln\left|\frac{1 + \sqrt 2 w}{1 - \sqrt 2 w}\right|$ (q.15).</p>
+        </div>
+
+        <h2>Receitas da prova 3 (Lista 3)</h2>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-laplaceDireta">Tabela e propriedades de Laplace</h3>
+          <div class="grid2">
+            <table class="data">
+              <tr><th>$f(t)$</th><th>$F(s)$</th></tr>
+              <tr><td>$1$</td><td>$\dfrac{1}{s}$</td></tr>
+              <tr><td>$t^n$</td><td>$\dfrac{n!}{s^{n+1}}$</td></tr>
+              <tr><td>$e^{at}$</td><td>$\dfrac{1}{s - a}$</td></tr>
+              <tr><td>$\operatorname{sen} bt$</td><td>$\dfrac{b}{s^2 + b^2}$</td></tr>
+              <tr><td>$\cos bt$</td><td>$\dfrac{s}{s^2 + b^2}$</td></tr>
+              <tr><td>$\operatorname{senh} bt$, $\cosh bt$</td><td>$\dfrac{b}{s^2 - b^2}$, $\dfrac{s}{s^2 - b^2}$</td></tr>
+              <tr><td>$u_c(t)$</td><td>$\dfrac{e^{-cs}}{s}$</td></tr>
+              <tr><td>$\delta(t - c)$</td><td>$e^{-cs}$</td></tr>
+            </table>
+            <table class="data">
+              <tr><th>Propriedade</th><th>Fórmula</th></tr>
+              <tr><td>derivadas</td><td>$\mathcal{L}\{y'\} = sY - y(0)$<br>$\mathcal{L}\{y''\} = s^2Y - sy(0) - y'(0)$</td></tr>
+              <tr><td>deslocamento em $s$</td><td>$\mathcal{L}\{e^{at}f(t)\} = F(s - a)$</td></tr>
+              <tr><td>deslocamento em $t$</td><td>$\mathcal{L}\{u_c(t)f(t - c)\} = e^{-cs}F(s)$</td></tr>
+              <tr><td>delta com peso</td><td>$\varphi(t)\delta(t - c) = \varphi(c)\delta(t - c)$</td></tr>
+              <tr><td>multiplicar por $t$</td><td>$\mathcal{L}\{tf(t)\} = -F'(s)$</td></tr>
+              <tr><td>convolução</td><td>$\mathcal{L}\{f * g\} = F(s)G(s)$</td></tr>
+              <tr><td>útil</td><td>$\mathcal{L}^{-1}\left\{\dfrac{1}{(s^2 + a^2)^2}\right\} = \dfrac{\operatorname{sen} at - at\cos at}{2a^3}$</td></tr>
+            </table>
+          </div>
+          <p><span class="tag">Funções por partes</span> escreva com degraus: "vale $g$ a partir de $c$" é $u_c(t)\,g(t)$. Para usar a tabela, $g$ precisa estar escrita em $t - c$: $u_2(t)\,t = u_2(t)\,[(t - 2) + 2]$.</p>
+          <p><span class="tag">Pegadinhas</span> $\operatorname{sen}^2(3t)$ pede a identidade $\frac{1 - \cos 6t}{2}$ antes da tabela; $\mathcal{L}\{u_c(t)f(t)\} \ne e^{-cs}F(s)$ se $f$ não estiver deslocada.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-laplaceInversa">Transformada inversa</h3>
+          <ol>
+            <li>Tem $e^{-cs}$? Separe: inverta o resto e aplique o deslocamento em $t$ no fim.</li>
+            <li>Denominador com raízes reais: frações parciais. Para fatores simples, o atalho de Heaviside: $A = \left.(s - r)F(s)\right|_{s = r}$.</li>
+            <li>$\Delta &lt; 0$: complete o quadrado, $(s - p)^2 + q^2$, e reescreva o numerador como $\alpha(s - p) + \beta$: dá $e^{pt}\left(\alpha\cos qt + \frac{\beta}{q}\operatorname{sen} qt\right)$.</li>
+            <li>Coeficiente em $s^2$ diferente de 1 (q.2d: $2s^2 + 3$)? Divida antes de tudo.</li>
+          </ol>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-laplacePvi">PVI por Laplace</h3>
+          <ol>
+            <li>Transforme a equação inteira, com as condições iniciais nas fórmulas das derivadas.</li>
+            <li>Isole $Y(s)$. Ele fica na forma $\frac{\text{(condições iniciais)}}{P(s)} + \frac{G(s)}{P(s)}$, com $P$ a característica.</li>
+            <li>Inverta cada pedaço. Com $e^{-cs}$: ache $h = \mathcal{L}^{-1}\{\text{resto}\}$ e escreva $u_c(t)\,h(t - c)$.</li>
+          </ol>
+          <p><span class="tag">Confira</span> a solução é contínua; com $\delta(t - c)$, $y'$ dá um salto igual ao peso do impulso dividido pelo coeficiente de $y''$; com degrau, nada muda antes de $t = c$.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-convolucao">Convolução</h3>
+          <p>$(f * g)(t) = \int_0^t f(\tau)\,g(t - \tau)\,d\tau$ e $\mathcal{L}^{-1}\{F\,G\} = f * g$. Use quando $F(s)$ for <b>produto de duas transformadas conhecidas</b>, quando o forçamento é genérico, $g(t)$ (q.11a: $y = \frac{1}{2}\int_0^t g(\tau)\operatorname{sen} 2(t - \tau)\,d\tau$), ou com fatores complexos repetidos ($\frac{s}{(s^2 + 1)^2} = \frac{s}{s^2 + 1}\cdot\frac{1}{s^2 + 1}$ → $\cos * \operatorname{sen} = \frac{t}{2}\operatorname{sen} t$).</p>
+          <p><span class="tag">Truque</span> expanda $\operatorname{sen}(t - \tau) = \operatorname{sen} t\cos\tau - \cos t\operatorname{sen}\tau$: o que só depende de $t$ sai da integral.</p>
+        </div>
+
+        <h2>Lista 1 resolvida</h2>
+        <p class="c-muted">Abra cada questão só depois de tentar. As soluções foram conferidas substituindo na equação (sympy e integração numérica).</p>
+
+        <details class="prob exam"><summary><b>1.</b> $y' + \frac{2}{x}y = x^2$, $y(1) = 0$, $x &gt; 0$.</summary>
+          <p>$\mu = e^{\int 2/x} = x^2$. $(x^2y)' = x^4 \Rightarrow x^2y = \frac{x^5}{5} + C$; $y(1) = 0 \Rightarrow C = -\frac{1}{5}$.</p>
+          <p>$y = \frac{x^5 - 1}{5x^2}$, em $(0, \infty)$.</p></details>
+        <details class="prob"><summary><b>2.</b> $y' + (\operatorname{tg} x)\,y = \operatorname{sen} x$, $y(0) = 2$.</summary>
+          <p>$\mu = e^{\int \operatorname{tg} x} = e^{-\ln\cos x} = \sec x$. $(y\sec x)' = \operatorname{tg} x \Rightarrow y\sec x = -\ln(\cos x) + C$, $C = 2$.</p>
+          <p>$y = \cos x\,(2 - \ln\cos x)$, em $\left(-\frac{\pi}{2}, \frac{\pi}{2}\right)$.</p></details>
+        <details class="prob exam"><summary><b>3.</b> $ty' + 2y = \frac{\cos t}{t}$, $y(\pi) = 0$, $t &gt; 0$: solução e intervalo.</summary>
+          <p>Forma padrão: $y' + \frac{2}{t}y = \frac{\cos t}{t^2}$. $\mu = t^2$: $(t^2y)' = \cos t \Rightarrow t^2y = \operatorname{sen} t + C$, e $y(\pi) = 0$ dá $C = 0$.</p>
+          <p>$y = \frac{\operatorname{sen} t}{t^2}$, válida em $(0, \infty)$: $p = 2/t$ e $q = \cos t/t^2$ são contínuas em $t &gt; 0$, e esse é o intervalo que contém $t_0 = \pi$.</p></details>
+        <details class="prob"><summary><b>4.</b> $y' - 3y = e^{2x}$, $y(\ln 2) = 1$.</summary>
+          <p>$\mu = e^{-3x}$: $(e^{-3x}y)' = e^{-x} \Rightarrow y = -e^{2x} + Ce^{3x}$. $y(\ln 2) = -4 + 8C = 1 \Rightarrow C = \frac{5}{8}$.</p>
+          <p>$y = \frac{5}{8}e^{3x} - e^{2x}$, em $\mathbb{R}$.</p></details>
+        <details class="prob"><summary><b>5.</b> $ty' + (1 + t)y = t^2$, $y(1) = 0$, $t &gt; 0$.</summary>
+          <p>Forma padrão: $y' + \left(\frac{1}{t} + 1\right)y = t$. $\mu = e^{\ln t + t} = te^t$. $(te^ty)' = t^2e^t \Rightarrow te^ty = (t^2 - 2t + 2)e^t + C$; $y(1) = 0 \Rightarrow C = -e$.</p>
+          <p>$y = t - 2 + \frac{2}{t} - \frac{e^{1 - t}}{t}$, em $(0, \infty)$.</p></details>
+        <details class="prob exam"><summary><b>6.</b> $(x - 1)y' + \frac{x - 2}{x + 1}y = (x - 1)e^x$, $y(2) = 1$: maior intervalo.</summary>
+          <p>Forma padrão: $y' + \frac{x - 2}{(x - 1)(x + 1)}y = e^x$. Frações parciais: $\frac{x - 2}{(x - 1)(x + 1)} = -\frac{1/2}{x - 1} + \frac{3/2}{x + 1}$, logo $\mu = \frac{(x + 1)^{3/2}}{(x - 1)^{1/2}}$.</p>
+          <p>$(\mu y)' = \mu e^x = \frac{(x + 1)^{3/2}e^x}{\sqrt{x - 1}}$, que <b>não tem primitiva elementar</b>. Deixe a integral indicada a partir de $x_0 = 2$ (onde $\mu(2) = 3\sqrt 3$):</p>
+          <p>$$y(x) = \frac{\sqrt{x - 1}}{(x + 1)^{3/2}}\left[3\sqrt 3 + \int_2^x \frac{(s + 1)^{3/2}e^s}{\sqrt{s - 1}}\,ds\right].$$</p>
+          <p>Maior intervalo: $(1, \infty)$, porque $p$ é descontínua em $x = \pm 1$ e $x_0 = 2$.</p></details>
+        <details class="prob exam"><summary><b>7.</b> $x(\ln x)y' + (1 + \ln x)y = x(\ln x)^2$, $y(e) = 0$.</summary>
+          <p>(a) Como $(x\ln x)' = 1 + \ln x$, o lado esquerdo já é $(x\ln x\cdot y)'$ (na forma padrão, $\mu = x\ln x$). Integrando por partes:</p>
+          <p>$x\ln x\cdot y = \int x\ln^2 x\,dx = \frac{x^2}{2}\ln^2 x - \frac{x^2}{2}\ln x + \frac{x^2}{4} + C$; em $x = e$: $0 = \frac{e^2}{4} + C$.</p>
+          <p>$y = \frac{x^2(2\ln^2 x - 2\ln x + 1) - e^2}{4x\ln x}$.</p>
+          <p>(b) $(1, \infty)$: $\ln x = 0$ em $x = 1$ e o domínio exige $x &gt; 0$.</p></details>
+        <details class="prob"><summary><b>8.</b> $\frac{dy}{dx} = \frac{xe^{x^2}}{1 + y^2}$, $y(0) = 0$: solução explícita e intervalo.</summary>
+          <p>$(1 + y^2)\,dy = xe^{x^2}dx \Rightarrow y + \frac{y^3}{3} = \frac{e^{x^2} - 1}{2}$.</p>
+          <p>Explícita pela fórmula de Cardano ($y^3 + 3y - 3\cdot\frac{e^{x^2} - 1}{2} = 0$ tem uma única raiz real): com $A = \frac{3}{4}(e^{x^2} - 1)$,</p>
+          <p>$$y = \sqrt[3]{A + \sqrt{A^2 + 1}} + \sqrt[3]{A - \sqrt{A^2 + 1}}.$$</p>
+          <p>Intervalo: $\mathbb{R}$, pois $y \mapsto y + y^3/3$ é crescente e sobrejetora, e $1 + y^2 \ne 0$.</p></details>
+        <details class="prob exam"><summary><b>9.</b> $\frac{dy}{dx} = (y - 1)(y + 2)$, $y(0) = 0$: soluções constantes e comportamento.</summary>
+          <p>Constantes: $y \equiv 1$ e $y \equiv -2$. Com $\frac{1}{(y - 1)(y + 2)} = \frac{1}{3}\left(\frac{1}{y - 1} - \frac{1}{y + 2}\right)$: $\frac{1}{3}\ln\left|\frac{y - 1}{y + 2}\right| = x + C$.</p>
+          <p>Em $(0, 0)$ a fração vale $-\frac{1}{2}$ (negativa entre os equilíbrios): $\frac{y - 1}{y + 2} = -\frac{1}{2}e^{3x}$, logo $y = \frac{2 - 2e^{3x}}{2 + e^{3x}}$, definida em $\mathbb{R}$.</p>
+          <p>$g'(y) = 2y + 1$: $g'(1) = 3 &gt; 0$ (instável), $g'(-2) = -3 &lt; 0$ (estável). Começando entre eles, $y$ decresce: $y \to -2$ quando $x \to \infty$ e $y \to 1$ quando $x \to -\infty$.</p></details>
+        <details class="prob"><summary><b>10.</b> $\frac{dy}{dx} = 4^{2x - y}$, $y(0) = 1$.</summary>
+          <p>$4^y\,dy = 4^{2x}dx \Rightarrow \frac{4^y}{\ln 4} = \frac{4^{2x}}{2\ln 4} + C \Rightarrow 4^y = \frac{16^x}{2} + K$, e $y(0) = 1$ dá $K = \frac{7}{2}$.</p>
+          <p>$y = \log_4\frac{16^x + 7}{2}$, em $\mathbb{R}$.</p></details>
+        <details class="prob"><summary><b>11.</b> $\frac{dy}{dx} = \frac{x}{y}$, $y(1) = 2$: maior intervalo.</summary>
+          <p>$y\,dy = x\,dx \Rightarrow y^2 = x^2 + 3$; raiz positiva pelo $y_0$: $y = \sqrt{x^2 + 3}$. Intervalo $\mathbb{R}$: o radicando é sempre positivo e $y$ nunca zera.</p></details>
+        <details class="prob exam"><summary><b>12.</b> $y' = x(y - 1)^2(y + 2)$, $y(0) = 0$: solução implícita; atinge $y = 1$ ou $y = -2$?</summary>
+          <p>Constantes: $y \equiv 1$, $y \equiv -2$. Frações: $\frac{1}{(y - 1)^2(y + 2)} = -\frac{1/9}{y - 1} + \frac{1/3}{(y - 1)^2} + \frac{1/9}{y + 2}$.</p>
+          <p>$$\frac{1}{9}\ln\left|\frac{y + 2}{y - 1}\right| - \frac{1}{3(y - 1)} = \frac{x^2}{2} + \frac{\ln 2}{9} + \frac{1}{3}.$$</p>
+          <p><b>Não</b> atinge em tempo finito: $f$ e $f_y$ são contínuas em todo o plano, então vale a unicidade, e como $y \equiv 1$ e $y \equiv -2$ já são soluções, nenhuma outra pode tocá-las. (Também se vê na fórmula: o lado esquerdo vai a $+\infty$ quando $y \to 1^-$.) Entre $-2$ e $1$ o sinal de $y'$ é o de $x$: mínimo em $x = 0$ e $y \to 1$ quando $|x| \to \infty$.</p></details>
+        <details class="prob"><summary><b>13.</b> $\frac{dy}{dx} = \frac{x(1 + y^2)}{y(1 + x^2)}$, $y(0) = 1$.</summary>
+          <p>$\frac{y\,dy}{1 + y^2} = \frac{x\,dx}{1 + x^2} \Rightarrow \ln(1 + y^2) = \ln(1 + x^2) + C \Rightarrow 1 + y^2 = 2(1 + x^2)$.</p>
+          <p>$y = \sqrt{2x^2 + 1}$, em $\mathbb{R}$.</p></details>
+        <details class="prob exam"><summary><b>14.</b> $(2xy + y^2)\,dx + (x^2 + 2xy)\,dy = 0$.</summary>
+          <p>$M_y = 2x + 2y = N_x$: exata. $\psi = x^2y + xy^2 = C$.</p></details>
+        <details class="prob"><summary><b>15.</b> $(e^x\cos y - 2y)\,dx + (-e^x\operatorname{sen} y - 2x)\,dy = 0$.</summary>
+          <p>$M_y = -e^x\operatorname{sen} y - 2 = N_x$. $\psi = e^x\cos y - 2xy = C$.</p></details>
+        <details class="prob"><summary><b>16.</b> $(3x^2 + y)\,dx + (x + 2y)\,dy = 0$, $y(1) = 1$.</summary>
+          <p>$M_y = 1 = N_x$. $\psi = x^3 + xy + y^2$, $\psi(1, 1) = 3$: $x^3 + xy + y^2 = 3$.</p>
+          <p>Explícita (Bhaskara em $y$, sinal + pelo $y(1) = 1$): $y = \frac{-x + \sqrt{12 + x^2 - 4x^3}}{2}$.</p></details>
+        <details class="prob"><summary><b>17.</b> $(y + y\cos(xy))\,dx + (x + x\cos(xy))\,dy = 0$.</summary>
+          <p>$M_y = 1 + \cos(xy) - xy\operatorname{sen}(xy) = N_x$. $\psi = xy + \operatorname{sen}(xy) = C$.</p></details>
+        <details class="prob"><summary><b>18.</b> $\left(2xye^{x^2y} + 2x\right)dx + \left(x^2e^{x^2y} + \frac{2y}{1 + y^2}\right)dy = 0$.</summary>
+          <p>$M_y = 2xe^{x^2y}(1 + x^2y) = N_x$. $\psi = e^{x^2y} + x^2 + \ln(1 + y^2) = C$.</p></details>
+        <details class="prob exam"><summary><b>19.</b> $\left(\frac{1}{x} + 2xy + y^2\right)dx + (x^2 + 2xy + \cos y)\,dy = 0$, $y(1) = 0$.</summary>
+          <p>(a) $M_y = 2x + 2y = N_x$: exata.</p>
+          <p>(b) $\psi = \ln x + x^2y + xy^2 + \operatorname{sen} y$, $\psi(1, 0) = 0$: $\ln x + x^2y + xy^2 + \operatorname{sen} y = 0$.</p>
+          <p>(c) O TFI escreve $y = y(x)$ perto dos pontos da curva onde $\psi_y = x^2 + 2xy + \cos y \ne 0$. Em $(1, 0)$: $\psi_y = 2 \ne 0$.</p></details>
+        <details class="prob exam"><summary><b>20.</b> $y' = \sqrt y$, $y(0) = 0$: o TEU garante unicidade?</summary>
+          <p>$f = \sqrt y$ é contínua ($y \ge 0$), mas $f_y = \frac{1}{2\sqrt y}$ não existe em $y = 0$: o teorema <b>não garante</b> unicidade. E ela falha: $y \equiv 0$ e $y = \frac{x^2}{4}$ (para $x \ge 0$, e 0 antes) são duas soluções.</p></details>
+        <details class="prob"><summary><b>21.</b> $y' = \frac{y}{x}$, $y(1) = 2$.</summary>
+          <p>$f$ e $f_y = \frac{1}{x}$ são contínuas em $x \ne 0$; como linear, o intervalo garantido é $(0, \infty)$. A solução é $y = 2x$, que se estende a $\mathbb{R}$, mas em $x = 0$ todas as retas $y = cx$ se cruzam: ali não há unicidade.</p></details>
+        <details class="prob exam"><summary><b>22.</b> $y' = \frac{x + y}{x - 1}$, $y(0) = 0$.</summary>
+          <p>Linear: $y' - \frac{1}{x - 1}y = \frac{x}{x - 1}$, coeficientes contínuos em $x \ne 1$; com $x_0 = 0$, o intervalo é $(-\infty, 1)$.</p>
+          <p>$\left(\frac{y}{x - 1}\right)' = \frac{x}{(x - 1)^2} = \frac{1}{x - 1} + \frac{1}{(x - 1)^2} \Rightarrow \frac{y}{x - 1} = \ln|x - 1| - \frac{1}{x - 1} - 1$.</p>
+          <p>$y = (x - 1)\ln(1 - x) - x$.</p></details>
+        <details class="prob"><summary><b>23.</b> $y' = \frac{y}{x^2 + 1}$, $y(0) = 3$.</summary>
+          <p>(a) $f$ e $f_y = \frac{1}{x^2 + 1}$ são contínuas em todo o plano: existe e é única. (b) $y = 3e^{\operatorname{arctg} x}$, em $\mathbb{R}$.</p></details>
+        <details class="prob"><summary><b>24.</b> $y' = \frac{y}{x + 1}$, $y(0) = 2$.</summary>
+          <p>(a) $f$, $f_y$ contínuas fora de $x = -1$. (b) Intervalo $(-1, \infty)$; $y = 2(x + 1)$.</p></details>
+        <details class="prob exam"><summary><b>25.</b> $y' = 3|y|^{2/3}$, $y(0) = 0$.</summary>
+          <p>(a) $f$ é contínua (existência garantida), mas $f_y = 2\,\text{sgn}(y)\,|y|^{-1/3}$ explode em $y = 0$: unicidade não garantida.</p>
+          <p>(b) $y \equiv 0$; $y = x^3$; $y = (x - 1)^3$ para $x \ge 1$ e $0$ antes.</p>
+          <p>(c) Para cada $a \ge 0$: $y_a(x) = 0$ se $x &lt; a$ e $(x - a)^3$ se $x \ge a$. As duas partes se colam com derivada 0 em $x = a$.</p></details>
+        <details class="prob"><summary><b>26.</b> $y' = \frac{x + y}{\sqrt{4 - x^2 - y^2}}$, $y(0) = 1$.</summary>
+          <p>(a) $f$ e $f_y = \frac{4 - x^2 + xy}{(4 - x^2 - y^2)^{3/2}}$ são contínuas no disco aberto $x^2 + y^2 &lt; 4$.</p>
+          <p>(b) Sim: $0^2 + 1^2 &lt; 4$.</p>
+          <p>(c) Por exemplo $|x| \le \frac{1}{2}$, $|y - 1| \le \frac{1}{2}$: o canto mais distante, $\left(\pm\frac{1}{2}, \frac{3}{2}\right)$, tem $x^2 + y^2 = 2{,}5 &lt; 4$.</p>
+          <p>(d) O teorema só garante a solução para $|x| \le h = \min(a, b/K)$, com $K = \max_R|f|$: depende do retângulo e não diz até onde a solução vai (ela pode chegar à borda do disco, onde $f$ deixa de existir).</p></details>
+
+        <h2>Lista 2 resolvida</h2>
+        <details class="prob"><summary><b>1.</b> Princípio da superposição.</summary>
+          <p><b>Teorema.</b> Se $y_1$ e $y_2$ são soluções de $y'' + p(t)y' + q(t)y = 0$, então $c_1y_1 + c_2y_2$ também é, para quaisquer constantes.</p>
+          <p><b>Prova.</b> $L[y] = y'' + py' + qy$ é linear porque derivar é linear: $L[c_1y_1 + c_2y_2] = c_1L[y_1] + c_2L[y_2] = c_1\cdot 0 + c_2\cdot 0 = 0$. (Só vale para equações <b>lineares homogêneas</b>.)</p></details>
+        <details class="prob exam"><summary><b>2.</b> $e^{2x}$ e $xe^{2x}$ em $y'' - 4y' + 4y = 0$.</summary>
+          <p>São soluções ($r^2 - 4r + 4 = (r - 2)^2$, raiz dupla). $W = e^{2x}(1 + 2x)e^{2x} - 2e^{2x}\cdot xe^{2x} = e^{4x} \ne 0$: linearmente independentes.</p></details>
+        <details class="prob exam"><summary><b>3.</b> $x^2y'' - 4xy' + 6y = 0$, $x &gt; 0$.</summary>
+          <p>(a) $x^2$: $2x^2 - 8x^2 + 6x^2 = 0$; $x^3$: $6x^3 - 12x^3 + 6x^3 = 0$. (b) $W = x^2\cdot 3x^2 - 2x\cdot x^3 = x^4 \ne 0$: LI.</p>
+          <p>(c) Abel: forma padrão $y'' - \frac{4}{x}y' + \frac{6}{x^2}y = 0$, $W = Ce^{\int 4/x} = Cx^4$. Como $p$ e $q$ são contínuas em $x &gt; 0$, $W$ é identicamente nulo ou nunca zera; aqui $C = 1$.</p></details>
+        <details class="prob"><summary><b>4.</b> $y'' + 4y = 0$.</summary>
+          <p>(a) $r = \pm 2i$: $\cos 2x$ e $\operatorname{sen} 2x$. (b) $W = 2\cos^2 2x + 2\operatorname{sen}^2 2x = 2$, constante (Abel com $p = 0$).</p></details>
+        <details class="prob"><summary><b>5.</b> $y'' + 4y' + 13y = 0$.</summary>
+          <p>$r = -2 \pm 3i$: $y = e^{-2x}(c_1\cos 3x + c_2\operatorname{sen} 3x)$.</p></details>
+        <details class="prob exam"><summary><b>6.</b> (a) $y'' - 3y' + 2y = 0$, $y(0) = 1$, $y'(0) = 0$; (b) $y'' + 6y' + 9y = 0$, $y(0) = 2$, $y'(0) = -1$.</summary>
+          <p>(a) $r = 1, 2$: $c_1 + c_2 = 1$, $c_1 + 2c_2 = 0$ → $y = 2e^x - e^{2x}$.</p>
+          <p>(b) $r = -3$ dupla: $y = (c_1 + c_2x)e^{-3x}$, $c_1 = 2$, $-3c_1 + c_2 = -1$ → $y = (2 + 5x)e^{-3x}$.</p></details>
+        <details class="prob"><summary><b>7.</b> $y'' - 5y' + 6y = 0$, $y(0) = 2$, $y'(0) = 3$.</summary>
+          <p>$r = 2, 3$: $c_1 + c_2 = 2$, $2c_1 + 3c_2 = 3$ → $y = 3e^{2x} - e^{3x}$.</p></details>
+        <details class="prob"><summary><b>8.</b> $y'' + 4y' + 4y = 0$, $y(0) = 1$, $y'(0) = -2$.</summary>
+          <p>$r = -2$ dupla: $c_1 = 1$, $-2 + c_2 = -2$ → $y = e^{-2x}$.</p></details>
+        <details class="prob"><summary><b>9.</b> $4y'' - 12y' + 9y = 0$, $y(0) = 0$, $y'(0) = 3$.</summary>
+          <p>$(2r - 3)^2 = 0$, $r = \frac{3}{2}$ dupla: $c_1 = 0$, $c_2 = 3$ → $y = 3xe^{3x/2}$.</p></details>
+        <details class="prob exam"><summary><b>10.</b> $y'' - 4y' + 13y = 0$, $y\left(\frac{\pi}{2}\right) = 1$, $y'\left(\frac{\pi}{2}\right) = 0$.</summary>
+          <p>$r = 2 \pm 3i$: $y = e^{2x}(A\cos 3x + B\operatorname{sen} 3x)$. Em $\frac{\pi}{2}$: $\cos\frac{3\pi}{2} = 0$, $\operatorname{sen}\frac{3\pi}{2} = -1$.</p>
+          <p>$y\left(\frac{\pi}{2}\right) = -Be^{\pi} = 1 \Rightarrow B = -e^{-\pi}$. $y' = e^{2x}[(2A + 3B)\cos 3x + (2B - 3A)\operatorname{sen} 3x]$, então $y'\left(\frac{\pi}{2}\right) = e^{\pi}(3A - 2B) = 0 \Rightarrow A = -\frac{2}{3}e^{-\pi}$.</p>
+          <p>$y = -e^{2x - \pi}\left(\frac{2}{3}\cos 3x + \operatorname{sen} 3x\right)$.</p></details>
+        <details class="prob exam"><summary><b>11.</b> $y'' + 4y = 8x^2$.</summary>
+          <p>$y_p = Ax^2 + Bx + C$: $2A + 4Ax^2 + 4Bx + 4C = 8x^2$ → $A = 2$, $B = 0$, $C = -1$.</p>
+          <p>$y = c_1\cos 2x + c_2\operatorname{sen} 2x + 2x^2 - 1$.</p></details>
+        <details class="prob"><summary><b>12.</b> $y'' - y' - 6y = 10e^{2x}$.</summary>
+          <p>$r = 3, -2$; $2$ não é raiz, $y_p = Ae^{2x}$: $(4 - 2 - 6)A = 10$, $A = -\frac{5}{2}$.</p>
+          <p>$y = c_1e^{3x} + c_2e^{-2x} - \frac{5}{2}e^{2x}$.</p></details>
+        <details class="prob"><summary><b>13.</b> $y'' + y = x$.</summary>
+          <p>$y_p = Ax + B$ dá $A = 1$, $B = 0$: $y = c_1\cos x + c_2\operatorname{sen} x + x$.</p></details>
+        <details class="prob exam"><summary><b>14.</b> $y'' + y = \sec x$, $-\frac{\pi}{2} &lt; x &lt; \frac{\pi}{2}$.</summary>
+          <p>$y_1 = \cos x$, $y_2 = \operatorname{sen} x$, $W = 1$. $u_1' = -\operatorname{sen} x\sec x = -\operatorname{tg} x \Rightarrow u_1 = \ln(\cos x)$; $u_2' = \cos x\sec x = 1 \Rightarrow u_2 = x$.</p>
+          <p>$y = c_1\cos x + c_2\operatorname{sen} x + \cos x\ln(\cos x) + x\operatorname{sen} x$.</p></details>
+        <details class="prob"><summary><b>15.</b> $y'' + y = \sec(2x)$, $-\frac{\pi}{4} &lt; x &lt; \frac{\pi}{4}$ (a mais trabalhosa).</summary>
+          <p>$W = 1$; $u_1' = -\frac{\operatorname{sen} x}{\cos 2x}$, $u_2' = \frac{\cos x}{\cos 2x}$.</p>
+          <p>$u_2$: use $\cos 2x = 1 - 2\operatorname{sen}^2 x$ e $w = \operatorname{sen} x$: $\int\frac{dw}{1 - 2w^2} = \frac{1}{2\sqrt 2}\ln\frac{1 + \sqrt 2\operatorname{sen} x}{1 - \sqrt 2\operatorname{sen} x}$.</p>
+          <p>$u_1$: use $\cos 2x = 2\cos^2 x - 1$ e $w = \cos x$: $u_1 = \int\frac{dw}{2w^2 - 1} = -\frac{1}{2\sqrt 2}\ln\frac{\sqrt 2\cos x + 1}{\sqrt 2\cos x - 1}$ (no intervalo, $\sqrt 2\cos x &gt; 1$).</p>
+          <p>$$y_p = \frac{1}{2\sqrt 2}\left[\operatorname{sen} x\,\ln\frac{1 + \sqrt 2\operatorname{sen} x}{1 - \sqrt 2\operatorname{sen} x} - \cos x\,\ln\frac{\sqrt 2\cos x + 1}{\sqrt 2\cos x - 1}\right],\quad y = c_1\cos x + c_2\operatorname{sen} x + y_p.$$</p></details>
+        <details class="prob"><summary><b>16.</b> $y'' + 9y = \operatorname{cossec}(3x)$, $0 &lt; x &lt; \frac{\pi}{3}$.</summary>
+          <p>$y_1 = \cos 3x$, $y_2 = \operatorname{sen} 3x$, $W = 3$. $u_1' = -\frac{1}{3} \Rightarrow u_1 = -\frac{x}{3}$; $u_2' = \frac{\operatorname{cotg} 3x}{3} \Rightarrow u_2 = \frac{1}{9}\ln(\operatorname{sen} 3x)$.</p>
+          <p>$y = c_1\cos 3x + c_2\operatorname{sen} 3x - \frac{x}{3}\cos 3x + \frac{1}{9}\operatorname{sen} 3x\,\ln(\operatorname{sen} 3x)$.</p></details>
+        <details class="prob exam"><summary><b>17.</b> $y'' - 4y' + 4y = \frac{e^{2x}}{x}$, $x &gt; 0$.</summary>
+          <p>$y_1 = e^{2x}$, $y_2 = xe^{2x}$, $W = e^{4x}$. $u_1' = -1 \Rightarrow u_1 = -x$; $u_2' = \frac{1}{x} \Rightarrow u_2 = \ln x$.</p>
+          <p>$y_p = -xe^{2x} + xe^{2x}\ln x$; o primeiro termo é da homogênea. $y = (c_1 + c_2x)e^{2x} + xe^{2x}\ln x$.</p></details>
+
+        <h2>Lista 3: respostas e errata</h2>
+        <p>A Lista 3 já vem com a resolução detalhada do professor. Aqui estão as respostas conferidas, o "pulo do gato" de cada questão e <b>dois erros no gabarito resumido</b> (a resolução detalhada está certa nos dois casos).</p>
+        <div class="callout warn">
+          <p><b>Errata do gabarito resumido.</b></p>
+          <ul>
+            <li><b>5(b)</b>: está $\frac{1}{3}\operatorname{sen} t + \frac{1}{3}\operatorname{sen} 2t - \dots$; o certo é $y = \left(1 - u_{2\pi}(t)\right)\left(\frac{1}{3}\operatorname{sen} t - \frac{1}{6}\operatorname{sen} 2t\right)$. Com o $+\frac{1}{3}$, $y'(0) = 1$ e a condição $y'(0) = 0$ falha.</li>
+            <li><b>10(d)</b>: está $\frac{2\cos 2t - \operatorname{sen} 2t - 2e^t}{5}$, com os sinais de $e^t$ e $\cos 2t$ trocados; o certo é $\frac{2e^t - 2\cos 2t - \operatorname{sen} 2t}{5}$ (como $F(s) \approx \frac{2}{s^3}$ para $s$ grande, $f(0) = f'(0) = 0$; a do gabarito resumido tem $f'(0) = -\frac{4}{5}$. Pelo atalho de Heaviside em $s = 1$, o coeficiente de $e^t$ é $+\frac{2}{5}$).</li>
+          </ul>
+        </div>
+        <details class="prob"><summary><b>1.</b> Transformadas diretas.</summary>
+          <p>(a) $\frac{1}{s} + \frac{1}{s - 3}$ · (b) $\frac{s}{s^2 + 4} + \frac{2}{s^3}$ · (c) $\frac{s - 4}{s^2 + 16}$ · (d) $\frac{3}{s - 2} + \frac{1}{s} - \frac{s}{s^2 + 36}$ (use $2\operatorname{sen}^2 3t = 1 - \cos 6t$) · (e) $\frac{b}{(s - a)^2 + b^2}$ · (f) $\frac{s - a}{(s - a)^2 + b^2}$.</p></details>
+        <details class="prob exam"><summary><b>2.</b> Inversas.</summary>
+          <p>(a) $\frac{2}{3}\operatorname{sen} 3t$ · (b) $-4e^t + 5e^{2t}$ · (c) $\frac{3}{2}e^{-t} + \frac{1}{2}e^{-3t}$ · (d) divida por 2: $\frac{3}{2}\cos\sqrt{\tfrac{3}{2}}\,t + \frac{5}{\sqrt 6}\operatorname{sen}\sqrt{\tfrac{3}{2}}\,t$ · (e) $\frac{1}{3}e^{2t} + \frac{2}{3}e^{-t}$ · (f) $e^t\cos 2t + \frac{1}{2}e^t\operatorname{sen} 2t$ (numerador $s = (s - 1) + 1$) · (g) $e^{2t}\operatorname{sen} t$.</p></details>
+        <details class="prob exam"><summary><b>3.</b> PVIs sem degrau.</summary>
+          <p>(a) $2e^{-t} - e^{-2t}$ · (b) $\frac{5}{8}\operatorname{sen} 2t - \frac{t}{4}\cos 2t$ (ressonância: aparece $\frac{1}{(s^2 + 4)^2}$) · (c) $\frac{3}{5}e^{3t} + \frac{7}{5}e^{-2t}$ · (d) $e^{-t}\left(t + \frac{t^2}{2}\right)$ (polo triplo em $-1$).</p></details>
+        <details class="prob"><summary><b>4.</b> Funções por partes com degrau.</summary>
+          <p>(a) $\frac{e^{-s}}{s}$ · (b) $\frac{e^{-2s}}{s^2}$ · (c) $\frac{3(1 - e^{-s})}{s}$ · (d) $\frac{e^{-\pi s}}{s^2 + 1}$. Em todas, primeiro escreva $f$ com $u_c(t)$ e a função já deslocada.</p></details>
+        <details class="prob exam errata"><summary><b>5.</b> PVIs com degrau (⚠ errata no item b).</summary>
+          <p>(a) $\frac{u_\pi(t)}{9}(1 + \cos 3t)$, pois $\cos 3(t - \pi) = -\cos 3t$ · (b) $\left(1 - u_{2\pi}(t)\right)\left(\frac{1}{3}\operatorname{sen} t - \frac{1}{6}\operatorname{sen} 2t\right)$: o forçamento "desliga" em $2\pi$ e, por coincidência, a solução também · (c) $\frac{1}{2}\operatorname{sen} 2t + u_2(t)\left[\frac{t - 2}{4} - \frac{1}{8}\operatorname{sen} 2(t - 2)\right]$.</p></details>
+        <details class="prob"><summary><b>6.</b> Inversas com $e^{-cs}$.</summary>
+          <p>(a) $t - u_2(t)(t - 2)$ · (b) $u_2(t)\operatorname{sen}(t - 2)$.</p></details>
+        <details class="prob"><summary><b>7.</b> Delta de Dirac.</summary>
+          <p>$e^{-3s}$ · $e^{2}e^{-s} = e^{2 - s}$ (pela regra $\varphi(t)\delta(t - 1) = \varphi(1)\delta(t - 1)$) · $5\delta(t - 4)$.</p></details>
+        <details class="prob exam"><summary><b>8.</b> PVIs com impulso.</summary>
+          <p>(a) $-u_\pi(t)\operatorname{sen} t$ · (b) $-u_\pi(t)e^{-(t - \pi)}\operatorname{sen} t$ · (c) $\cosh t + u_1(t)\operatorname{senh}(t - 1)$ · (d) $3\cos 2t + 4u_{2\pi}(t)\operatorname{sen} 2t$ · (e) $\frac{2}{\sqrt{15}}u_5(t)e^{-(t - 5)/4}\operatorname{sen}\frac{\sqrt{15}}{4}(t - 5)$ (divida por 2 antes de completar o quadrado).</p>
+          <p>Conferido: em cada uma, $y'$ salta exatamente (peso do impulso) ÷ (coeficiente de $y''$): 1, 1, 1, 4 e $\frac{1}{2}$.</p></details>
+        <details class="prob"><summary><b>9.</b> $\cos * \operatorname{sen}$.</summary><p>$\frac{t}{2}\operatorname{sen} t$.</p></details>
+        <details class="prob exam errata"><summary><b>10.</b> Inversas por convolução (⚠ errata no item d).</summary>
+          <p>(a) $\frac{1 - \cos 2t}{4}$ · (b) $\frac{3}{10}\operatorname{sen} 2t - \frac{1}{5}\operatorname{sen} 3t$ · (c) $\frac{t}{2}\operatorname{sen} t$ · (d) $\frac{2}{5}e^t - \frac{2}{5}\cos 2t - \frac{1}{5}\operatorname{sen} 2t$.</p></details>
+        <details class="prob"><summary><b>11.</b> PVIs com convolução.</summary>
+          <p>(a) $y = \frac{1}{2}\int_0^t g(\tau)\operatorname{sen} 2(t - \tau)\,d\tau$ · (b) $y = \frac{t}{a} - \frac{\operatorname{sen} at}{a^2}$.</p></details>
+
+        <h2>Véspera da prova</h2>
+        <ol>
+          <li>Faça um <b>simulado intercalado</b> no <a href="../visualizacoes/treino.html">treino</a>, sem dicas e cronometrado. Não releia o caderno: resolva.</li>
+          <li>Refaça as questões marcadas com 📌 que você errou, sem abrir a solução.</li>
+          <li>Escreva de memória, numa folha em branco, a tabela de Laplace e as três formas da solução homogênea. Depois confira.</li>
+          <li>Na prova: <b>justifique o intervalo</b>, escreva o teste $M_y = N_x$, mostre a equação característica e as frações parciais. E <b>confira</b> substituindo, se sobrar tempo.</li>
+        </ol>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { $, buildToc } from '../../../engine/page.js';
+    buildToc($('#toc'), $('#content'));
+  </script>
+</body>
+</html>

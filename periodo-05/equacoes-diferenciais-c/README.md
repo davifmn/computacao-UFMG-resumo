@@ -15,7 +15,24 @@ contato com simulação numérica, controle e modelagem de sistemas dinâmicos.
 |---|---|---|
 | 🧭 | [Campo de direções](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/campo-de-direcoes.html) | O campo de inclinações de seis EDOs (linear, logística, explosão em tempo finito, falta de unicidade…); clique para escolher a condição inicial e compare Euler, Heun e RK4 com a solução exata, com a tabela que mede a ordem de cada método |
 | 🪀 | [Oscilador massa-mola](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/oscilador.html) | A massa balançando ao lado do gráfico de y(t): regimes sub, crítico e superamortecido, envelope exponencial, força periódica, batimentos, ressonância e a curva de resposta A(ω) |
+| 🎯 | [Treino para as provas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html) | Questões infinitas no formato das três listas, com a fórmula digitada corrigida na hora, dicas que revelam um passo de cada vez, níveis de domínio no estilo Khan Academy, simulado intercalado e revisão espaçada |
+| 📝 | [Guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html) | O que cai em cada prova (mapa das listas), o fluxograma "qual método?", uma receita por tipo de questão e as listas 1, 2 e 3 resolvidas e conferidas no computador, com a errata do gabarito da lista 3 |
 | 🌀 | [Plano de fase](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/plano-de-fase.html) | Partículas seguindo x' = Ax, autovetores, selas, nós, espirais e centros, e o ponto (traço, determinante) andando no diagrama de classificação |
+
+## 🧭 Como estudar para as provas
+
+As três listas do professor (1ª ordem → P1, 2ª ordem → P2, Laplace → P3) definem o que cai.
+O [guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html)
+traz o mapa e as listas resolvidas; o [treino](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html)
+aplica o que a pesquisa em aprendizagem mostra que funciona:
+
+| Princípio | Referência | No treino |
+|---|---|---|
+| Domínio por níveis | Khan Academy (Tentado → Familiar → Proficiente → Dominado) | rodadas de 5 questões; 100% = Proficiente |
+| Testar a memória e espaçar | Dunlosky et al. (2013): as duas técnicas mais bem avaliadas entre dez | revisão em 1, 2, 4 e 8 dias |
+| Prática intercalada | Rohrer et al. (2020): 61% × 38% num teste surpresa um mês depois | simulado misturado e "Qual método?" |
+| Exemplos resolvidos que somem aos poucos | Renkl e Atkinson (2003) | exemplo resolvido e dicas de um passo por vez |
+| Sessão = teoria curta + exemplo + prática | MIT 18.03SC | receita → exemplo → treino |
 
 ## 📚 Resumo teórico
 
@@ -59,6 +76,7 @@ python3 codigo/edo.py
 
 | Arquivo | Conteúdo |
 |---|---|
+| [`treino.js`](visualizacoes/treino.js) | Geradores das 16 habilidades do treino, leitor de fórmulas (com multiplicação implícita e degrau $u_c(t)$), correção por equivalência numérica e regras de domínio; os testes conferem centenas de questões sorteadas contra o próprio enunciado |
 | [`edo.py`](codigo/edo.py) | Euler, Heun e RK4 com as ordens de convergência medidas (1, 2, 4); oscilador nos três regimes contra a fórmula fechada; amplitude do regime permanente; ressonância $y'' + 4y = \cos 2t$; classificação de sistemas 2×2; tabela de Laplace conferida por integração numérica |
 
 ## ✍️ Exercícios
@@ -71,6 +89,8 @@ python3 codigo/edo.py
 6. Classifique a origem de $\mathbf{x}' = \begin{pmatrix} 1 & -2 \\ 3 & -4 \end{pmatrix}\mathbf{x}$.
 7. Resolva $y'' + 3y' + 2y = 0$, $y(0) = 1$, $y'(0) = 0$ pela transformada de Laplace.
 8. Com Euler e $h = 0{,}5$, estime $y(1)$ para $y' = y$, $y(0) = 1$. Compare com $e$.
+
+Os exercícios das listas da disciplina estão resolvidos no [guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html).
 
 <details>
 <summary>Gabarito</summary>
