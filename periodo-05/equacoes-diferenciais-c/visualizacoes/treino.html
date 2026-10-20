@@ -10,7 +10,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <link rel="stylesheet" href="../../../engine/theme.css">
   <style>
-    .how { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 18px; }
+    .how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 18px; }
     .how .card h3 { font-size: 15px; }
     .how .card p { font-size: 13.5px; }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -58,6 +58,32 @@
     .q-tools { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
     .q-tools .note { color: var(--muted); font-size: 13px; }
     .summary table.data td, .summary table.data th { font-family: var(--font); text-align: left; }
+    .arena-head .spacer { flex: 1; }
+    .arena-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+    .arena-body.with-f { grid-template-columns: minmax(0, 1fr) 360px; }
+    .arena-body .formulas { display: none; }
+    .arena-body.with-f .formulas { display: block; position: sticky; top: 70px; max-height: calc(100vh - 90px); overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+    .f-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+    .f-item { border-top: 1px solid var(--border); padding: 8px 0; }
+    .f-name { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+    .f-tex { overflow-x: auto; font-size: 14px; }
+    .f-tex .katex-display { margin: 6px 0 0; }
+    .f-foot { border-top: 1px solid var(--border); padding-top: 8px; font-size: 12.5px; color: var(--muted); }
+    .legend-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: -4px 0 12px; font-size: 13px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); }
+    .chip::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+    .tag-ex, .tag-q { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--yellow); margin-bottom: 6px; }
+    .tag-q { color: var(--green); margin: 0 0 6px; }
+    .q-card.theory { border-left: 4px solid var(--blue); }
+    .q-card.theory h3 { margin: 0 0 8px; }
+    .q-card.theory .tag-ex { color: var(--blue); }
+    .q-card.example { border-left: 4px solid var(--yellow); }
+    .prose-in { line-height: 1.7; } .prose-in ol { margin: 6px 0; padding-left: 22px; } .prose-in li { margin: 4px 0; }
+    .eyebrow-s { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .trail { display: flex; gap: 3px; flex-wrap: wrap; max-width: 520px; }
+    .trail i { width: 14px; height: 8px; border-radius: 3px; background: var(--surface-3); }
+    .trail i.teoria.past { background: var(--blue); } .trail i.exemplo.past { background: var(--yellow); } .trail i.exercicio.past { background: var(--green); }
+    .trail i.cur { outline: 2px solid var(--text); outline-offset: 1px; }
     .idle { color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); padding: 22px; text-align: center; }
     .prose table.syntax td, .prose table.syntax th { text-align: left; font-family: var(--font); }
     .prose table.syntax td:first-child { font-family: var(--mono); color: var(--yellow); white-space: nowrap; }
@@ -83,6 +109,8 @@
       <div class="card"><h3>💡 Dicas em passos</h3><p>Cada dica revela <b>um passo</b> da solução: é um exemplo resolvido que some aos poucos. Usou dica? A questão não conta como acerto.</p></div>
       <div class="card"><h3>🔀 Intercalado</h3><p>O simulado <b>mistura</b> os tipos de questão, como a prova. É o que treina a parte difícil: <b>reconhecer o método</b>.</p></div>
       <div class="card"><h3>📅 Revisão espaçada</h3><p>Cada habilidade volta para revisão depois de 1, 2, 4 ou 8 dias, conforme o nível. O progresso fica salvo neste navegador.</p></div>
+      <div class="card"><h3>🧭 Trilha</h3><p><b>Aprender</b> alterna teoria curta, exemplo resolvido passo a passo e exercícios, como no Responde Aí. A <b>trilha da lista</b> encadeia todas as habilidades e lembra onde você parou.</p></div>
+      <div class="card"><h3>🎨 Cores e fórmulas</h3><p>Cada objeto tem uma cor do enunciado à resposta: quando um símbolo vira o seu valor, o valor herda a cor. As fórmulas do tipo de questão ficam ao lado (📐 ou tecla <b>F</b> para ocultar).</p></div>
     </div>
 
     <div class="toolbar">
@@ -92,6 +120,7 @@
       <label>Data da prova <input type="date" id="exam"></label>
       <span id="plan" class="c-muted"></span>
       <span class="spacer"></span>
+      <button class="btn" id="trilhaLista">Trilha da lista</button>
       <button class="btn primary" id="sim">Simulado intercalado (6 questões)</button>
       <button class="btn small" id="reset">Zerar progresso</button>
     </div>
@@ -99,7 +128,7 @@
     <div id="today" class="today"></div>
     <div id="skills" class="skill-grid"></div>
 
-    <section id="arena" class="arena" aria-live="polite"><div class="idle">Escolha uma habilidade para praticar, veja um exemplo resolvido ou comece um simulado.</div></section>
+    <section id="arena" class="arena" aria-live="polite"><div class="idle">Comece por <b>Aprender</b> (teoria → exemplo → exercícios), depois <b>Praticar</b> até Proficiente e feche com o simulado.</div></section>
 
     <section class="prose">
       <h2>Como digitar as respostas</h2>
@@ -122,11 +151,12 @@
   <script type="module">
     import { $, h, renderMath, tex, shuffle } from '../../../engine/page.js';
     import * as T from './treino.js';
+    import { TEORIA, trilha } from './treino-teoria.js';
 
     // ---------- estado salvo (só neste navegador) ----------
     const KEY = 'edc-treino-v1';
     const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) ?? {}; } catch { return {}; } };
-    let state = Object.assign({ skills: {}, prova: 'P1', exam: '' }, load());
+    let state = Object.assign({ skills: {}, prova: 'P1', exam: '', formulas: true, trilhas: {} }, load());
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* modo privado: segue sem salvar */ } };
     const sk = id => (state.skills[id] ??= { level: 0, last: 0 });
     const inProva = s => state.prova === 'todas' || s.prova === state.prova;
@@ -138,6 +168,7 @@
     function renderPanel() {
       for (const b of $('#prova').children) b.setAttribute('aria-pressed', b.dataset.p === state.prova);
       $('#exam').value = state.exam || '';
+      $('#trilhaLista').textContent = state.prova === 'todas' ? 'Trilha de todas as listas' : `Trilha da ${LISTA[state.prova]}`;
       const due = new Set(T.dueSkills(state));
       const grid = $('#skills');
       grid.replaceChildren();
@@ -153,8 +184,9 @@
             h('div', { class: 'bar' }, h('i'), h('i'), h('i'), h('i')),
             h('div', { class: 'meta' }, h('span', { class: 'lvname' }, T.LEVELS[st.level]), due.has(s.id) ? h('span', { class: 'c-yellow' }, 'revisar hoje') : h('a', { href: GUIA(s.id) }, 'receita ↗')),
             h('div', { class: 'acts' },
-              h('button', { class: 'btn small primary', onclick: () => start('pratica', s.id) }, 'Praticar'),
-              h('button', { class: 'btn small', onclick: () => start('exemplo', s.id) }, 'Exemplo resolvido')),
+              h('button', { class: `btn small${st.level === 0 ? ' primary' : ''}`, onclick: () => startTrilha([s.id], s.id, `Aprender · ${s.nome}`), title: 'teoria → exemplo → exercícios' }, 'Aprender'),
+              h('button', { class: `btn small${st.level > 0 ? ' primary' : ''}`, onclick: () => start('pratica', s.id) }, 'Praticar'),
+              h('button', { class: 'btn small', onclick: () => start('exemplo', s.id) }, 'Exemplo')),
           ));
         }
       }
@@ -179,10 +211,44 @@
       else el.textContent = `faltam ${days} dia${days > 1 ? 's' : ''} · ${pend} habilidade${pend === 1 ? '' : 's'} abaixo de Proficiente` + (pend ? ` → ${Math.ceil(pend / Math.max(1, days - 1))} por dia, e deixe o último dia para simulados` : ' → faça simulados');
     }
 
+    // ---------- arena: questão à esquerda, fórmulas à direita (ocultáveis) ----------
+    let arenaApi = null;
+    function arenaShell(title, ...headExtra) {
+      const toggle = h('button', { class: 'btn small', 'aria-pressed': String(!!state.formulas), title: 'mostrar ou ocultar as fórmulas (tecla F)' }, '📐 Fórmulas');
+      const aside = h('aside', { class: 'formulas', 'aria-label': 'Fórmulas' });
+      const slot = h('div', { class: 'arena-main' });
+      const body = h('div', { class: `arena-body${state.formulas ? ' with-f' : ''}` }, slot, aside);
+      const setOpen = open => { state.formulas = open; save(); body.classList.toggle('with-f', open); toggle.setAttribute('aria-pressed', String(open)); };
+      toggle.addEventListener('click', () => setOpen(!state.formulas));
+      let current = null;
+      const setSkill = id => {
+        if (id === current) return;
+        current = id;
+        const s = T.skillById(id), f = TEORIA[id].formulas;
+        aside.replaceChildren(
+          h('div', { class: 'f-head' }, h('b', {}, 'Fórmulas'), h('span', { class: 'c-muted' }, s.nome)),
+          ...f.map(([nome, src]) => { const box = h('div', { class: 'f-tex' }); tex(box, src, true); return h('div', { class: 'f-item' }, h('div', { class: 'f-name' }, nome), box); }),
+          h('div', { class: 'f-foot' }, 'As cores são as mesmas dos passos. ', h('a', { href: GUIA(id) }, 'Receita completa ↗')),
+        );
+      };
+      $('#arena').replaceChildren(h('div', { class: 'arena-head' }, h('h2', {}, title), ...headExtra, h('span', { class: 'spacer' }), toggle), body);
+      $('#arena').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      arenaApi = { slot, setSkill, setOpen };
+      return arenaApi;
+    }
+
     // ---------- uma questão ----------
-    function questionCard(q, { hints = true, reveal = false, onDone }) {
+    function legendRow(q) {
+      if (!q.legend?.length) return null;
+      return h('div', { class: 'legend-row', title: 'Cada objeto mantém a mesma cor do enunciado até a resposta' },
+        h('span', { class: 'c-muted' }, 'Cores:'),
+        ...q.legend.map(l => h('span', { class: 'chip', style: `--c:${l.cor}`, html: `$${l.tex}$` })));
+    }
+
+    function questionCard(q, { hints = true, onDone }) {
       const card = h('div', { class: 'q-card' });
       card.append(h('div', { class: 'q', html: q.q }));
+      const lg = legendRow(q); if (lg) card.append(lg);
       const steps = h('ol', { class: 'steps' });
       let shown = 0, usedHint = false, done = false;
       const showStep = () => { if (shown < q.steps.length) { steps.append(h('li', { html: q.steps[shown++] })); renderMath(steps); } };
@@ -219,7 +285,7 @@
           opts.append(b);
         }
         card.append(opts);
-      } else if (!reveal && q.ans.kind === 'vec') {
+      } else if (q.ans.kind === 'vec') {
         const rows = q.ans.labels.map(label => {
           const input = h('input', { type: 'text', placeholder: `${label} = …`, 'aria-label': label, autocomplete: 'off', spellcheck: 'false' });
           const preview = h('div', { class: 'preview' }, `${label} interpretada aparece aqui.`);
@@ -238,7 +304,7 @@
         const btn = h('button', { class: 'btn primary small', onclick: submit }, 'Verificar');
         rows.forEach((rw, i) => card.append(h('div', { class: 'ansrow' }, h('span', { class: 'vlabel' }, `$${rw.label} =$`), rw.input, i === rows.length - 1 ? btn : null), rw.preview));
         setTimeout(() => rows[0].input.focus(), 0);
-      } else if (!reveal) {
+      } else {
         const vars = q.ans.vars;
         const input = h('input', { type: 'text', placeholder: `sua resposta em ${vars.join(', ')}`, 'aria-label': 'Resposta', autocomplete: 'off', spellcheck: 'false' });
         const preview = h('div', { class: 'preview' }, 'A fórmula interpretada aparece aqui.');
@@ -255,10 +321,7 @@
         card.append(h('div', { class: 'ansrow' }, input, btn), preview);
         setTimeout(() => input.focus(), 0);
       }
-      if (reveal) {
-        while (shown < q.steps.length) showStep();
-        if (q.ans.kind === 'choice') card.querySelectorAll('.opt').forEach((o, k) => { o.disabled = true; });
-      } else if (hints) tools.append(hintBtn);
+      if (hints) tools.append(hintBtn);
       else tools.append(h('span', { class: 'note' }, 'Simulado: sem dicas, como na prova. A solução aparece depois.'));
       card.append(tools, steps, feedback);
       renderMath(card);
@@ -271,21 +334,91 @@
       catch (e) { preview.replaceChildren(h('span', { class: 'err' }, e.message)); }
     }
 
+    /** Exemplo resolvido revelado um passo por vez (antes de cada clique, tente prever o passo). */
+    function workedExample(q, onEnd) {
+      const card = h('div', { class: 'q-card example' });
+      card.append(h('div', { class: 'tag-ex' }, 'Exemplo resolvido'), h('div', { class: 'q', html: q.q }));
+      const lg = legendRow(q); if (lg) card.append(lg);
+      const steps = h('ol', { class: 'steps' });
+      const ans = q.ans.kind === 'choice' ? `<b>Resposta:</b> ${q.ans.options[q.ans.correct]}` : '';
+      let shown = 0;
+      const nextBtn = h('button', { class: 'btn primary small' }, 'Mostrar o 1º passo');
+      const allBtn = h('button', { class: 'btn small' }, 'Mostrar tudo');
+      const tools = h('div', { class: 'q-tools' }, nextBtn, allBtn, h('span', { class: 'note' }, 'Antes de cada clique, tente prever o próximo passo.'));
+      const end = () => { tools.replaceChildren(); if (ans) card.append(h('div', { class: 'feedback', html: ans })); renderMath(card); onEnd?.(card); };
+      const step = () => {
+        steps.append(h('li', { html: q.steps[shown++] })); renderMath(steps);
+        nextBtn.textContent = `Próximo passo (${shown}/${q.steps.length})`;
+        if (shown >= q.steps.length) end();
+      };
+      nextBtn.addEventListener('click', step);
+      allBtn.addEventListener('click', () => { while (shown < q.steps.length) { steps.append(h('li', { html: q.steps[shown++] })); } renderMath(steps); end(); });
+      card.append(steps, tools);
+      renderMath(card);
+      return card;
+    }
+
+    // ---------- trilha (teoria → exemplo → exercício, no estilo Responde Aí) ----------
+    function startTrilha(skills, key, title) {
+      clearInterval(timerId);
+      const items = skills.flatMap(id => trilha(id));
+      let i = Math.min(state.trilhas[key] ?? 0, items.length - 1);
+      const results = [];
+      const bar = h('div', { class: 'trail', title: 'T = teoria, E = exemplo, Q = questão' }, items.map(it => h('i', { class: it.tipo })));
+      const count = h('span', { class: 'timer' });
+      const api = arenaShell(title, bar, count);
+      const go = k => {
+        i = k; state.trilhas[key] = i; save();
+        [...bar.children].forEach((el, j) => { el.classList.toggle('cur', j === i); el.classList.toggle('past', j < i); });
+        count.textContent = `${i + 1} / ${items.length}`;
+        const it = items[i];
+        api.setSkill(it.skill);
+        const sname = skills.length > 1 ? h('div', { class: 'eyebrow-s' }, T.skillById(it.skill).nome) : null;
+        const nav = (label = 'Continuar →') => h('div', { class: 'q-tools' },
+          i > 0 ? h('button', { class: 'btn small', onclick: () => go(i - 1) }, '← Anterior') : null,
+          i + 1 < items.length ? h('button', { class: 'btn primary', onclick: () => go(i + 1) }, label) : h('button', { class: 'btn primary', onclick: () => finishTrilha(skills, key, results) }, 'Concluir a trilha'));
+        if (it.tipo === 'teoria') {
+          const card = h('div', { class: 'q-card theory' }, h('div', { class: 'tag-ex' }, 'Teoria'), h('h3', {}, it.bloco.titulo), h('div', { class: 'prose-in', html: it.bloco.html }));
+          renderMath(card);
+          api.slot.replaceChildren(...[sname, card, nav()].filter(Boolean));
+        } else if (it.tipo === 'exemplo') {
+          const holder = h('div');
+          const ex = workedExample(T.generate(it.skill), () => holder.replaceChildren(nav('Agora é sua vez →')));
+          api.slot.replaceChildren(...[sname, ex, holder].filter(Boolean));
+        } else {
+          const holder = h('div');
+          const card = questionCard(T.generate(it.skill), { onDone: ({ ok }) => { results.push({ id: it.skill, ok }); holder.replaceChildren(nav()); } });
+          api.slot.replaceChildren(...[sname, h('div', { class: 'tag-q' }, 'Sua vez: use as dicas sem medo, a trilha é para aprender'), card, holder].filter(Boolean));
+        }
+      };
+      go(i);
+    }
+
+    function finishTrilha(skills, key, results) {
+      state.trilhas[key] = 0;
+      for (const id of skills) { const st = sk(id); if (st.level === 0) { st.level = 1; st.last = Date.now(); } }
+      save();
+      const ok = results.filter(r => r.ok).length;
+      arenaApi.slot.replaceChildren(h('div', { class: 'q-card' },
+        h('h3', {}, 'Trilha concluída'),
+        h('p', {}, `${ok} de ${results.length} exercícios certos sem dica. A trilha ensina; o nível sobe na prática: faça uma rodada de 5 questões sem dicas para chegar a Proficiente.`),
+        h('div', { class: 'q-tools' }, ...skills.slice(0, 6).map(id => h('button', { class: 'btn small primary', onclick: () => start('pratica', id) }, `Praticar ${T.skillById(id).nome}`)))));
+      renderPanel();
+    }
+
     // ---------- sessões ----------
     let timerId = null;
     function start(mode, id) {
       clearInterval(timerId);
-      const arena = $('#arena');
       const pool = T.SKILLS.filter(s => inProva(s) && !s.id.startsWith('metodo')).map(s => s.id);
       if (mode === 'exemplo') {
-        const s = T.skillById(id), q = T.generate(id);
-        arena.replaceChildren(
-          h('div', { class: 'arena-head' }, h('h2', {}, `Exemplo resolvido · ${s.nome}`)),
-          h('p', { class: 'c-muted' }, 'Leia cada passo e tente explicar a si mesmo por que ele vem ali (é a autoexplicação, que faz o exemplo render). Depois resolva um parecido sozinho.'),
-          questionCard(q, { reveal: true }),
-          h('div', { class: 'q-tools' }, h('button', { class: 'btn primary', onclick: () => start('pratica', id) }, 'Agora tente um parecido →'), h('button', { class: 'btn', onclick: () => start('exemplo', id) }, 'Outro exemplo'), h('a', { href: GUIA(id) }, 'receita no guia ↗')),
-        );
-        arena.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const s = T.skillById(id);
+        const api = arenaShell(`Exemplo resolvido · ${s.nome}`);
+        api.setSkill(id);
+        const holder = h('div');
+        api.slot.replaceChildren(workedExample(T.generate(id), () => holder.replaceChildren(h('div', { class: 'q-tools' },
+          h('button', { class: 'btn primary', onclick: () => start('pratica', id) }, 'Agora tente um parecido →'),
+          h('button', { class: 'btn', onclick: () => start('exemplo', id) }, 'Outro exemplo')))), holder);
         return;
       }
       let ids, title;
@@ -301,13 +434,12 @@
       const dots = h('div', { class: 'dots' }, ids.map(() => h('i')));
       const timer = h('span', { class: 'timer' });
       if (mode !== 'pratica') timerId = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); timer.textContent = `⏱ ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 1000);
-      const slot = h('div');
-      arena.replaceChildren(h('div', { class: 'arena-head' }, h('h2', {}, title), dots, timer), slot);
-      arena.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const api = arenaShell(title, dots, timer);
 
       const next = i => {
         [...dots.children].forEach((d, k) => d.classList.toggle('cur', k === i));
         if (i >= ids.length) return summary(mode, ids, results, t0);
+        api.setSkill(ids[i]);
         const q = T.generate(ids[i]);
         const label = mode === 'pratica' ? null : h('div', { class: 'c-muted', style: 'font-size:13px;margin-bottom:6px' }, `Questão ${i + 1} de ${ids.length}`);
         const card = questionCard(q, {
@@ -318,7 +450,7 @@
             card.append(h('div', { class: 'q-tools' }, h('button', { class: 'btn primary', onclick: () => next(i + 1) }, i + 1 < ids.length ? 'Próxima →' : 'Ver resultado')));
           },
         });
-        slot.replaceChildren(...[label, card].filter(Boolean));
+        api.slot.replaceChildren(...[label, card].filter(Boolean));
       };
       next(0);
     }
@@ -354,8 +486,8 @@
           rows.map(([id, b, a, sc]) => h('tr', {},
             h('td', {}, T.skillById(id).nome), h('td', {}, sc),
             h('td', { html: `${T.LEVELS[b]} → <b class="${a > b ? 'c-green' : a < b ? 'c-red' : ''}">${T.LEVELS[a]}</b>` }),
-            h('td', {}, h('a', { href: GUIA(id) }, 'receita ↗'))))),
-        h('p', { class: 'c-muted' }, weak.length ? `Próximo passo: releia a receita de ${weak.map(id => T.skillById(id).nome).join(', ')}, veja um exemplo resolvido e pratique de novo. Errar agora é o que faz lembrar na prova.` : 'Tudo no nível Proficiente ou acima: faça um simulado intercalado para chegar a Dominado.'),
+            h('td', {}, h('button', { class: 'btn small', onclick: () => startTrilha([id], id, `Aprender · ${T.skillById(id).nome}`) }, 'rever a trilha'))))),
+        h('p', { class: 'c-muted' }, weak.length ? `Próximo passo: refaça a trilha de ${weak.map(id => T.skillById(id).nome).join(', ')} e pratique de novo. Errar agora é o que faz lembrar na prova.` : 'Tudo no nível Proficiente ou acima: faça um simulado intercalado para chegar a Dominado.'),
         h('div', { class: 'q-tools' },
           mode === 'pratica' ? h('button', { class: 'btn primary', onclick: () => start('pratica', ids[0]) }, 'Praticar de novo') : h('button', { class: 'btn primary', onclick: () => start(mode) }, 'Outra rodada'),
           h('button', { class: 'btn', onclick: () => start('simulado') }, 'Simulado intercalado')),
@@ -367,10 +499,18 @@
     $('#prova').addEventListener('click', e => { const p = e.target.dataset?.p; if (!p) return; state.prova = p; save(); renderPanel(); });
     $('#exam').addEventListener('change', e => { state.exam = e.target.value; save(); renderPlan(); });
     $('#sim').addEventListener('click', () => start('simulado'));
+    $('#trilhaLista').addEventListener('click', () => {
+      const ids = T.SKILLS.filter(inProva).map(s => s.id);
+      startTrilha(ids, `lista-${state.prova}`, $('#trilhaLista').textContent);
+    });
+    // F mostra/oculta as fórmulas (fora dos campos de texto)
+    document.addEventListener('keydown', e => {
+      if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName ?? '') && arenaApi) arenaApi.setOpen(!state.formulas);
+    });
     let armed = false;
     $('#reset').addEventListener('click', e => {
       if (!armed) { armed = true; e.target.textContent = 'Clique de novo para confirmar'; setTimeout(() => { armed = false; e.target.textContent = 'Zerar progresso'; }, 3000); return; }
-      state.skills = {}; save(); armed = false; e.target.textContent = 'Zerar progresso'; renderPanel();
+      state.skills = {}; state.trilhas = {}; save(); armed = false; e.target.textContent = 'Zerar progresso'; renderPanel();
     });
     renderPanel();
   </script>

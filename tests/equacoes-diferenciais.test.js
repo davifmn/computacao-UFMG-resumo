@@ -255,3 +255,49 @@ test('domínio: níveis no estilo Khan, simulado e revisão espaçada', () => {
   for (let i = 1; i < seq.length; i++) assert.notEqual(seq[i], seq[i - 1]);
   assert.equal(new Set(T.SKILLS.map(s => s.id)).size, T.SKILLS.length);
 });
+
+// ---------- Trilha, fórmulas e cores ----------
+import { TEORIA, trilha } from '../periodo-05/equacoes-diferenciais-c/visualizacoes/treino-teoria.js';
+
+const balanced = s => {
+  let d = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '\\') { i++; continue; } // \{ e \} não contam
+    if (s[i] === '{') d++;
+    if (s[i] === '}' && --d < 0) return false;
+  }
+  return d === 0;
+};
+
+test('toda habilidade tem teoria em 3 blocos, folha de fórmulas e trilha de 7 etapas', () => {
+  for (const sk of T.SKILLS) {
+    const t = TEORIA[sk.id];
+    assert.ok(t, `${sk.id}: sem teoria`);
+    assert.equal(t.blocos.length, 3, sk.id);
+    assert.ok(t.formulas.length >= 3, `${sk.id}: poucas fórmulas`);
+    for (const [nome, src] of t.formulas) assert.ok(nome && balanced(src), `${sk.id}: fórmula ${nome}`);
+    for (const b of t.blocos) assert.ok(balanced(b.html) && (b.html.match(/\$/g) ?? []).length % 2 === 0, `${sk.id}: bloco ${b.titulo}`);
+    const tr = trilha(sk.id);
+    assert.equal(tr.length, 7);
+    assert.deepEqual(tr.map(x => x.tipo), ['teoria', 'exemplo', 'teoria', 'exercicio', 'teoria', 'exercicio', 'exercicio']);
+  }
+});
+
+test('passos coloridos: TeX balanceado e legenda só com cores da paleta', () => {
+  const r = rng(11);
+  const paleta = new Set(Object.values(T.CORES));
+  for (const sk of T.SKILLS) {
+    for (let i = 0; i < 60; i++) {
+      const q = T.generate(sk.id, r);
+      for (const piece of [q.q, ...q.steps]) {
+        assert.ok(balanced(piece), `${sk.id}: chaves desbalanceadas em ${piece}`);
+        assert.equal((piece.match(/(?<!\\)\$/g) ?? []).length % 2, 0, `${sk.id}: $ ímpar em ${piece}`);
+        for (const m of piece.matchAll(/\\textcolor\{([^}]*)\}/g)) assert.ok(paleta.has(m[1]), `${sk.id}: cor ${m[1]}`);
+      }
+      if (!sk.id.startsWith('metodo')) {
+        assert.ok(q.legend?.length, `${sk.id}: sem legenda`);
+        for (const l of q.legend) assert.ok(paleta.has(l.cor) && balanced(l.tex), `${sk.id}: legenda`);
+      }
+    }
+  }
+});
