@@ -339,16 +339,18 @@ export const sen = (k, v = 't') => `\\operatorname{sen}${arg(k, v)}`;
 export const cos = (k, v = 't') => `\\cos${arg(k, v)}`;
 
 /**
- * Combinação linear: termos [coef, corpoTeX, fn]; devolve { tex, f(x) }.
+ * Combinação linear: termos [coef, corpoTeX, fn, cor?]; devolve { tex, f(x) }.
  * Coeficientes zero somem, 1 e -1 viram sinais, frações viram \frac.
+ * `cor` (uma função de pinta) colore o termo, deixando o sinal de fora.
  */
 export function lin(terms) {
   const live = terms.filter(([c]) => !q(c).isZero());
   let tex = '';
-  live.forEach(([c, body], i) => {
+  live.forEach(([c, body, , paint], i) => {
     c = q(c);
     const neg = c.n < 0, a = neg ? c.neg() : c;
-    const s = body ? (a.isOne() ? body : `${a.tex()}${/^[\d\\]/.test(body) && a.d === 1 ? '\\,' : ''}${body}`) : a.tex();
+    const s0 = body ? (a.isOne() ? body : `${a.tex()}${/^[\d\\]/.test(body) && a.d === 1 ? '\\,' : ''}${body}`) : a.tex();
+    const s = paint ? paint(s0) : s0;
     tex += i === 0 ? `${neg ? '-' : ''}${s}` : ` ${neg ? '-' : '+'} ${s}`;
   });
   const f = x => live.reduce((acc, [c, , fn]) => acc + q(c).v * (fn ? fn(x) : 1), 0);
@@ -372,6 +374,18 @@ const nz = (r, a, b) => { let k; do k = ri(r, a, b); while (k === 0); return k; 
 const T = s => `$${s}$`;
 const fact = n => (n <= 1 ? 1 : n * fact(n - 1));
 
+// ---------- Cores (como no integral-calculator) ----------
+// Cada objeto tem uma cor fixa do enunciado à resposta. Quando um símbolo é trocado pelo
+// seu valor (μ → e^{2x}, a parcela de f(t) → sua transformada, λ₁ → e^{λ₁t}v₁), o valor
+// herda a cor do símbolo, como um placeholder que foi preenchido.
+export const CORES = { azul: '#58c4dd', verde: '#83c167', amarelo: '#f4d35e', roxo: '#b189f5', laranja: '#ff9f43', rosa: '#f78fb3' };
+export const pinta = cor => s => `\\textcolor{${CORES[cor]}}{${s}}`;
+const AZ = pinta('azul'), VD = pinta('verde'), AM = pinta('amarelo'), RX = pinta('roxo'), LR = pinta('laranja'), RS = pinta('rosa');
+/** Legenda das cores de uma questão: leg(['azul', 'p(x)'], ...). */
+const leg = (...pares) => pares.map(([cor, tex]) => ({ cor: CORES[cor], tex }));
+/** Envolve em parênteses se começar com sinal de menos (para produtos). */
+const par = s => (String(s).startsWith('-') ? `\\left(${s}\\right)` : s);
+
 /** Raízes da equação característica e a solução homogênea geral em TeX. */
 function homogTex(roots, v = 'x') {
   if (roots.type === 'reais') return lin([[1, roots.r1 === 0 ? 'c_1' : `c_1${ex(roots.r1, v)}`], [1, roots.r2 === 0 ? 'c_2' : `c_2${ex(roots.r2, v)}`]]).tex;
@@ -383,6 +397,19 @@ function rootsTex(roots) {
   if (roots.type === 'reais') return `r_1 = ${q(roots.r1).tex()},\\ r_2 = ${q(roots.r2).tex()}`;
   if (roots.type === 'dupla') return `r = ${q(roots.r).tex()}\\ \\text{(dupla)}`;
   return `r = ${roots.a === 0 ? '' : `${roots.a} `}\\pm ${roots.b === 1 ? '' : roots.b}i`;
+}
+/** Versões coloridas: raízes r₁ (ou α) azul, r₂ (ou β) verde; c₁ roxo, c₂ laranja. */
+function homogTexC(roots, v = 'x') {
+  const E = (r0, paint) => (r0 === 0 ? '' : `e^{${paint(kv(r0, v))}}`);
+  if (roots.type === 'reais') return `${RX('c_1')}${E(roots.r1, AZ)} + ${LR('c_2')}${E(roots.r2, VD)}`;
+  if (roots.type === 'dupla') return `(${RX('c_1')} + ${LR('c_2')}${v})e^{${AZ(kv(roots.r, v))}}`;
+  const b = VD(kv(roots.b, v));
+  return `${E(roots.a, AZ)}\\left(${RX('c_1')}\\cos(${b}) + ${LR('c_2')}\\operatorname{sen}(${b})\\right)`;
+}
+function rootsTexC(roots) {
+  if (roots.type === 'reais') return `${AZ(`r_1 = ${q(roots.r1).tex()}`)},\\ ${VD(`r_2 = ${q(roots.r2).tex()}`)}`;
+  if (roots.type === 'dupla') return `${AZ(`r = ${q(roots.r).tex()}`)}\\ \\text{(dupla)}`;
+  return `r = ${roots.a === 0 ? '' : `${AZ(roots.a)} `}\\pm ${VD(roots.b === 1 ? '' : roots.b)}${roots.b === 1 ? VD('i') : 'i'}`;
 }
 /** Coeficientes [a, b, c] da equação característica a partir das raízes (mônica, ou 4r² para raiz dupla p/2). */
 function charPoly(roots) {
@@ -410,17 +437,21 @@ function genLinear1(r) {
     const forc = c === 0 ? String(b) : lin([[b, ex(c, 'x')]]).tex;
     const eq = `y'${lin([[1, ''], [a, 'y']]).tex.slice(1)} = ${forc}`;
     const y = lin([[K, c === 0 ? '' : ex(c, 'x'), c === 0 ? null : x => Math.exp(c * x)], [y0 - K, ex(-a, 'x'), x => Math.exp(-a * x)]]);
+    const yC = lin([[K, c === 0 ? '' : ex(c, 'x')], [y0 - K, ex(-a, 'x'), null, RX]]).tex;
+    const mu = AM(ex(a, 'x'));
+    const eqC = `y' ${a < 0 ? '-' : '+'} ${AZ(kv(Math.abs(a), 'y'))} = ${VD(forc)},\\quad y(0) = ${RS(y0)}`;
     return {
       skill: 'linear1', metodos: c === 0 ? ['linear', 'separavel'] : ['linear'],
       eq: `${eq},\\quad y(0) = ${y0}`,
-      q: `Resolva o PVI por fator integrante: ${T(`${eq},\\quad y(0) = ${y0}`)}`,
+      q: `Resolva o PVI por fator integrante: ${T(eqC)}`,
+      legend: leg(['azul', 'p(x)'], ['verde', 'q(x)'], ['amarelo', '\\mu(x)'], ['roxo', 'C'], ['rosa', 'y(0)']),
       steps: [
-        `Já está na forma padrão $y' + p(x)\\,y = q(x)$, com $p(x) = ${a}$ e $q(x) = ${forc}$.`,
-        `Fator integrante: $\\mu(x) = e^{\\int p\\,dx} = ${ex(a, 'x')}$.`,
-        `Multiplicando a equação por $\\mu$, o lado esquerdo vira a derivada de um produto: $\\left(${ex(a, 'x')}y\\right)' = ${lin([[b, ex(a + c, 'x')]]).tex}$.`,
-        `Integrando: $${ex(a, 'x')}y = ${lin([[q(b, a + c), ex(a + c, 'x')]]).tex} + C$, logo $y = ${lin([[K, c === 0 ? '' : ex(c, 'x')]]).tex} + C${ex(-a, 'x')}$.`,
-        `Condição inicial: $y(0) = ${K} + C = ${y0}$, então $C = ${y0 - K}$.`,
-        `$y(x) = ${y.tex}$`,
+        `Já está na forma padrão $y' + ${AZ('p(x)')}\\,y = ${VD('q(x)')}$, com $${AZ('p(x)')} = ${AZ(a)}$ e $${VD('q(x)')} = ${VD(forc)}$.`,
+        `Fator integrante: $${AM('\\mu(x)')} = e^{\\int ${AZ('p')}\\,dx} = e^{\\int ${AZ(a)}\\,dx} = ${mu}$.`,
+        `Multiplique a equação por $${AM('\\mu')}$: o lado esquerdo vira a derivada de um produto, $\\left(${mu}\\,y\\right)' = ${mu}\\cdot ${VD(par(forc))} = ${lin([[b, ex(a + c, 'x')]]).tex}$.`,
+        `Integre os dois lados: $${mu}\\,y = ${lin([[K, ex(a + c, 'x')]]).tex} + ${RX('C')}$. Dividindo por $${AM('\\mu')}$: $y = ${lin([[K, c === 0 ? '' : ex(c, 'x')]]).tex} + ${RX('C')}\\,${ex(-a, 'x')}$.`,
+        `Condição inicial: $y(0) = ${K} + ${RX('C')} = ${RS(y0)}$, então $${RX('C')} = ${RX(y0 - K)}$.`,
+        `$y(x) = ${yC}$`,
       ],
       ans: { kind: 'expr', vars: ['x'], f: e => y.f(e.x), domain: { x: [-1, 1.5] }, tex: y.tex },
       spec: { type: 'ode1', f: (x, yy) => b * Math.exp(c * x) - a * yy, x0: 0, y0, sol: y.f },
@@ -433,18 +464,23 @@ function genLinear1(r) {
   const xm = m === 0 ? '1' : m === 1 ? 'x' : `x^{${m}}`;
   const premult = r() < 0.5;
   const eq = premult ? `x\\,y' + ${k === 1 ? '' : k}y = ${m + 1 === 1 ? 'x' : `x^{${m + 1}}`}` : `y' + \\frac{${k}}{x}\\,y = ${xm}`;
-  const mu = k === 1 ? 'x' : `x^{${k}}`;
+  const mu0 = k === 1 ? 'x' : `x^{${k}}`, mu = AM(mu0);
+  const pT = AZ(`\\frac{${k}}{x}`);
+  const xm1 = m + 1 === 1 ? 'x' : `x^{${m + 1}}`;
+  const eqC = premult ? `x\\,y' + ${AZ(`${k === 1 ? '' : k}y`)} = ${VD(xm1)}` : `y' + ${pT}\\,y = ${VD(xm)}`;
+  const yC = lin([[q(1, D), xm1], [C, `x^{-${k}}`, null, RX]]).tex;
   return {
     skill: 'linear1', metodos: ['linear'],
     eq: `${eq},\\quad y(1) = ${y0},\\ x > 0`,
-    q: `Resolva o PVI e escreva $y(x)$ explicitamente: ${T(`${eq},\\quad y(1) = ${y0},\\quad x > 0`)}`,
+    q: `Resolva o PVI e escreva $y(x)$ explicitamente: ${T(`${eqC},\\quad y(1) = ${RS(y0)},\\quad x > 0`)}`,
+    legend: leg(['azul', 'p(x)'], ['verde', 'q(x)'], ['amarelo', '\\mu(x)'], ['roxo', 'C'], ['rosa', 'y(1)']),
     steps: [
-      premult ? `Divida por $x$ para chegar à forma padrão: $y' + \\frac{${k}}{x}\\,y = ${xm}$.` : `Já está na forma padrão, com $p(x) = \\frac{${k}}{x}$ e $q(x) = ${xm}$.`,
-      `Fator integrante: $\\mu = e^{\\int ${k}/x\\,dx} = e^{${k === 1 ? '' : k}\\ln x} = ${mu}$ (vale para $x > 0$).`,
-      `$\\left(${mu}\\,y\\right)' = ${mu}\\cdot ${xm} = x^{${m + k}}$.`,
-      `Integrando: $${mu}\\,y = \\frac{x^{${D}}}{${D}} + C$, então $y = \\frac{x^{${m + 1}}}{${D}} + \\frac{C}{${mu}}$.`,
-      `$y(1) = \\frac{1}{${D}} + C = ${y0}$, logo $C = ${C.tex()}$.`,
-      `$y(x) = ${y.tex}$, definida em $(0, \\infty)$.`,
+      premult ? `Divida por $x$ para chegar à forma padrão: $y' + ${pT}\\,y = ${VD(xm)}$, ou seja, $${AZ('p(x)')} = ${pT}$ e $${VD('q(x)')} = ${VD(xm)}$.` : `Já está na forma padrão, com $${AZ('p(x)')} = ${pT}$ e $${VD('q(x)')} = ${VD(xm)}$.`,
+      `Fator integrante: $${AM('\\mu')} = e^{\\int ${pT}\\,dx} = e^{${k === 1 ? '' : k}\\ln x} = ${mu}$ (vale para $x > 0$).`,
+      `$\\left(${mu}\\,y\\right)' = ${mu}\\cdot ${VD(xm)} = x^{${m + k}}$.`,
+      `Integre: $${mu}\\,y = \\frac{x^{${D}}}{${D}} + ${RX('C')}$, então $y = \\frac{${xm1}}{${D}} + \\frac{${RX('C')}}{${mu}}$.`,
+      `$y(1) = \\frac{1}{${D}} + ${RX('C')} = ${RS(y0)}$, logo $${RX('C')} = ${RX(C.tex())}$.`,
+      `$y(x) = ${yC}$, definida em $(0, \\infty)$.`,
     ],
     ans: { kind: 'expr', vars: ['x'], f: e => y.f(e.x), domain: { x: [0.3, 2.5] }, tex: y.tex },
     spec: { type: 'ode1', f: (x, yy) => x ** m - (k / x) * yy, x0: 1, y0, sol: y.f },
@@ -461,16 +497,18 @@ function genSeparavel(r) {
     const eq = `y' = ${kv(k, xn)}\\,y`;
     const expo = ex(c, `x^{${n + 1}}`);
     const y = lin([[y0, expo, x => Math.exp(c.v * x ** (n + 1))]]);
+    const g = AZ(kv(k, xn)), expoC = `e^{${AZ(kv(c, `x^{${n + 1}}`))}}`;
     return {
       skill: 'separavel', metodos: ['separavel', 'linear'],
       eq: `${eq},\\quad y(0) = ${y0}`,
-      q: `Resolva por separação de variáveis: ${T(`${eq},\\quad y(0) = ${y0}`)}`,
+      q: `Resolva por separação de variáveis: ${T(`y' = ${g}\\,${VD('y')},\\quad y(0) = ${RS(y0)}`)}`,
+      legend: leg(['azul', 'g(x)'], ['verde', 'h(y)'], ['roxo', 'C,\\ A'], ['rosa', 'y(0)']),
       steps: [
-        `Separe: $\\frac{dy}{y} = ${kv(k, xn)}\\,dx$ (a solução constante $y = 0$ não satisfaz a condição inicial).`,
-        `Integre os dois lados: $\\ln|y| = ${kv(c, `x^{${n + 1}}`)} + C$.`,
-        `Exponencie: $y = A${expo}$, com $A = \\pm e^C$.`,
-        `$y(0) = A = ${y0}$.`,
-        `$y(x) = ${y.tex}$`,
+        `É da forma $y' = ${AZ('g(x)')}\\,${VD('h(y)')}$ com $${AZ('g(x)')} = ${g}$ e $${VD('h(y)')} = ${VD('y')}$. Separe: $\\frac{dy}{${VD('y')}} = ${g}\\,dx$ (a solução constante $y = 0$ não satisfaz a condição inicial).`,
+        `Integre os dois lados: $\\ln|y| = ${AZ(kv(c, `x^{${n + 1}}`))} + ${RX('C')}$.`,
+        `Exponencie: $y = ${RX('A')}\\,${expoC}$, com $${RX('A')} = \\pm e^{${RX('C')}}$.`,
+        `$y(0) = ${RX('A')} = ${RS(y0)}$.`,
+        `$y(x) = ${RX(y0 === 1 ? '' : y0 === -1 ? '-' : y0)}${expoC}$`,
       ],
       ans: { kind: 'expr', vars: ['x'], f: e => y.f(e.x), domain: { x: [-1, 1] }, tex: y.tex },
       spec: { type: 'ode1', f: (x, yy) => k * x ** n * yy, x0: 0, y0, sol: y.f },
@@ -486,15 +524,17 @@ function genSeparavel(r) {
     const f = x => Math.sqrt(a * x * x + C);
     const lo = C > 0 ? x0 - 1 : x0 + 0.05, hi = x0 + 1.5;
     const eq = `y' = \\frac{${kv(a, 'x')}}{y}`;
+    const g = AZ(kv(a, 'x'));
     return {
       skill: 'separavel', metodos: ['separavel'],
       eq: `${eq},\\quad y(${x0}) = ${y0}`,
-      q: `Resolva o PVI e dê $y(x)$ explícita: ${T(`${eq},\\quad y(${x0}) = ${y0}`)}`,
+      q: `Resolva o PVI e dê $y(x)$ explícita: ${T(`y' = \\frac{${g}}{${VD('y')}},\\quad y(${x0}) = ${RS(y0)}`)}`,
+      legend: leg(['azul', 'g(x)'], ['verde', 'h(y) = 1/y'], ['roxo', 'K'], ['rosa', 'y(x_0)']),
       steps: [
-        `Separe: $y\\,dy = ${kv(a, 'x')}\\,dx$.`,
-        `Integre: $\\frac{y^2}{2} = ${kv(q(a, 2), 'x^2')} + C$, isto é, $y^2 = ${kv(a, 'x^2')} + K$.`,
-        `Condição inicial: $${y0 * y0} = ${a * x0 * x0} + K$, logo $K = ${C}$.`,
-        `Como $y(${x0}) = ${y0} > 0$, fica a raiz positiva: $y(x) = ${ytex}$.`,
+        `Separe (o ${VD('y')} do denominador passa multiplicando): $${VD('y')}\\,dy = ${g}\\,dx$.`,
+        `Integre: $\\frac{y^2}{2} = ${AZ(kv(q(a, 2), 'x^2'))} + C$, isto é, $y^2 = ${AZ(kv(a, 'x^2'))} + ${RX('K')}$.`,
+        `Condição inicial: $${RS(y0)}^2 = ${a * x0 * x0} + ${RX('K')}$, logo $${RX('K')} = ${RX(C)}$.`,
+        `Como $y(${x0}) = ${RS(y0)} > 0$, fica a raiz positiva: $y(x) = \\sqrt{${AZ(kv(a, 'x^2'))} ${C < 0 ? '-' : '+'} ${RX(Math.abs(C))}}$.`,
         C > 0 ? `O radicando é sempre positivo: a solução vale em todo $\\mathbb{R}$.` : `Ela vale enquanto ${T(`${rad} > 0`)} no lado que contém $x_0 = ${x0}$.`,
       ],
       ans: { kind: 'expr', vars: ['x'], f: e => f(e.x), domain: { x: [lo, hi] }, tex: ytex },
@@ -515,11 +555,12 @@ function genSeparavel(r) {
     return {
       skill: 'separavel', metodos: ['separavel'],
       eq: `${eq},\\quad y(0) = ${y0}`,
-      q: `Resolva o PVI: ${T(`${eq},\\quad y(0) = ${y0}`)}`,
+      q: `Resolva o PVI: ${T(`y' = ${AZ(kv(k, 'x'))}\\,${VD('y^2')},\\quad y(0) = ${RS(y0)}`)}`,
+      legend: leg(['azul', 'g(x)'], ['verde', 'h(y)'], ['roxo', 'C'], ['rosa', 'y(0)']),
       steps: [
-        `Separe: $\\frac{dy}{y^2} = ${kv(k, 'x')}\\,dx$.`,
-        `Integre: $-\\frac{1}{y} = ${kv(q(k, 2), 'x^2')} + C$.`,
-        `$y(0) = ${y0}$: $C = ${q(-1, y0).tex()}$.`,
+        `Separe: $\\frac{dy}{${VD('y^2')}} = ${AZ(kv(k, 'x'))}\\,dx$.`,
+        `Integre: $-\\frac{1}{y} = ${AZ(kv(q(k, 2), 'x^2'))} + ${RX('C')}$.`,
+        `$y(0) = ${RS(y0)}$: $-\\frac{1}{${RS(y0)}} = ${RX('C')}$, logo $${RX('C')} = ${RX(q(-1, y0).tex())}$.`,
         `Isolando $y$: $y(x) = ${ytex}$.`,
         B > 0 ? `Atenção: o denominador zera em $x = \\pm\\sqrt{${q(A, B).tex()}}$; a solução explode ali e só vale entre esses pontos.` : `O denominador nunca zera: vale em todo $\\mathbb{R}$.`,
       ],
@@ -535,11 +576,12 @@ function genSeparavel(r) {
   return {
     skill: 'separavel', metodos: ['separavel'],
     eq: `${eq},\\quad y(0) = 0`,
-    q: `Resolva o PVI: ${T(`${eq},\\quad y(0) = 0`)}`,
+    q: `Resolva o PVI: ${T(`${eq},\\quad y(0) = ${RS(0)}`)}`,
+    legend: leg(['azul', 'g(x)'], ['verde', 'h(y)'], ['roxo', 'C'], ['rosa', 'y(0)']),
     steps: [
-      `Use $e^{${a}x - y} = e^{${a}x}e^{-y}$ e separe: $e^{y}\\,dy = ${ex(a, 'x')}\\,dx$.`,
-      `Integre: $e^{y} = \\frac{${ex(a, 'x')}}{${a}} + C$.`,
-      `$y(0) = 0$: $1 = \\frac{1}{${a}} + C$, logo $C = \\frac{${a - 1}}{${a}}$.`,
+      `Use $e^{${a}x - y} = ${AZ(ex(a, 'x'))}\\,${VD('e^{-y}')}$ e separe: $\\frac{dy}{${VD('e^{-y}')}} = e^{y}\\,dy = ${AZ(ex(a, 'x'))}\\,dx$.`,
+      `Integre: $e^{y} = \\frac{${AZ(ex(a, 'x'))}}{${a}} + ${RX('C')}$.`,
+      `$y(0) = ${RS(0)}$: $1 = \\frac{1}{${a}} + ${RX('C')}$, logo $${RX('C')} = ${RX(`\\frac{${a - 1}}{${a}}`)}$.`,
       `$y(x) = ${ytex}$ (o argumento do log é sempre positivo: vale em todo $\\mathbb{R}$).`,
     ],
     ans: { kind: 'expr', vars: ['x'], f: e => f(e.x), domain: { x: [-1.5, 1.5] }, tex: ytex },
@@ -591,29 +633,31 @@ function genExata(r) {
   const intM = lin([[cs[0], mixed[0].psi], [cs[1], mixed[1].psi], [cs[2], tx.psi]]).tex;
   const hy = cs[3] ? lin([[cs[3], ty.psi]]).tex : '0';
   const hp = cs[3] ? lin([[cs[3] * ty.N[0], ty.N[1]]]).tex : '0';
-  const base = { skill: 'exata', metodos: ['exata'], eq };
+  const base = { skill: 'exata', metodos: ['exata'], eq, legend: leg(['azul', 'M'], ['verde', 'N'], ['amarelo', '\\psi'], ['roxo', 'h(y)']) };
+  const eqC = `\\left(${AZ(M)}\\right)dx + \\left(${VD(N)}\\right)dy = 0`;
+  const psiC = hy === '0' ? AM(intM) : `${AM(intM)} ${hy.startsWith('-') ? `- ${RX(hy.slice(1))}` : `+ ${RX(hy)}`}`;
   if (!exact || r() < 0.25) {
     return {
       ...base, metodos: exact ? ['exata'] : ['nenhum'],
-      q: `A equação abaixo é exata? ${T(eq)}`,
+      q: `A equação abaixo é exata? ${T(eqC)}`,
       steps: [
-        `Teste de exatidão: com $M\\,dx + N\\,dy = 0$, a equação é exata se e só se $M_y = N_x$.`,
-        `$M_y = ${My}$`,
-        `$N_x = ${Nx}$`,
-        exact ? `São iguais: <b>é exata</b>, e $\\psi(x, y) = ${psi} = C$.` : `São diferentes: <b>não é exata</b> (seria preciso um fator integrante).`,
+        `Teste de exatidão: com $${AZ('M')}\\,dx + ${VD('N')}\\,dy = 0$, a equação é exata se e só se $${AZ('M_y')} = ${VD('N_x')}$.`,
+        `$${AZ('M_y')} = \\frac{\\partial}{\\partial y}\\left(${AZ(M)}\\right) = ${AZ(My)}$`,
+        `$${VD('N_x')} = \\frac{\\partial}{\\partial x}\\left(${VD(N)}\\right) = ${VD(Nx)}$`,
+        exact ? `São iguais: <b>é exata</b>, e $${AM('\\psi(x, y)')} = ${psiC} = C$.` : `São diferentes: <b>não é exata</b> (seria preciso um fator integrante).`,
       ],
       ans: { kind: 'choice', options: ['Sim, é exata', 'Não é exata'], correct: exact ? 0 : 1 },
     };
   }
   return {
     ...base,
-    q: `Verifique que a equação é exata e encontre $\\psi(x, y)$ tal que a solução seja $\\psi(x, y) = C$: ${T(eq)}<br><span class="c-muted">Digite só $\\psi$ (a constante não importa).</span>`,
+    q: `Verifique que a equação é exata e encontre $\\psi(x, y)$ tal que a solução seja $\\psi(x, y) = C$: ${T(eqC)}<br><span class="c-muted">Digite só $\\psi$ (a constante não importa).</span>`,
     steps: [
-      `$M = ${M}$ e $N = ${N}$.`,
-      `$M_y = ${My} = N_x$: é exata, então existe $\\psi$ com $\\psi_x = M$ e $\\psi_y = N$.`,
-      `Integre $M$ em $x$ (com $y$ fixo): $\\psi = ${intM} + h(y)$.`,
-      `Derive em $y$ e iguale a $N$: sobra $h'(y) = ${hp}$, logo $h(y) = ${hy}$.`,
-      `$\\psi(x, y) = ${psi} = C$`,
+      `$${AZ('M')} = ${AZ(M)}$ e $${VD('N')} = ${VD(N)}$.`,
+      `$${AZ('M_y')} = ${AZ(My)} = ${VD('N_x')}$: é exata, então existe $${AM('\\psi')}$ com $${AM('\\psi')}_x = ${AZ('M')}$ e $${AM('\\psi')}_y = ${VD('N')}$.`,
+      `Integre ${T(AZ('M'))} em $x$ (com $y$ fixo): $${AM('\\psi')} = \\int ${AZ('M')}\\,dx = ${AM(intM)} + ${RX('h(y)')}$.`,
+      `Derive em $y$ e iguale a ${T(VD('N'))}: tudo bate, menos $${RX("h'(y)")} = ${RX(hp)}$, logo $${RX('h(y)')} = ${RX(hy)}$.`,
+      `$${AM('\\psi(x, y)')} = ${psiC} = C$`,
     ],
     ans: { kind: 'potential', vars: ['x', 'y'], f: e => fpsi(e.x, e.y), domain: { x: [0.2, 1.6], y: [-1.2, 1.4] }, tex: psi },
     spec: {
@@ -665,12 +709,13 @@ function genTeu(r) {
     return {
       skill: 'teu', metodos: [],
       eq,
-      q: `O Teorema de Existência e Unicidade garante solução <b>única</b> para ${T(eq)}?`,
+      q: `O Teorema de Existência e Unicidade garante solução <b>única</b> para ${T(`y' = ${AZ(kind.f)},\\quad y(${RS(x0)}) = ${RS(y0)}`)}?`,
+      legend: leg(['azul', 'f(x, y)'], ['verde', '\\partial f/\\partial y'], ['rosa', '(x_0, y_0)']),
       steps: [
-        `O teorema pede $f(x, y)$ e $\\frac{\\partial f}{\\partial y}$ contínuas num retângulo em volta de $(x_0, y_0) = (${x0}, ${y0})$.`,
-        `$f = ${kind.f}$ é contínua${kind.onlyPos ? ' (onde está definida, $y \\ge 0$)' : ''}; $\\frac{\\partial f}{\\partial y} = ${kind.fy}$.`,
-        ok ? `Em $y_0 = ${y0}$ as duas são contínuas: <b>existe e é única</b> (localmente).`
-          : `Em $y_0 = 0$ a derivada parcial explode: o teorema <b>não garante unicidade</b>. De fato, $y \\equiv 0$ é solução e há outras que saem do equilíbrio.`,
+        `O teorema pede $${AZ('f(x, y)')}$ e $${VD('\\frac{\\partial f}{\\partial y}')}$ contínuas num retângulo em volta de $(x_0, y_0) = (${RS(x0)}, ${RS(y0)})$.`,
+        `$${AZ('f')} = ${AZ(kind.f)}$ é contínua${kind.onlyPos ? ' (onde está definida, $y \\ge 0$)' : ''}; $${VD('\\frac{\\partial f}{\\partial y}')} = ${VD(kind.fy)}$.`,
+        ok ? `Em $y_0 = ${RS(y0)}$ as duas são contínuas: <b>existe e é única</b> (localmente).`
+          : `Em $y_0 = ${RS(0)}$ a ${T(VD('\\partial f/\\partial y'))} explode: o teorema <b>não garante unicidade</b>. De fato, $y \\equiv 0$ é solução e há outras que saem do equilíbrio.`,
       ],
       ans: { kind: 'choice', options: ['Sim: $f$ e $\\partial f/\\partial y$ são contínuas perto do ponto inicial', 'Não: $\\partial f/\\partial y$ não é contínua no ponto inicial, então a unicidade não é garantida', 'Não: $f$ não é contínua no ponto inicial, então nem a existência é garantida'], correct: ok ? 0 : 1, shuffle: false },
     };
@@ -713,11 +758,12 @@ function genTeu(r) {
   return {
     skill: 'teu', metodos: ['linear'],
     eq,
-    q: `Sem resolver, qual é o maior intervalo em que o TEU garante que o PVI tem solução única? ${T(eq)}`,
+    q: `Sem resolver, qual é o maior intervalo em que o TEU garante que o PVI tem solução única? ${T(`y' + ${AZ(P.tex)}\\,y = ${VD(Qp.tex)},\\quad y(${RS(x0)}) = ${y0}`)}`,
+    legend: leg(['azul', 'p(x)'], ['verde', 'q(x)'], ['rosa', 'x_0'], ['amarelo', '\\text{intervalo}']),
     steps: [
-      `Para a linear $y' + p(x)y = q(x)$, a solução existe e é única no <b>maior intervalo aberto que contém $x_0$</b> onde $p$ e $q$ são contínuas.`,
-      `Onde $p = ${P.tex}$ e $q = ${Qp.tex}$ deixam de ser contínuas: ${why}.`,
-      `Esses pontos picam a reta em intervalos; o que contém $x_0 = ${x0}$ é $${right}$.`,
+      `Para a linear $y' + ${AZ('p(x)')}\\,y = ${VD('q(x)')}$, a solução existe e é única no <b>maior intervalo aberto que contém $x_0$</b> onde ${T(AZ('p'))} e ${T(VD('q'))} são contínuas.`,
+      `Onde $${AZ('p')} = ${AZ(P.tex)}$ e $${VD('q')} = ${VD(Qp.tex)}$ deixam de ser contínuas: ${why}.`,
+      `Esses pontos picam a reta em intervalos; o que contém $x_0 = ${RS(x0)}$ é $${AM(right)}$.`,
     ],
     ans: { kind: 'choice', options: options.map(o => `$${o}$`), correct: options.indexOf(right) },
   };
@@ -731,24 +777,28 @@ function genAutonoma(r) {
   const fa = y => `\\left(y ${y < 0 ? '+' : '-'} ${Math.abs(y)}\\right)`.replace('\\left(y - 0\\right)', 'y').replace('\\left(y + 0\\right)', 'y');
   const rhs = semi ? `${fa(a)}^2${fa(b)}` : `${s < 0 ? '-' : ''}${fa(a)}${fa(b)}`;
   const eqs = [a, b].sort((u, v) => u - v);
+  const cE = e => (e === eqs[0] ? AZ : VD);
+  const rhsC = semi ? `${cE(a)(fa(a))}^2${cE(b)(fa(b))}` : `${s < 0 ? '-' : ''}${cE(a)(fa(a))}${cE(b)(fa(b))}`;
+  const E0 = AZ(eqs[0]), E1 = VD(eqs[1]);
   const cls = e => {
     const L = Math.sign(g(e - 1e-3)), R = Math.sign(g(e + 1e-3));
     return L > 0 && R < 0 ? 'estável' : L < 0 && R > 0 ? 'instável' : 'semiestável';
   };
   const signs = [eqs[0] - 1, (eqs[0] + eqs[1]) / 2, eqs[1] + 1].map(y => (g(y) > 0 ? '+' : '-'));
-  const lines = `sinal de $g(y)$: ${signs[0]} abaixo de $${eqs[0]}$, ${signs[1]} entre $${eqs[0]}$ e $${eqs[1]}$, ${signs[2]} acima de $${eqs[1]}$`;
+  const lines = `sinal de $g(y)$: ${signs[0]} abaixo de $${E0}$, ${signs[1]} entre $${E0}$ e $${E1}$, ${signs[2]} acima de $${E1}$`;
   if (r() < 0.5) {
-    const right = `$y = ${eqs[0]}$ ${cls(eqs[0])}, $y = ${eqs[1]}$ ${cls(eqs[1])}`;
+    const right = `$y = ${E0}$ ${cls(eqs[0])}, $y = ${E1}$ ${cls(eqs[1])}`;
     const all = ['estável', 'instável', 'semiestável'];
     const options = new Set([right]);
-    while (options.size < 4) options.add(`$y = ${eqs[0]}$ ${pk(r, all)}, $y = ${eqs[1]}$ ${pk(r, all)}`);
+    while (options.size < 4) options.add(`$y = ${E0}$ ${pk(r, all)}, $y = ${E1}$ ${pk(r, all)}`);
     const list = [...options];
     return {
       skill: 'autonoma', metodos: ['separavel'],
       eq: `y' = ${rhs}`,
-      q: `Classifique os equilíbrios de ${T(`y' = ${rhs}`)}`,
+      q: `Classifique os equilíbrios de ${T(`y' = ${rhsC}`)}`,
+      legend: leg(['azul', `y = ${eqs[0]}`], ['verde', `y = ${eqs[1]}`]),
       steps: [
-        `Equilíbrios: $g(y) = 0 \\Rightarrow y = ${eqs[0]}$ e $y = ${eqs[1]}$.`,
+        `Equilíbrios: cada fator que zera dá um, $y = ${E0}$ e $y = ${E1}$.`,
         `Faça a linha de fase: ${lines}.`,
         `Setas apontando para o equilíbrio dos dois lados: estável; saindo dos dois lados: instável; uma entra e outra sai: semiestável.`,
         `Resposta: ${right}.`,
@@ -759,17 +809,18 @@ function genAutonoma(r) {
   const y0 = pk(r, [eqs[0] - 1, (eqs[0] + eqs[1]) / 2, eqs[1] + 1]);
   const gy = g(y0);
   const lim = gy > 0 ? (y0 < eqs[0] ? eqs[0] : y0 < eqs[1] ? eqs[1] : Infinity) : (y0 > eqs[1] ? eqs[1] : y0 > eqs[0] ? eqs[0] : -Infinity);
-  const opt = [`$${eqs[0]}$`, `$${eqs[1]}$`, '$+\\infty$', '$-\\infty$'];
+  const opt = [`$${E0}$`, `$${E1}$`, '$+\\infty$', '$-\\infty$'];
   const correct = lim === eqs[0] ? 0 : lim === eqs[1] ? 1 : lim === Infinity ? 2 : 3;
   const y0t = String(y0).replace('.', '{,}');
   return {
     skill: 'autonoma', metodos: ['separavel'],
     eq: `y' = ${rhs}`,
-    q: `Para ${T(`y' = ${rhs},\\quad y(0) = ${y0t}`)}, o que acontece com $y(t)$ quando $t$ cresce?`,
+    q: `Para ${T(`y' = ${rhsC},\\quad y(0) = ${RS(y0t)}`)}, o que acontece com $y(t)$ quando $t$ cresce?`,
+    legend: leg(['azul', `y = ${eqs[0]}`], ['verde', `y = ${eqs[1]}`], ['rosa', 'y_0']),
     steps: [
-      `Equilíbrios: $y = ${eqs[0]}$ e $y = ${eqs[1]}$. As soluções não podem cruzá-los (unicidade).`,
+      `Equilíbrios: $y = ${E0}$ e $y = ${E1}$. As soluções não podem cruzá-los (unicidade).`,
       `${lines[0].toUpperCase()}${lines.slice(1)}.`,
-      `Em $y_0 = ${y0t}$ temos $g(y_0) ${gy > 0 ? '> 0' : '< 0'}$: $y$ ${gy > 0 ? 'cresce' : 'decresce'} ${Number.isFinite(lim) ? `e se aproxima de $${lim}$ sem nunca alcançá-lo` : `sem limite (${lim > 0 ? '+' : '-'}∞; pode até explodir em tempo finito)`}.`,
+      `Em $y_0 = ${RS(y0t)}$ temos $g(y_0) ${gy > 0 ? '> 0' : '< 0'}$: $y$ ${gy > 0 ? 'cresce' : 'decresce'} ${Number.isFinite(lim) ? `e se aproxima de $${cE(lim)(lim)}$ sem nunca alcançá-lo` : `sem limite (${lim > 0 ? '+' : '-'}∞; pode até explodir em tempo finito)`}.`,
     ],
     ans: { kind: 'choice', options: opt, correct, shuffle: false },
   };
@@ -779,26 +830,31 @@ function genAutonoma(r) {
 
 function genWronskiano(r) {
   const kind = pk(r, ['exps', 'dupla', 'trig', 'pot', 'amort', 'ld']);
-  let y1, y2, f1, f2, W, fW, why;
+  let y1, y2, f1, f2, W, fW, why, d1 = null, d2 = null;
+  const dE = a => (a === 0 ? '0' : kv(a, ex(a, 'x')));
   if (kind === 'exps') {
     const a = ri(r, -3, 3); let b; do b = ri(r, -3, 3); while (b === a);
-    y1 = ex(a, 'x'); y2 = ex(b, 'x'); f1 = x => Math.exp(a * x); f2 = x => Math.exp(b * x);
+    y1 = a === 0 ? '1' : ex(a, 'x'); y2 = b === 0 ? '1' : ex(b, 'x'); f1 = x => Math.exp(a * x); f2 = x => Math.exp(b * x);
+    d1 = dE(a); d2 = dE(b);
     ({ tex: W } = lin([[b - a, a + b === 0 ? '' : ex(a + b, 'x')]])); fW = x => (b - a) * Math.exp((a + b) * x);
     why = `$W = ${y1}\\cdot ${kv(b, ex(b, 'x'))} - ${kv(a, ex(a, 'x'))}\\cdot ${y2}$`;
   } else if (kind === 'dupla') {
     const a = nz(r, -3, 3);
     y1 = ex(a, 'x'); y2 = `x${ex(a, 'x')}`; f1 = x => Math.exp(a * x); f2 = x => x * Math.exp(a * x);
+    d1 = dE(a); d2 = `(1 ${a < 0 ? '-' : '+'} ${kv(Math.abs(a), 'x')})${ex(a, 'x')}`;
     W = ex(2 * a, 'x'); fW = x => Math.exp(2 * a * x);
     why = `$y_2' = (1 + ${kv(a, 'x')})${ex(a, 'x')}$, então $W = ${y1}(1 + ${kv(a, 'x')})${ex(a, 'x')} - ${kv(a, ex(a, 'x'))}\\cdot x${ex(a, 'x')}$`;
   } else if (kind === 'trig') {
     const k = pk(r, [1, 2, 3, 4]);
     y1 = cos(k, 'x'); y2 = sen(k, 'x'); f1 = x => Math.cos(k * x); f2 = x => Math.sin(k * x);
+    d1 = kv(-k, sen(k, 'x')); d2 = kv(k, cos(k, 'x'));
     W = String(k); fW = () => k;
     why = `$W = ${y1}\\cdot ${kv(k, cos(k, 'x'))} + ${kv(k, sen(k, 'x'))}\\cdot ${y2} = ${k}(\\cos^2 + \\operatorname{sen}^2)$`;
   } else if (kind === 'pot') {
     const m = pk(r, [1, 2, 3]); let n; do n = pk(r, [2, 3, 4, -1]); while (n === m);
     const px = e => (e === 1 ? 'x' : `x^{${e}}`);
     y1 = px(m); y2 = px(n); f1 = x => x ** m; f2 = x => x ** n;
+    d1 = m === 1 ? '1' : kv(m, px(m - 1)); d2 = n === 1 ? '1' : kv(n, px(n - 1));
     const e = m + n - 1;
     W = lin([[n - m, e === 0 ? '' : px(e)]]).tex; fW = x => (n - m) * x ** e;
     why = `$y_1y_2' - y_1'y_2 = ${n}x^{${e}} - ${m}x^{${e}}$`;
@@ -811,17 +867,21 @@ function genWronskiano(r) {
   } else {
     const a = nz(r, -3, 3), c = pk(r, [2, 3, -1, 5]);
     y1 = ex(a, 'x'); y2 = lin([[c, ex(a, 'x')]]).tex; f1 = x => Math.exp(a * x); f2 = x => c * Math.exp(a * x);
+    d1 = dE(a); d2 = lin([[c * a, ex(a, 'x')]]).tex;
     W = '0'; fW = () => 0;
     why = `$y_2 = ${c}\\,y_1$: uma é múltipla da outra, então as colunas do determinante são proporcionais`;
   }
   return {
     skill: 'wronskiano', metodos: [],
     eq: `y_1 = ${y1},\\ y_2 = ${y2}`,
-    q: `Calcule o Wronskiano $W(y_1, y_2)(x)$ de ${T(`y_1 = ${y1}`)} e ${T(`y_2 = ${y2}`)}. Elas são linearmente independentes?`,
+    q: `Calcule o Wronskiano $W(y_1, y_2)(x)$ de ${T(`${AZ('y_1')} = ${AZ(y1)}`)} e ${T(`${VD('y_2')} = ${VD(y2)}`)}. Elas são linearmente independentes?`,
+    legend: leg(['azul', 'y_1,\\ y_1\''], ['verde', 'y_2,\\ y_2\''], ['amarelo', 'W']),
     steps: [
-      `Definição: $W = \\begin{vmatrix} y_1 & y_2 \\\\ y_1' & y_2' \\end{vmatrix} = y_1 y_2' - y_1' y_2$.`,
-      `${why}.`,
-      `$W(x) = ${W}$. ${W === '0' ? 'Como $W \\equiv 0$, são <b>linearmente dependentes</b>.' : 'Como $W \\ne 0$, são <b>linearmente independentes</b> (formam um conjunto fundamental).'}`,
+      `Definição: $${AM('W')} = \\begin{vmatrix} ${AZ('y_1')} & ${VD('y_2')} \\\\ ${AZ("y_1'")} & ${VD("y_2'")} \\end{vmatrix} = ${AZ('y_1')}${VD("y_2'")} - ${AZ("y_1'")}${VD('y_2')}$.`,
+      d1 !== null
+        ? `Derive e preencha: $${AM('W')} = \\begin{vmatrix} ${AZ(y1)} & ${VD(y2)} \\\\ ${AZ(d1)} & ${VD(d2)} \\end{vmatrix} = ${AZ(par(y1))}\\cdot ${VD(par(d2))} - ${AZ(par(d1))}\\cdot ${VD(par(y2))}$.`
+        : `${why}.`,
+      `$${AM('W(x)')} = ${AM(W)}$. ${W === '0' ? 'Como $W \\equiv 0$, são <b>linearmente dependentes</b>.' : 'Como $W \\ne 0$, são <b>linearmente independentes</b> (formam um conjunto fundamental).'}`,
     ],
     ans: { kind: 'expr', vars: ['x'], f: e => fW(e.x), domain: { x: [0.2, 1.5] }, tex: W },
     spec: { type: 'wronskian', f1, f2, W: fW },
@@ -853,48 +913,56 @@ function genHomogenea2(r) {
       skill: 'homogenea2', metodos: ['caracteristica'],
       eq: `${eqL} = 0`,
       q: `Qual é a solução geral de ${T(`${eqL} = 0`)}?`,
+      legend: leg(['azul', roots.type === 'complexas' ? '\\alpha' : 'r_1'], ['verde', roots.type === 'complexas' ? '\\beta' : 'r_2']),
       steps: [
         `Tente $y = e^{rx}$: chega-se à equação característica $${poly(cp, 'r')} = 0$.`,
-        `Raízes: $${rootsTex(roots)}$.`,
-        roots.type === 'reais' ? 'Duas raízes reais distintas: $c_1e^{r_1x} + c_2e^{r_2x}$.' : roots.type === 'dupla' ? 'Raiz dupla: a segunda solução ganha um fator $x$.' : 'Raízes $\\alpha \\pm \\beta i$: $e^{\\alpha x}(c_1\\cos\\beta x + c_2\\operatorname{sen}\\beta x)$.',
-        `$y = ${homogTex(roots)}$`,
+        `Raízes: $${rootsTexC(roots)}$.`,
+        roots.type === 'reais' ? `Duas raízes reais distintas: $c_1e^{${AZ('r_1')}x} + c_2e^{${VD('r_2')}x}$.` : roots.type === 'dupla' ? `Raiz dupla: $(c_1 + c_2x)e^{${AZ('r')}x}$; a segunda solução ganha um fator $x$.` : `Raízes $${AZ('\\alpha')} \\pm ${VD('\\beta')} i$: $e^{${AZ('\\alpha')}x}(c_1\\cos ${VD('\\beta')}x + c_2\\operatorname{sen} ${VD('\\beta')}x)$.`,
+        `$y = ${homogTexC(roots)}$`,
       ],
       ans: { kind: 'choice', options, correct: 0 },
     };
   }
   const y0 = ri(r, -2, 3), y1 = ri(r, -3, 3);
-  let y, consts;
+  let y, yC, consts;
   if (roots.type === 'reais') {
     const { r1, r2 } = roots;
     const c2 = q(y1 - r1 * y0, r2 - r1), c1 = q(y0).sub(c2);
     y = lin([[c1, r1 === 0 ? '' : ex(r1, 'x'), x => Math.exp(r1 * x)], [c2, r2 === 0 ? '' : ex(r2, 'x'), x => Math.exp(r2 * x)]]);
-    consts = `$c_1 + c_2 = ${y0}$ e $${r1}c_1 + ${r2 < 0 ? `(${r2})` : r2}c_2 = ${y1}$, logo $c_1 = ${c1.tex()}$, $c_2 = ${c2.tex()}$.`;
+    yC = lin([[c1, r1 === 0 ? '' : `e^{${AZ(kv(r1, 'x'))}}`, null, RX], [c2, r2 === 0 ? '' : `e^{${VD(kv(r2, 'x'))}}`, null, LR]]).tex;
+    consts = `$y(0) = ${RX('c_1')} + ${LR('c_2')} = ${RS(y0)}$ e $y'(0) = ${AZ(r1)}${RX('c_1')} + ${VD(par(r2))}${LR('c_2')} = ${RS(y1)}$, logo $${RX('c_1')} = ${RX(c1.tex())}$, $${LR('c_2')} = ${LR(c2.tex())}$.`;
   } else if (roots.type === 'dupla') {
     const rr = roots.r, c2 = q(y1).sub(rr.mul(y0));
     const inner = lin([[y0, '', null], [c2, 'x', x => x]]);
     const wrap = inner.tex.includes(' ') ? `\\left(${inner.tex}\\right)` : inner.tex;
     const tex = inner.tex === '0' ? '0' : inner.tex === '1' ? ex(rr, 'x') : `${wrap}${ex(rr, 'x')}`;
     y = { tex, f: x => inner.f(x) * Math.exp(rr.v * x) };
-    consts = `$c_1 = y(0) = ${y0}$ e $y'(0) = ${rr.tex()}c_1 + c_2 = ${y1}$, logo $c_2 = ${c2.tex()}$.`;
+    const innerC = lin([[y0, '', null, RX], [c2, 'x', null, LR]]).tex;
+    yC = innerC === '0' ? '0' : `\\left(${innerC}\\right)e^{${AZ(kv(rr, 'x'))}}`;
+    consts = `$${RX('c_1')} = y(0) = ${RS(y0)}$ e $y'(0) = ${AZ(rr.tex())}${RX('c_1')} + ${LR('c_2')} = ${RS(y1)}$, logo $${LR('c_2')} = ${LR(c2.tex())}$.`;
   } else {
     const { a, b } = roots, c2 = q(y1 - a * y0, b);
     const inner = lin([[y0, cos(b, 'x'), x => Math.cos(b * x)], [c2, sen(b, 'x'), x => Math.sin(b * x)]]);
     const e = a === 0 ? '' : ex(a, 'x');
     const tex = inner.tex === '0' ? '0' : e ? `${e}\\left(${inner.tex}\\right)` : inner.tex;
     y = { tex, f: x => Math.exp(a * x) * inner.f(x) };
-    consts = `$c_1 = y(0) = ${y0}$ e $y'(0) = ${a}c_1 + ${b}c_2 = ${y1}$, logo $c_2 = ${c2.tex()}$.`;
+    const bb = VD(kv(b, 'x'));
+    const innerC = lin([[y0, `\\cos(${bb})`, null, RX], [c2, `\\operatorname{sen}(${bb})`, null, LR]]).tex;
+    yC = innerC === '0' ? '0' : a === 0 ? innerC : `e^{${AZ(kv(a, 'x'))}}\\left(${innerC}\\right)`;
+    consts = `$${RX('c_1')} = y(0) = ${RS(y0)}$ e $y'(0) = ${AZ(a)}${RX('c_1')} + ${VD(b)}${LR('c_2')} = ${RS(y1)}$, logo $${LR('c_2')} = ${LR(c2.tex())}$.`;
   }
   const eq = `${eqL} = 0,\\quad y(0) = ${y0},\\ y'(0) = ${y1}`;
   return {
     skill: 'homogenea2', metodos: ['caracteristica'],
     eq,
-    q: `Resolva o PVI: ${T(eq)}`,
+    q: `Resolva o PVI: ${T(`${eqL} = 0,\\quad y(0) = ${RS(y0)},\\ y'(0) = ${RS(y1)}`)}`,
+    legend: leg(['azul', roots.type === 'complexas' ? '\\alpha' : 'r_1'], ['verde', roots.type === 'complexas' ? '\\beta' : 'r_2'], ['roxo', 'c_1'], ['laranja', 'c_2'], ['rosa', 'y(0),\\ y\'(0)']),
     steps: [
-      `Equação característica: $${poly(cp, 'r')} = 0$.`,
-      `Raízes: $${rootsTex(roots)}$.`,
-      `Solução geral: $y = ${homogTex(roots)}$.`,
+      `Troque $y$ por $e^{rx}$: equação característica $${poly(cp, 'r')} = 0$.`,
+      `Raízes: $${rootsTexC(roots)}$.`,
+      `Solução geral: $y = ${homogTexC(roots)}$.`,
       consts,
-      `$y(x) = ${y.tex}$`,
+      `$y(x) = ${yC}$`,
     ],
     ans: { kind: 'expr', vars: ['x'], f: e => y.f(e.x), domain: { x: [-1, 1.5] }, tex: y.tex },
     spec: { type: 'ode2', a: cp, g: () => 0, x0: 0, ic: [y0, y1], sol: y.f },
@@ -920,7 +988,9 @@ function genCoefIndet(r) {
     guess = deg === 2 ? 'Ax^2 + Bx + C' : 'Ax + B';
     guessWrong = [deg === 2 ? 'Ax^2' : 'Ax', deg === 2 ? 'x(Ax^2 + Bx + C)' : 'x(Ax + B)', 'Ae^{x}'];
     if (deg === 1) { const B1 = q(g1, c), C1 = q(g0).sub(B1.mul(b)).div(c); yp = lin([[B1, 'x', x => x], [C1, '', null]]); }
-    solve = deg === 2 ? `$${c}A = ${g2}$, $${c}B + ${2 * b}A = ${g1}$, $${c}C + ${b}B + 2A = ${g0}$` : `$${c}A = ${g1}$ e $${c}B + ${b}A = ${g0}$`;
+    solve = deg === 2
+      ? `coeficientes de $x^2$, $x$ e constante: $${lin([[c, 'A']]).tex} = ${g2}$, $${lin([[c, 'B'], [2 * b, 'A']]).tex} = ${g1}$, $${lin([[c, 'C'], [b, 'B'], [2, 'A']]).tex} = ${g0}$`
+      : `coeficientes de $x$ e constante: $${lin([[c, 'A']]).tex} = ${g1}$ e $${lin([[c, 'B'], [b, 'A']]).tex} = ${g0}$`;
   } else if (kind === 'exp') {
     const roots = hom.type === 'reais' ? [hom.r1, hom.r2] : [];
     const res = roots.length && r() < 0.45;
@@ -951,40 +1021,45 @@ function genCoefIndet(r) {
       const A = q(Gc * m - n * Gs, det), B = q(m * Gs + n * Gc, det);
       yp = lin([[A, cos(k, 'x'), x => Math.cos(k * x)], [B, sen(k, 'x'), x => Math.sin(k * x)]]);
       guess = `A${cos(k, 'x')} + B${sen(k, 'x')}`; guessWrong = [isCos ? `A${cos(k, 'x')}` : `A${sen(k, 'x')}`, `x\\left(A${cos(k, 'x')} + B${sen(k, 'x')}\\right)`, `A${ex(k, 'x')}`];
-      solve = `Iguale os coeficientes de $\\cos$ e de $\\operatorname{sen}$: $${m}A + ${n}B = ${Gc}$ e $${-n}A + ${m}B = ${Gs}$`;
+      solve = `coeficientes de $\\cos$ e de $\\operatorname{sen}$: $${lin([[m, 'A'], [n, 'B']]).tex} = ${Gc}$ e $${lin([[-n, 'A'], [m, 'B']]).tex} = ${Gs}$`;
     } else {
       yp = isCos ? lin([[q(G, 2 * k), `x${sen(k, 'x')}`, x => x * Math.sin(k * x)]]) : lin([[q(-G, 2 * k), `x${cos(k, 'x')}`, x => x * Math.cos(k * x)]]);
       guess = `x\\left(A${cos(k, 'x')} + B${sen(k, 'x')}\\right)`; guessWrong = [`A${cos(k, 'x')} + B${sen(k, 'x')}`, isCos ? `A${cos(k, 'x')}` : `A${sen(k, 'x')}`, `Ax^2${cos(k, 'x')}`];
-      solve = `Ressonância: $${cos(k, 'x')}$ e $${sen(k, 'x')}$ já resolvem a homogênea, por isso o fator $x$. Substituindo, $${2 * k}B = ${isCos ? G : 0}$ e $${-2 * k}A = ${isCos ? 0 : G}$`;
+      solve = `ressonância ($${cos(k, 'x')}$ e $${sen(k, 'x')}$ já resolvem a homogênea, por isso o fator $x$); sobra $${2 * k}B = ${isCos ? G : 0}$ e $${-2 * k}A = ${isCos ? 0 : G}$`;
     }
   }
   const eqL = odeLhs([1, b, c]);
   const eq = `${eqL} = ${gtex}`;
+  // A, B, C (incógnitas do chute) com cor própria em todo lugar onde aparecem
+  const abc = str => str.replace(/(?<![A-Za-z\\])([ABC])(?![A-Za-z])/g, (m0, L) => ({ A: RX, B: LR, C: RS })[L](L));
   const base = {
     skill: 'coefIndet', metodos: ['coef', 'variacao'], eq,
+    legend: leg(['azul', 'y_h'], ['verde', 'g(x)'], ['amarelo', 'y_p'], ['roxo', 'A'], ['laranja', 'B'], ['rosa', 'C']),
     steps: [
-      `Homogênea: característica $${poly([1, b, c], 'r')} = 0$, raízes $${rootsTex(hom)}$, então $y_h = ${homogTex(hom)}$.`,
-      `Chute pela forma de $g(x) = ${gtex}$: $y_p = ${guess}$ (compare com $y_h$: se algum termo do chute já resolve a homogênea, multiplique por $x$).`,
-      `Substitua na equação: ${solve}.`,
-      `$y_p = ${yp.tex}$`,
-      `Solução geral: $y = ${homogTex(hom)} ${yp.tex.startsWith('-') ? '' : '+ '}${yp.tex}$.`,
+      `Homogênea: característica $${poly([1, b, c], 'r')} = 0$, raízes $${rootsTex(hom)}$, então $${AZ('y_h')} = ${AZ(homogTex(hom))}$.`,
+      `Chute pela forma de $${VD('g(x)')} = ${VD(gtex)}$: $${AM('y_p')} = ${abc(guess)}$ (compare com $${AZ('y_h')}$: se algum termo do chute já resolve a homogênea, multiplique por $x$).`,
+      `Substitua $${AM('y_p')}$ na equação e iguale a $${VD('g')}$: ${abc(solve)}.`,
+      `$${AM('y_p')} = ${AM(yp.tex)}$`,
+      `Solução geral: $y = ${AZ('y_h')} + ${AM('y_p')} = ${AZ(homogTex(hom))} ${yp.tex.startsWith('-') ? `- ${AM(yp.tex.slice(1))}` : `+ ${AM(yp.tex)}`}$.`,
     ],
   };
   if (r() < 0.35) {
     const options = [`$${guess}$`, ...guessWrong.map(w => `$${w}$`)];
     return {
       ...base,
-      q: `Pelo método dos coeficientes a determinar, qual é a forma correta do chute para $y_p$ em ${T(eq)}?`,
+      q: `Pelo método dos coeficientes a determinar, qual é a forma correta do chute para $y_p$ em ${T(`${eqL} = ${VD(gtex)}`)}?`,
       ans: { kind: 'choice', options, correct: 0 },
     };
   }
   return {
     ...base,
-    q: `Encontre uma solução particular $y_p$ de ${T(eq)}`,
+    q: `Encontre uma solução particular $y_p$ de ${T(`${eqL} = ${VD(gtex)}`)}`,
     ans: { kind: 'ode', vars: ['x'], a: [1, b, c], g, v: 'x', domain: { x: [-1, 1.5] }, tex: yp.tex },
     spec: { type: 'particular', a: [1, b, c], g, yp: yp.f },
   };
 }
+
+const VP_LEGEND = leg(['azul', 'y_1'], ['verde', 'y_2'], ['amarelo', 'W'], ['rosa', 'g(x)'], ['roxo', 'u_1'], ['laranja', 'u_2']);
 
 function genVariacao(r) {
   const kind = pk(r, ['sec', 'csc', 'tan', 'ln', 'x2']);
@@ -1000,13 +1075,14 @@ function genVariacao(r) {
     return {
       skill: 'variacao', metodos: ['variacao'],
       eq: `${eqL} = ${gtex},\\ x > 0`,
-      q: `Encontre uma solução particular de ${T(`${eqL} = ${gtex},\\quad x > 0`)}`,
+      q: `Encontre uma solução particular de ${T(`${eqL} = ${RS(gtex)},\\quad x > 0`)}`,
+      legend: VP_LEGEND,
       steps: [
-        `$g(x) = ${gtex}$ não está na tabela dos coeficientes a determinar: use <b>variação de parâmetros</b>.`,
-        `Característica com raiz dupla $r = ${a}$: $y_1 = ${E}$, $y_2 = x${E}$, e $W = ${ex(2 * a, 'x')}$.`,
-        `$u_1' = -\\frac{y_2\\,g}{W} = ${kind === 'ln' ? '-1' : '-\\frac{1}{x}'}$ e $u_2' = \\frac{y_1\\,g}{W} = ${kind === 'ln' ? '\\frac{1}{x}' : '\\frac{1}{x^2}'}$.`,
-        `Integrando: $u_1 = ${kind === 'ln' ? '-x' : '-\\ln x'}$ e $u_2 = ${kind === 'ln' ? '\\ln x' : '-\\frac{1}{x}'}$.`,
-        `$y_p = u_1y_1 + u_2y_2 = ${kind === 'ln' ? `-x${E} + x${E}\\ln x` : `-${E}\\ln x - ${E}`}$. O termo $${kind === 'ln' ? `-x${E}` : `-${E}`}$ resolve a homogênea e pode ser descartado: $y_p = ${yp.tex}$.`,
+        `$${RS('g(x)')} = ${RS(gtex)}$ não está na tabela dos coeficientes a determinar: use <b>variação de parâmetros</b>.`,
+        `Característica com raiz dupla $r = ${a}$: $${AZ('y_1')} = ${AZ(E)}$, $${VD('y_2')} = ${VD(`x${E}`)}$, e $${AM('W')} = ${AM(ex(2 * a, 'x'))}$.`,
+        `$${RX("u_1'")} = -\\frac{${VD('y_2')}\\,${RS('g')}}{${AM('W')}} = -\\frac{${VD(`x${E}`)}\\cdot ${RS(gtex)}}{${AM(ex(2 * a, 'x'))}} = ${RX(kind === 'ln' ? '-1' : '-\\frac{1}{x}')}$ e $${LR("u_2'")} = \\frac{${AZ('y_1')}\\,${RS('g')}}{${AM('W')}} = ${LR(kind === 'ln' ? '\\frac{1}{x}' : '\\frac{1}{x^2}')}$.`,
+        `Integrando: $${RX('u_1')} = ${RX(kind === 'ln' ? '-x' : '-\\ln x')}$ e $${LR('u_2')} = ${LR(kind === 'ln' ? '\\ln x' : '-\\frac{1}{x}')}$.`,
+        `$y_p = ${RX('u_1')}${AZ('y_1')} + ${LR('u_2')}${VD('y_2')} = ${RX(kind === 'ln' ? '(-x)' : '(-\\ln x)')}${AZ(E)} + ${LR(kind === 'ln' ? '\\ln x' : '\\left(-\\frac{1}{x}\\right)')}\\,${VD(`x${E}`)}$. O termo $${kind === 'ln' ? `-x${E}` : `-${E}`}$ resolve a homogênea e pode ser descartado: $y_p = ${yp.tex}$.`,
       ],
       ans: { kind: 'ode', vars: ['x'], a: cp, g, v: 'x', domain: { x: [0.2, 2.5] }, tex: yp.tex },
       spec: { type: 'particular', a: cp, g, yp: yp.f },
@@ -1039,13 +1115,14 @@ function genVariacao(r) {
   return {
     skill: 'variacao', metodos: ['variacao'],
     eq: `${eqL} = ${gtex}`,
-    q: `Encontre uma solução particular de ${T(`${eqL} = ${gtex}`)} (no intervalo em que $g$ é contínua e contém pontos perto de ${kind === 'csc' ? `$\\frac{\\pi}{${2 * k}}$` : '$0$'}).`,
+    q: `Encontre uma solução particular de ${T(`${eqL} = ${RS(gtex)}`)} (no intervalo em que $g$ é contínua e contém pontos perto de ${kind === 'csc' ? `$\\frac{\\pi}{${2 * k}}$` : '$0$'}).`,
+    legend: VP_LEGEND,
     steps: [
-      `$g(x) = ${gtex}$ não é polinômio, exponencial, seno ou cosseno: coeficientes a determinar não funciona. Use <b>variação de parâmetros</b>.`,
-      `$y_1 = ${C}$, $y_2 = ${S}$, $W = ${k}$.`,
-      `$u_1' = -\\frac{y_2\\,g}{W} = ${u1p}$ e $u_2' = \\frac{y_1\\,g}{W} = ${u2p}$.`,
-      `Integrando: $u_1 = ${u1}$ e $u_2 = ${u2}$.`,
-      `$y_p = u_1y_1 + u_2y_2 = ${yp.tex}$${kind === 'tan' ? ' (os termos com sen·cos se cancelam)' : ''}.`,
+      `$${RS('g(x)')} = ${RS(gtex)}$ não é polinômio, exponencial, seno ou cosseno: coeficientes a determinar não funciona. Use <b>variação de parâmetros</b>.`,
+      `Da homogênea ($r = \\pm ${k === 1 ? '' : k}i$): $${AZ('y_1')} = ${AZ(C)}$, $${VD('y_2')} = ${VD(S)}$, $${AM('W')} = ${AZ(C)}\\cdot ${VD(kv(k, C))} - ${AZ(kv(-k, S))}\\cdot ${VD(S)} = ${AM(k)}$.`,
+      `$${RX("u_1'")} = -\\frac{${VD('y_2')}\\,${RS('g')}}{${AM('W')}} = ${RX(u1p)}$ e $${LR("u_2'")} = \\frac{${AZ('y_1')}\\,${RS('g')}}{${AM('W')}} = ${LR(u2p)}$.`,
+      `Integrando: $${RX('u_1')} = ${RX(u1)}$ e $${LR('u_2')} = ${LR(u2)}$.`,
+      `$y_p = ${RX('u_1')}${AZ('y_1')} + ${LR('u_2')}${VD('y_2')} = ${RX(`\\left(${u1}\\right)`)}${AZ(C)} + ${LR(`\\left(${u2}\\right)`)}${VD(S)} = ${yp.tex}$${kind === 'tan' ? ' (os termos com sen·cos se cancelam)' : ''}.`,
     ],
     ans: { kind: 'ode', vars: ['x'], a: cp, g, v: 'x', domain: { x: dom }, tex: yp.tex },
     spec: { type: 'particular', a: cp, g, yp: yp.f, domain: dom },
@@ -1084,14 +1161,18 @@ function genLaplaceDireta(r) {
   const a = Math.max(...ps.map(p => p.a));
   const F = s => ps[0].F(s) + ps[1].F(s);
   const Ftex = sumTex(ps.map(p => p.Ftex));
+  const cor = [AZ, VD];
+  const ftexC = lin(ps.map((p, i) => [p.ftex[0], p.ftex[1], null, cor[i]])).tex;
+  const FtexC = sumTex(ps.map((p, i) => ({ neg: p.Ftex.neg, tex: cor[i](p.Ftex.tex) })));
   return {
     skill: 'laplaceDireta', metodos: [],
     eq: `f(t) = ${ftex}`,
-    q: `Calcule a transformada de Laplace $F(s) = \\mathcal{L}\\{f\\}(s)$ de ${T(`f(t) = ${ftex}`)}<br><span class="c-muted">Use <code>e^(-2s)</code> para exponenciais em $s$.</span>`,
+    q: `Calcule a transformada de Laplace $F(s) = \\mathcal{L}\\{f\\}(s)$ de ${T(`f(t) = ${ftexC}`)}<br><span class="c-muted">Use <code>e^(-2s)</code> para exponenciais em $s$.</span>`,
+    legend: leg(['azul', '1^a\\ \\text{parcela e sua transformada}'], ['verde', '2^a\\ \\text{parcela e sua transformada}']),
     steps: [
-      `A transformada é linear: transforme cada termo e some.`,
-      ...ps.map(p => `$${lin([[p.ftex[0], p.ftex[1]]]).tex}$: ${p.table} $\\Rightarrow ${sumTex([p.Ftex])}$.`),
-      `$F(s) = ${Ftex}$, para $s > ${a}$.`,
+      `A transformada é linear: transforme cada parcela e some. Cada cor acompanha uma parcela até virar a sua transformada.`,
+      ...ps.map((p, i) => `$${lin([[p.ftex[0], p.ftex[1], null, cor[i]]]).tex}$: ${p.table} $\\Rightarrow ${sumTex([{ neg: p.Ftex.neg, tex: cor[i](p.Ftex.tex) }])}$.`),
+      `$F(s) = ${FtexC}$, para $s > ${a}$.`,
     ],
     ans: { kind: 'expr', vars: ['s'], f: e => F(e.s), domain: { s: [a + 1, a + 5] }, tex: Ftex },
     spec: { type: 'laplace', pieces: ps, F, a },
@@ -1112,11 +1193,12 @@ function genLaplaceInversa(r) {
     return {
       skill: 'laplaceInversa', metodos: ['fracoes'], eq: `F(s) = ${Ftex}`,
       q: `Encontre $f(t) = \\mathcal{L}^{-1}\\{F\\}$ para ${T(`F(s) = ${Ftex}`)}`,
+      legend: leg(['azul', `\\frac{A}{${sa(r1)}} \\to Ae^{${r1}t}`], ['verde', `\\frac{B}{${sa(r2)}} \\to Be^{${r2}t}`]),
       steps: [
-        `Fatore o denominador: $${den} = (${sa(r1)})(${sa(r2)})$ (raízes reais distintas → frações parciais).`,
-        `$\\frac{${num}}{(${sa(r1)})(${sa(r2)})} = \\frac{A}{${sa(r1)}} + \\frac{B}{${sa(r2)}}$. Cubra cada fator (Heaviside): $A = \\left.\\frac{${num}}{${sa(r2)}}\\right|_{s = ${r1}} = ${A}$, $B = \\left.\\frac{${num}}{${sa(r1)}}\\right|_{s = ${r2}} = ${B}$.`,
-        `Tabela: $\\mathcal{L}^{-1}\\left\\{\\frac{1}{s - a}\\right\\} = e^{at}$.`,
-        `$f(t) = ${f.tex}$`,
+        `Fatore o denominador: $${den} = (${AZ(sa(r1))})(${VD(sa(r2))})$ (raízes reais distintas → frações parciais).`,
+        `$\\frac{${num}}{(${AZ(sa(r1))})(${VD(sa(r2))})} = \\frac{${AZ('A')}}{${AZ(sa(r1))}} + \\frac{${VD('B')}}{${VD(sa(r2))}}$. Cubra cada fator (Heaviside): $${AZ('A')} = \\left.\\frac{${num}}{${VD(sa(r2))}}\\right|_{s = ${r1}} = ${AZ(A)}$, $${VD('B')} = \\left.\\frac{${num}}{${AZ(sa(r1))}}\\right|_{s = ${r2}} = ${VD(B)}$.`,
+        `Tabela: $\\mathcal{L}^{-1}\\left\\{\\frac{1}{s - a}\\right\\} = e^{at}$, termo a termo: $\\frac{${AZ(A)}}{${AZ(sa(r1))}} \\to ${AZ(lin([[A, r1 === 0 ? '' : ex(r1)]]).tex)}$ e $\\frac{${VD(B)}}{${VD(sa(r2))}} \\to ${VD(lin([[B, r2 === 0 ? '' : ex(r2)]]).tex)}$.`,
+        `$f(t) = ${lin([[A, r1 === 0 ? '' : ex(r1), null, AZ], [B, r2 === 0 ? '' : ex(r2), null, VD]]).tex}$`,
       ],
       ans: { kind: 'expr', vars: ['t'], f: e => f.f(e.t), domain: { t: [0.1, 2.5] }, tex: f.tex },
       spec: { type: 'inverse', F: s => (al * s + be) / ((s - r1) * (s - r2)), f: f.f, a: Math.max(r1, r2) },
@@ -1135,12 +1217,13 @@ function genLaplaceInversa(r) {
     return {
       skill: 'laplaceInversa', metodos: ['quadrado'], eq: `F(s) = ${Ftex}`,
       q: `Encontre $f(t) = \\mathcal{L}^{-1}\\{F\\}$ para ${T(`F(s) = ${Ftex}`)}`,
+      legend: leg(['laranja', `\\text{deslocamento } ${p}`], ['azul', '\\text{parte } \\cos'], ['verde', '\\text{parte } \\operatorname{sen}']),
       steps: [
-        `O denominador não tem raízes reais ($\\Delta < 0$): complete o quadrado, $${den} = (${sa(p)})^2 + ${qq * qq}$.`,
-        `Escreva o numerador em função de $${sa(p)}$: $${num} = ${lin([[al, `(${sa(p)})`], [C * qq, '']]).tex}$.`,
-        `$F(s) = ${lin([[al, `\\frac{${sa(p)}}{(${sa(p)})^2 + ${qq * qq}}`], [C, `\\frac{${qq}}{(${sa(p)})^2 + ${qq * qq}}`]]).tex}$.`,
-        `Deslocamento em $s$: $F(s - a) \\leftrightarrow e^{at}f(t)$, com as entradas de $\\cos$ e $\\operatorname{sen}$ da tabela.`,
-        `$f(t) = ${tex}$`,
+        `O denominador não tem raízes reais ($\\Delta < 0$): complete o quadrado, $${den} = (${LR(sa(p))})^2 + ${qq * qq}$.`,
+        `Escreva o numerador em função de $${LR(sa(p))}$: $${num} = ${lin([[al, `(${LR(sa(p))})`, null, AZ], [C * qq, '', null, VD]]).tex}$.`,
+        `$F(s) = ${lin([[al, `\\frac{${LR(sa(p))}}{(${LR(sa(p))})^2 + ${qq * qq}}`, null, AZ], [C, `\\frac{${qq}}{(${LR(sa(p))})^2 + ${qq * qq}}`, null, VD]]).tex}$.`,
+        `Tabela, com o deslocamento em $s$ ($F(s - a) \\leftrightarrow e^{at}f(t)$): o ${T(LR(sa(p)))} vira o fator $${LR(p === 0 ? '1' : ex(p))}$, a parte azul vira $\\cos ${qq === 1 ? '' : qq}t$ e a verde, $\\operatorname{sen} ${qq === 1 ? '' : qq}t$.`,
+        `$f(t) = ${p === 0 ? '' : LR(ex(p))}${p === 0 ? '' : '\\left('}${lin([[al, cos(qq), null, AZ], [C, sen(qq), null, VD]]).tex}${p === 0 ? '' : '\\right)'}$`,
       ],
       ans: { kind: 'expr', vars: ['t'], f: e => f(e.t), domain: { t: [0.1, 2.5] }, tex },
       spec: { type: 'inverse', F: s => (al * s + be) / ((s - p) ** 2 + qq * qq), f, a: p },
@@ -1154,10 +1237,11 @@ function genLaplaceInversa(r) {
     return {
       skill: 'laplaceInversa', metodos: ['fracoes'], eq: `F(s) = ${Ftex}`,
       q: `Encontre $f(t) = \\mathcal{L}^{-1}\\{F\\}$ para ${T(`F(s) = ${Ftex}`)}`,
+      legend: leg(['laranja', `s \\to ${sa(p)}`], ['azul', `\\frac{1}{s^{${n}}}`]),
       steps: [
-        `$\\mathcal{L}\\{t^{n}\\} = \\frac{n!}{s^{n+1}}$, logo $\\mathcal{L}^{-1}\\left\\{\\frac{1}{s^{${n}}}\\right\\} = \\frac{t^{${n - 1}}}{${fact(n - 1)}}$.`,
-        `Deslocamento em $s$ (trocar $s$ por $${sa(p)}$ multiplica por $${ex(p)}$).`,
-        `$f(t) = ${f.tex}$`,
+        `$\\mathcal{L}\\{t^{n}\\} = \\frac{n!}{s^{n+1}}$, logo $\\mathcal{L}^{-1}\\left\\{${AZ(`\\frac{1}{s^{${n}}}`)}\\right\\} = ${AZ(`\\frac{t^{${n - 1}}}{${fact(n - 1)}}`)}$.`,
+        `Deslocamento em $s$: trocar $s$ por $${LR(sa(p))}$ multiplica a inversa por $${LR(ex(p))}$.`,
+        `$f(t) = ${co.isOne() ? '' : co.tex()}${AZ(`t${n - 1 === 1 ? '' : `^{${n - 1}}`}`)}${LR(ex(p))}$`,
       ],
       ans: { kind: 'expr', vars: ['t'], f: e => f.f(e.t), domain: { t: [0.1, 2.5] }, tex: f.tex },
       spec: { type: 'inverse', F: s => c / (s - p) ** n, f: f.f, a: p },
@@ -1178,11 +1262,12 @@ function genLaplaceInversa(r) {
   const Ftex = `${eks(k)}\\,${G.G}`;
   return {
     skill: 'laplaceInversa', metodos: ['deslocamento'], eq: `F(s) = ${Ftex}`,
-    q: `Encontre $f(t) = \\mathcal{L}^{-1}\\{F\\}$ para ${T(`F(s) = ${Ftex}`)}<br><span class="c-muted">Digite o degrau como <code>u_${k}(t)</code> ou <code>u(t-${k})</code>.</span>`,
+    q: `Encontre $f(t) = \\mathcal{L}^{-1}\\{F\\}$ para ${T(`F(s) = ${LR(eks(k))}\\,${AZ(G.G)}`)}<br><span class="c-muted">Digite o degrau como <code>u_${k}(t)</code> ou <code>u(t-${k})</code>.</span>`,
+    legend: leg(['laranja', `e^{-cs} \\to u_c(t),\\ t \\to t - c`], ['azul', 'G(s) \\to g']),
     steps: [
-      `O fator $${eks(k)}$ indica deslocamento em $t$: $\\mathcal{L}^{-1}\\{e^{-cs}G(s)\\} = u_c(t)\\,g(t - c)$.`,
-      `Sem o fator: $g(t) = \\mathcal{L}^{-1}\\left\\{${G.G}\\right\\} = $ ${G.base}.`,
-      `Troque $t$ por $t - ${k}$ e ligue o degrau: $f(t) = ${ftex}$.`,
+      `O fator $${LR(eks(k))}$ indica deslocamento em $t$: $\\mathcal{L}^{-1}\\{${LR('e^{-cs}')}${AZ('G(s)')}\\} = ${LR('u_c(t)')}\\,${AZ('g')}(${LR('t - c')})$, aqui com $c = ${LR(k)}$.`,
+      `Sem o fator: $${AZ('g(t)')} = \\mathcal{L}^{-1}\\left\\{${AZ(G.G)}\\right\\} = $ ${G.base.replace(/^\$(.*)\$$/, (m0, x) => `$${AZ(x)}$`)}.`,
+      `Troque $t$ por $${LR(`t - ${k}`)}$ e ligue o degrau: $f(t) = ${LR(`u_{${k}}(t)`)}\\,${AZ(G.g.tex)}$.`,
     ],
     ans: { kind: 'expr', vars: ['t'], f: e => f(e.t), domain: { t: [0.1, k + 2.5] }, avoid: [k], tex: ftex },
     spec: { type: 'inverse', F: s => Math.exp(-k * s) * G.Gf(s), f, a: 1 },
@@ -1236,10 +1321,11 @@ function genLaplacePvi(r) {
     const numY = poly([y0, y1 + b * y0], 's');
     return {
       skill: 'laplacePvi', metodos: ['laplace'], eq,
-      q: `Resolva usando a transformada de Laplace: ${T(eq)}`,
+      q: `Resolva usando a transformada de Laplace: ${T(`${odeLhs([1, b, c])} = 0,\\quad y(0) = ${RS(y0)},\\ y'(0) = ${RS(y1)}`)}`,
+      legend: leg(['amarelo', 'Y(s)'], ['rosa', 'y(0),\\ y\'(0)']),
       steps: [
-        `Transforme: $\\mathcal{L}\\{y''\\} = s^2Y - sy(0) - y'(0)$ e $\\mathcal{L}\\{y'\\} = sY - y(0)$.`,
-        `$(${poly([1, b, c], 's')})Y = ${numY}$, logo $Y(s) = \\frac{${numY}}{${poly([1, b, c], 's')}}$.`,
+        `Transforme com $\\mathcal{L}\\{y''\\} = s^2${AM('Y')} - s\\,${RS("y(0)")} - ${RS("y'(0)")}$ e $\\mathcal{L}\\{y'\\} = s${AM('Y')} - ${RS('y(0)')}$: as condições iniciais (rosa) entram já na transformada.`,
+        `Agrupe: $(${poly([1, b, c], 's')})${AM('Y')} = ${RS(numY)}$, logo $${AM('Y(s)')} = ${AM(`\\frac{${RS(numY)}}{${poly([1, b, c], 's')}}`)}$.`,
         `Inverta com frações parciais ou completando o quadrado, conforme as raízes de $${poly([1, b, c], 's')}$.`,
         `$y(t) = ${sol}$`,
       ],
@@ -1257,12 +1343,13 @@ function genLaplacePvi(r) {
     const eq = `${odeLhs([1, b, c])} = ${lin([[A, ex(a)]]).tex},\\quad y(0) = 0,\\ y'(0) = 0`;
     return {
       skill: 'laplacePvi', metodos: ['laplace', 'coef'], eq,
-      q: `Resolva usando a transformada de Laplace: ${T(eq)}`,
+      q: `Resolva usando a transformada de Laplace: ${T(`${odeLhs([1, b, c])} = ${RS(lin([[A, ex(a)]]).tex)},\\quad y(0) = 0,\\ y'(0) = 0`)}`,
+      legend: leg(['amarelo', 'Y(s)'], ['rosa', '\\text{forçamento}'], ['azul', `(${sOf(r1)})`], ['verde', `(${sOf(r2)})`]),
       steps: [
-        `Com condições iniciais nulas: $(${poly([1, b, c], 's')})Y = \\frac{${A}}{${sOf(a)}}$.`,
-        `$Y(s) = \\frac{${A}}{(${sOf(a)})(${sOf(r1)})(${sOf(r2)})}$.`,
-        `Frações parciais (cubra cada fator): coeficientes ${terms.map(([c0]) => `$${c0.tex()}$`).join(', ')}.`,
-        `$y(t) = ${y.tex}$`,
+        `Com condições iniciais nulas: $(${poly([1, b, c], 's')})${AM('Y')} = ${RS(`\\frac{${A}}{${sOf(a)}}`)}$.`,
+        `$${AM('Y(s)')} = \\frac{${A}}{(${RS(sOf(a))})(${AZ(sOf(r1))})(${VD(sOf(r2))})}$.`,
+        `Frações parciais (cubra cada fator): $\\frac{${RS(terms[0][0].tex())}}{${RS(sOf(a))}} + \\frac{${AZ(terms[1][0].tex())}}{${AZ(sOf(r1))}} + \\frac{${VD(terms[2][0].tex())}}{${VD(sOf(r2))}}$.`,
+        `Cada fração vira uma exponencial da mesma cor: $y(t) = ${lin([[terms[0][0], terms[0][1], null, RS], [terms[1][0], terms[1][1], null, AZ], [terms[2][0], terms[2][1], null, VD]]).tex}$`,
       ],
       ans: { kind: 'expr', vars: ['t'], f: e => y.f(e.t), domain: { t: [0, 2] }, tex: y.tex },
       spec: { type: 'ode2', a: [1, b, c], g: t => A * Math.exp(a * t), x0: 0, ic: [0, 0], sol: y.f },
@@ -1287,12 +1374,13 @@ function genLaplacePvi(r) {
   const eq = `${odeLhs(cp)} = ${forc},\\quad y(0) = 0,\\ y'(0) = 0`;
   return {
     skill: 'laplacePvi', metodos: ['laplace'], eq,
-    q: `Resolva usando a transformada de Laplace: ${T(eq)}<br><span class="c-muted">Digite o degrau como <code>u_${k}(t)</code> ou <code>u(t-${k})</code>.</span>`,
+    q: `Resolva usando a transformada de Laplace: ${T(`${odeLhs(cp)} = ${RS(forc)},\\quad y(0) = 0,\\ y'(0) = 0`)}<br><span class="c-muted">Digite o degrau como <code>u_${k}(t)</code> ou <code>u(t-${k})</code>.</span>`,
+    legend: leg(['rosa', '\\text{forçamento}'], ['amarelo', 'Y(s)'], ['laranja', `e^{-${k}s} \\to u_{${k}}(t),\\ t \\to t - ${k}`], ['azul', isDelta ? 'h(t)' : 'g(t)']),
     steps: [
-      `Condições iniciais nulas: $\\mathcal{L}\\{${odeLhs(cp)}\\} = (${poly(cp, 's')})Y$ e $\\mathcal{L}\\{${forc}\\} = ${A === 1 ? '' : A}${isDelta ? eks(k) : `\\frac{${eks(k)}}{s}`}$.`,
-      `$Y(s) = ${A === 1 ? '' : A}${eks(k)}\\cdot\\frac{1}{${den}}$, com $${poly(cp, 's')} = ${R.P}$.`,
-      `Sem o $${eks(k)}$: $\\mathcal{L}^{-1}\\left\\{\\frac{1}{${den}}\\right\\} = ${(isDelta ? R0.h : R0.g).tex}$ (${isDelta ? R0.hName : 'frações parciais, agora com o fator extra $1/s$'}).`,
-      `Deslocamento em $t$ ($e^{-cs}F(s) \\leftrightarrow u_c(t)f(t - c)$): $y(t) = ${ytex}$.`,
+      `Condições iniciais nulas: $\\mathcal{L}\\{${odeLhs(cp)}\\} = (${poly(cp, 's')})${AM('Y')}$ e $\\mathcal{L}\\{${RS(forc)}\\} = ${RS(`${A === 1 ? '' : A}${isDelta ? '' : '\\frac{'}${LR(eks(k))}${isDelta ? '' : '}{s}'}`)}$.`,
+      `$${AM('Y(s)')} = ${A === 1 ? '' : A}${LR(eks(k))}\\cdot ${AZ(`\\frac{1}{${den}}`)}$, com $${poly(cp, 's')} = ${R.P}$.`,
+      `Sem o $${LR(eks(k))}$: $\\mathcal{L}^{-1}\\left\\{${AZ(`\\frac{1}{${den}}`)}\\right\\} = ${AZ((isDelta ? R0.h : R0.g).tex)}$ (${isDelta ? R0.hName : 'frações parciais, agora com o fator extra $1/s$'}).`,
+      `Deslocamento em $t$ ($${LR('e^{-cs}')}F(s) \\leftrightarrow ${LR('u_c(t)')}f(${LR('t - c')})$): troque $t$ por $${LR(`t - ${k}`)}$ e ligue o degrau: $y(t) = ${LR(`u_{${k}}(t)`)}\\,${AZ(respTex)}$.`,
       isDelta ? `Confira: $y$ é contínua em $t = ${k}$ e $y'$ salta $${A}$ ali (o impulso dá um "chute" na velocidade).` : `Confira: antes de $t = ${k}$ nada acontece, porque o sistema está em repouso.`,
     ],
     ans: { kind: 'expr', vars: ['t'], f: e => y(e.t), domain: { t: [0.1, k + 2.5] }, avoid: [k], tex: ytex },
@@ -1300,26 +1388,30 @@ function genLaplacePvi(r) {
   };
 }
 
+/** Troca a variável t (e só ela, não o t de \\operatorname) por outra expressão. */
+const trocaT = (tex, por) => tex.replace(/(?<![A-Za-z\\\\])t(?![A-Za-z])/g, por);
+
 function genConvolucao(r) {
   const k = pk(r, [1, 2, 3]), a = nz(r, -2, 3);
   let b; do b = nz(r, -3, 3); while (b === a);
   const K = k * k;
   const item = pk(r, [
-    { F: `\\frac{1}{s(s^2 + ${K})}`, f1: '1', f2: lin([[q(1, k), sen(k)]]).tex, f: t => (1 - Math.cos(k * t)) / K, tex: lin([[q(1, K), ''], [q(-1, K), cos(k)]]).tex, Ff: s => 1 / (s * (s * s + K)), g1: () => 1, g2: t => Math.sin(k * t) / k },
-    { F: `\\frac{1}{s^2(s^2 + ${K})}`, f1: 't', f2: lin([[q(1, k), sen(k)]]).tex, f: t => (k * t - Math.sin(k * t)) / k ** 3, tex: lin([[q(1, K), 't'], [q(-1, k ** 3), sen(k)]]).tex, Ff: s => 1 / (s * s * (s * s + K)), g1: t => t, g2: t => Math.sin(k * t) / k },
-    { F: `\\frac{s}{(s^2 + ${K})^2}`, f1: cos(k), f2: lin([[q(1, k), sen(k)]]).tex, f: t => (t * Math.sin(k * t)) / (2 * k), tex: lin([[q(1, 2 * k), `t${sen(k)}`]]).tex, Ff: s => s / (s * s + K) ** 2, g1: t => Math.cos(k * t), g2: t => Math.sin(k * t) / k },
-    { F: `\\frac{1}{(${sOf(a)})(${sOf(b)})}`, f1: ex(a), f2: ex(b), f: t => (Math.exp(a * t) - Math.exp(b * t)) / (a - b), tex: lin([[q(1, a - b), ex(a)], [q(-1, a - b), ex(b)]]).tex, Ff: s => 1 / ((s - a) * (s - b)), g1: t => Math.exp(a * t), g2: t => Math.exp(b * t) },
-    { F: `\\frac{1}{s(${sOf(a)})}`, f1: '1', f2: ex(a), f: t => (Math.exp(a * t) - 1) / a, tex: lin([[q(1, a), ex(a)], [q(-1, a), '']]).tex, Ff: s => 1 / (s * (s - a)), g1: () => 1, g2: t => Math.exp(a * t) },
-    { F: `\\frac{1}{(s^2 + ${K})^2}`, f1: lin([[q(1, k), sen(k)]]).tex, f2: lin([[q(1, k), sen(k)]]).tex, f: t => (Math.sin(k * t) - k * t * Math.cos(k * t)) / (2 * k ** 3), tex: lin([[q(1, 2 * k ** 3), sen(k)], [q(-1, 2 * K), `t${cos(k)}`]]).tex, Ff: s => 1 / (s * s + K) ** 2, g1: t => Math.sin(k * t) / k, g2: t => Math.sin(k * t) / k },
+    { F1: `\\frac{1}{s}`, F2: `\\frac{1}{s^2 + ${K}}`, F: `\\frac{1}{s(s^2 + ${K})}`, f1: '1', f2: lin([[q(1, k), sen(k)]]).tex, f: t => (1 - Math.cos(k * t)) / K, tex: lin([[q(1, K), ''], [q(-1, K), cos(k)]]).tex, Ff: s => 1 / (s * (s * s + K)), g1: () => 1, g2: t => Math.sin(k * t) / k },
+    { F1: `\\frac{1}{s^2}`, F2: `\\frac{1}{s^2 + ${K}}`, F: `\\frac{1}{s^2(s^2 + ${K})}`, f1: 't', f2: lin([[q(1, k), sen(k)]]).tex, f: t => (k * t - Math.sin(k * t)) / k ** 3, tex: lin([[q(1, K), 't'], [q(-1, k ** 3), sen(k)]]).tex, Ff: s => 1 / (s * s * (s * s + K)), g1: t => t, g2: t => Math.sin(k * t) / k },
+    { F1: `\\frac{s}{s^2 + ${K}}`, F2: `\\frac{1}{s^2 + ${K}}`, F: `\\frac{s}{(s^2 + ${K})^2}`, f1: cos(k), f2: lin([[q(1, k), sen(k)]]).tex, f: t => (t * Math.sin(k * t)) / (2 * k), tex: lin([[q(1, 2 * k), `t${sen(k)}`]]).tex, Ff: s => s / (s * s + K) ** 2, g1: t => Math.cos(k * t), g2: t => Math.sin(k * t) / k },
+    { F1: `\\frac{1}{${sOf(a)}}`, F2: `\\frac{1}{${sOf(b)}}`, F: `\\frac{1}{(${sOf(a)})(${sOf(b)})}`, f1: ex(a), f2: ex(b), f: t => (Math.exp(a * t) - Math.exp(b * t)) / (a - b), tex: lin([[q(1, a - b), ex(a)], [q(-1, a - b), ex(b)]]).tex, Ff: s => 1 / ((s - a) * (s - b)), g1: t => Math.exp(a * t), g2: t => Math.exp(b * t) },
+    { F1: `\\frac{1}{s}`, F2: `\\frac{1}{${sOf(a)}}`, F: `\\frac{1}{s(${sOf(a)})}`, f1: '1', f2: ex(a), f: t => (Math.exp(a * t) - 1) / a, tex: lin([[q(1, a), ex(a)], [q(-1, a), '']]).tex, Ff: s => 1 / (s * (s - a)), g1: () => 1, g2: t => Math.exp(a * t) },
+    { F1: `\\frac{1}{s^2 + ${K}}`, F2: `\\frac{1}{s^2 + ${K}}`, F: `\\frac{1}{(s^2 + ${K})^2}`, f1: lin([[q(1, k), sen(k)]]).tex, f2: lin([[q(1, k), sen(k)]]).tex, f: t => (Math.sin(k * t) - k * t * Math.cos(k * t)) / (2 * k ** 3), tex: lin([[q(1, 2 * k ** 3), sen(k)], [q(-1, 2 * K), `t${cos(k)}`]]).tex, Ff: s => 1 / (s * s + K) ** 2, g1: t => Math.sin(k * t) / k, g2: t => Math.sin(k * t) / k },
   ]);
   return {
     skill: 'convolucao', metodos: item.F.includes(')^2}') ? ['convolucao'] : ['convolucao', 'fracoes'], eq: `F(s) = ${item.F}`,
     q: `Use o Teorema da Convolução para calcular ${T(`\\mathcal{L}^{-1}\\left\\{${item.F}\\right\\}`)}`,
+    legend: leg(['azul', 'F_1 \\to f_1'], ['verde', 'F_2 \\to f_2'], ['amarelo', 'f_1 * f_2']),
     steps: [
-      `Teorema: se $F = F_1F_2$, então $\\mathcal{L}^{-1}\\{F\\} = (f_1 * f_2)(t) = \\int_0^t f_1(\\tau)\\,f_2(t - \\tau)\\,d\\tau$.`,
-      `Separe em dois fatores conhecidos: $f_1(t) = ${item.f1}$ e $f_2(t) = ${item.f2}$.`,
-      `$\\int_0^t f_1(\\tau)\\,f_2(t - \\tau)\\,d\\tau$ (use identidades trigonométricas ou integre a exponencial).`,
-      `$${item.tex}$`,
+      `Teorema: se $F = ${AZ('F_1')}${VD('F_2')}$, então $\\mathcal{L}^{-1}\\{F\\} = (${AZ('f_1')} * ${VD('f_2')})(t) = \\int_0^t ${AZ('f_1(\\tau)')}\\,${VD('f_2(t - \\tau)')}\\,d\\tau$.`,
+      `Separe em dois fatores da tabela: $${item.F} = ${AZ(item.F1)}\\cdot ${VD(item.F2)}$, ou seja, $${AZ('f_1(t)')} = ${AZ(item.f1)}$ e $${VD('f_2(t)')} = ${VD(item.f2)}$.`,
+      `Monte a integral trocando $t$ por $\\tau$ em ${T(AZ('f_1'))} e por $t - \\tau$ em ${T(VD('f_2'))}: $\\int_0^t ${AZ(trocaT(item.f1, '\\tau'))}\\cdot ${VD(par(trocaT(item.f2, '(t - \\tau)')))}\\,d\\tau$ (use identidades trigonométricas ou integre a exponencial).`,
+      `$${AM('(f_1 * f_2)(t)')} = ${AM(item.tex)}$`,
     ],
     ans: { kind: 'expr', vars: ['t'], f: e => item.f(e.t), domain: { t: [0.1, 3] }, tex: item.tex },
     spec: { type: 'conv', g1: item.g1, g2: item.g2, f: item.f, F: item.Ff },
@@ -1338,6 +1430,7 @@ const charSys = A => {
 };
 /** A − λI em TeX, sem "A - -3I". */
 const shift = l => (l === 0 ? 'A' : l < 0 ? `A + ${-l === 1 ? '' : -l}I` : `A - ${l === 1 ? '' : l}I`);
+const shiftP = l => (l === 0 ? 'A' : `(${shift(l)})`);
 /** Monta a resposta vetorial { x(t), y(t) } a partir das funções e do TeX de cada componente. */
 function vecAns(fx, fy, xtex, ytex, domain = { t: [0, 1.5] }) {
   return { kind: 'vec', vars: ['t'], fs: [e => fx(e.t), e => fy(e.t)], labels: ['x(t)', 'y(t)'], domain, tex: [xtex, ytex] };
@@ -1361,6 +1454,9 @@ function genSistemaReal(r) {
   const ch = charSys(A);
   const E = l => (l === 0 ? '' : ex(l));
   const gen = `\\mathbf{X}(t) = c_1${E(l1)}${vec(...v1)} + c_2${E(l2)}${vec(...v2)}`;
+  const EC = (l, paint) => (l === 0 ? '' : `e^{${paint(kv(l, 't'))}}`);
+  const genC = `\\mathbf{X}(t) = ${RX('c_1')}${EC(l1, AZ)}${AZ(vec(...v1))} + ${LR('c_2')}${EC(l2, VD)}${VD(vec(...v2))}`;
+  const legR = leg(['azul', '\\lambda_1,\\ \\mathbf v_1'], ['verde', '\\lambda_2,\\ \\mathbf v_2'], ['roxo', 'c_1'], ['laranja', 'c_2'], ['rosa', '\\mathbf X(0)']);
   if (r() < 0.3) {
     const opts = [
       gen,
@@ -1372,11 +1468,12 @@ function genSistemaReal(r) {
     return {
       skill: 'sistemaReal', metodos: ['reais'], eq: sysEq(A), A,
       q: `Qual é a solução geral de ${T(sysEq(A))}?`,
+      legend: legR.slice(0, 2),
       steps: [
-        `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$, raízes $\\lambda_1 = ${l1}$ e $\\lambda_2 = ${l2}$.`,
-        `Autovetores, de $(A - \\lambda I)\\mathbf v = 0$: $\\mathbf v_1 = ${vec(...v1)}$ e $\\mathbf v_2 = ${vec(...v2)}$ (qualquer múltiplo serve).`,
-        `Confira: $A\\mathbf v_1 = ${l1}\\mathbf v_1$. Trocar os autovetores de autovalor é o erro mais comum.`,
-        `$${gen}$`,
+        `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$, raízes $${AZ(`\\lambda_1 = ${l1}`)}$ e $${VD(`\\lambda_2 = ${l2}`)}$.`,
+        `Autovetores, de $(A - \\lambda I)\\mathbf v = 0$: $${AZ('\\mathbf v_1')} = ${AZ(vec(...v1))}$ e $${VD('\\mathbf v_2')} = ${VD(vec(...v2))}$ (qualquer múltiplo serve).`,
+        `Confira: $A${AZ('\\mathbf v_1')} = ${AZ(l1)}${AZ('\\mathbf v_1')}$. Cada autovetor anda junto com o <b>seu</b> autovalor (mesma cor); trocá-los é o erro mais comum.`,
+        `$${genC}$`,
       ],
       ans: { kind: 'choice', options: opts.map(o => `$${o}$`), correct: 0 },
     };
@@ -1388,13 +1485,14 @@ function genSistemaReal(r) {
   const eq = pvi(A, x0, y0);
   return {
     skill: 'sistemaReal', metodos: ['reais'], eq: sysEq(A), A,
-    q: `Resolva o PVI ${T(eq)}`,
+    q: `Resolva o PVI ${T(`${sysEq(A)},\\quad \\mathbf{X}(0) = ${RS(vec(x0, y0))}`)}`,
+    legend: legR,
     steps: [
-      `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$ (traço ${ch.tr.tex()}, determinante ${ch.det.tex()}), com raízes $\\lambda_1 = ${l1}$ e $\\lambda_2 = ${l2}$.${l1 === 0 || l2 === 0 ? ' Autovalor nulo: $\\det A = 0$ e a parcela dele é constante.' : ''}`,
-      `Autovetores: $(${shift(l1)})\\mathbf v_1 = 0 \\Rightarrow \\mathbf v_1 = ${vec(...v1)}$; $(${shift(l2)})\\mathbf v_2 = 0 \\Rightarrow \\mathbf v_2 = ${vec(...v2)}$.`,
-      `Solução geral: $${gen}$.`,
-      `Em $t = 0$: $c_1${vec(...v1)} + c_2${vec(...v2)} = ${vec(x0, y0)}$, logo $c_1 = ${c1}$ e $c_2 = ${c2}$.`,
-      `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
+      `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$ (traço ${ch.tr.tex()}, determinante ${ch.det.tex()}), com raízes $${AZ(`\\lambda_1 = ${l1}`)}$ e $${VD(`\\lambda_2 = ${l2}`)}$.${l1 === 0 || l2 === 0 ? ' Autovalor nulo: $\\det A = 0$ e a parcela dele é constante.' : ''}`,
+      `Autovetores: $${shiftP(l1)}${AZ('\\mathbf v_1')} = 0 \\Rightarrow ${AZ('\\mathbf v_1')} = ${AZ(vec(...v1))}$; $${shiftP(l2)}${VD('\\mathbf v_2')} = 0 \\Rightarrow ${VD('\\mathbf v_2')} = ${VD(vec(...v2))}$.`,
+      `Solução geral (cada autovalor com o seu autovetor): $${genC}$.`,
+      `Em $t = 0$ as exponenciais valem 1: $${RX('c_1')}${AZ(vec(...v1))} + ${LR('c_2')}${VD(vec(...v2))} = ${RS(vec(x0, y0))}$, logo $${RX('c_1')} = ${RX(c1)}$ e $${LR('c_2')} = ${LR(c2)}$.`,
+      `$x(t) = ${lin([[c1 * p, E(l1), null, AZ], [c2 * rr, E(l2), null, VD]]).tex}$ e $y(t) = ${lin([[c1 * qq, E(l1), null, AZ], [c2 * s, E(l2), null, VD]]).tex}$.`,
     ],
     ans: vecAns(X.f, Y.f, X.tex, Y.tex),
     spec: { type: 'system', A, X0: [x0, y0], sol: t => [X.f(t), Y.f(t)] },
@@ -1424,13 +1522,14 @@ function genSistemaComplexo(r) {
   const eq = pvi(A, x0, y0);
   return {
     skill: 'sistemaComplexo', metodos: ['complexos'], eq: sysEq(A), A,
-    q: `Resolva o PVI e escreva a solução com funções reais: ${T(eq)}`,
+    q: `Resolva o PVI e escreva a solução com funções reais: ${T(`${sysEq(A)},\\quad \\mathbf{X}(0) = ${RS(vec(x0, y0))}`)}`,
+    legend: leg(['amarelo', '\\lambda = \\alpha \\pm \\beta i'], ['azul', '\\mathbf a = \\operatorname{Re}\\mathbf v'], ['verde', '\\mathbf b = \\operatorname{Im}\\mathbf v'], ['roxo', 'c_1'], ['laranja', 'c_2'], ['rosa', '\\mathbf X(0)']),
     steps: [
-      `Polinômio característico: $${ch.tex}$, raízes $\\lambda = ${lam}$.`,
-      `Autovetor de $\\lambda = ${lp}$: da 1ª linha de $A - \\lambda I$, $(${m} - ${be === 1 ? '' : be}i)v_1 + ${n < 0 ? `(${n})` : n}v_2 = 0$, então $\\mathbf v = ${vec(n, -m)} + i${vec(0, be)} = \\mathbf a + i\\mathbf b$.`,
-      `Parte real e parte imaginária de $e^{\\lambda t}\\mathbf v$ são soluções reais: $\\mathbf u_1 = ${ea}(\\mathbf a\\cos ${kv(be, 't')} - \\mathbf b\\operatorname{sen} ${kv(be, 't')})$ e $\\mathbf u_2 = ${ea}(\\mathbf a\\operatorname{sen} ${kv(be, 't')} + \\mathbf b\\cos ${kv(be, 't')})$; $\\mathbf X = c_1\\mathbf u_1 + c_2\\mathbf u_2$.`,
-      `Em $t = 0$: $c_1\\mathbf a + c_2\\mathbf b = \\mathbf X(0)$, logo $c_1 = ${q(x0, n).tex()}$ e $c_2 = ${q(y0).add(q(m * x0, n)).div(be).tex()}$.`,
-      `Atalho que dá o mesmo: $\\mathbf X(t) = e^{\\alpha t}\\left[\\cos(\\beta t)\\,\\mathbf X(0) + \\operatorname{sen}(\\beta t)\\,\\frac{(A - \\alpha I)\\mathbf X(0)}{\\beta}\\right]$.`,
+      `Polinômio característico: $${ch.tex}$, raízes $${AM(`\\lambda = ${lam}`)}$.`,
+      `Autovetor de $${AM(`\\lambda = ${lp}`)}$: da 1ª linha de $A - \\lambda I$, $(${m} - ${be === 1 ? '' : be}i)v_1 + ${n < 0 ? `(${n})` : n}v_2 = 0$, então $\\mathbf v = ${AZ(vec(n, -m))} + i${VD(vec(0, be))} = ${AZ('\\mathbf a')} + i${VD('\\mathbf b')}$.`,
+      `Parte real e parte imaginária de $e^{${AM('\\lambda')} t}\\mathbf v$ são soluções reais: $\\mathbf u_1 = ${ea}(${AZ('\\mathbf a')}\\cos ${kv(be, 't')} - ${VD('\\mathbf b')}\\operatorname{sen} ${kv(be, 't')})$ e $\\mathbf u_2 = ${ea}(${AZ('\\mathbf a')}\\operatorname{sen} ${kv(be, 't')} + ${VD('\\mathbf b')}\\cos ${kv(be, 't')})$; $\\mathbf X = ${RX('c_1')}\\mathbf u_1 + ${LR('c_2')}\\mathbf u_2$.`,
+      `Em $t = 0$ ($\\cos = 1$, $\\operatorname{sen} = 0$): $${RX('c_1')}${AZ('\\mathbf a')} + ${LR('c_2')}${VD('\\mathbf b')} = ${RS('\\mathbf X(0)')}$, logo $${RX('c_1')} = ${RX(q(x0, n).tex())}$ e $${LR('c_2')} = ${LR(q(y0).add(q(m * x0, n)).div(be).tex())}$.`,
+      `Atalho que dá o mesmo: $\\mathbf X(t) = e^{\\alpha t}\\left[\\cos(\\beta t)\\,${RS('\\mathbf X(0)')} + \\operatorname{sen}(\\beta t)\\,\\frac{(A - \\alpha I)${RS('\\mathbf X(0)')}}{\\beta}\\right]$.`,
       `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
     ],
     ans: vecAns(X.f, Y.f, X.tex, Y.tex),
@@ -1457,17 +1556,22 @@ function genSistemaRepetido(r) {
     return { tex, f: t => Math.exp(lam * t) * inner.f(t) };
   };
   const X = comp(x0, k * u), Y = comp(y0, k * v);
+  const compC = (c, d) => {
+    const inner = lin([[c, '', null, RS], [d, 't', null, AZ]]).tex;
+    return inner === '0' ? '0' : !E ? inner : `\\left(${inner}\\right)e^{${AM(kv(lam, 't'))}}`;
+  };
   const ch = charSys(A);
   const eq = pvi(A, x0, y0);
   return {
     skill: 'sistemaRepetido', metodos: ['repetido'], eq: sysEq(A), A,
-    q: `Resolva o PVI ${T(eq)}`,
+    q: `Resolva o PVI ${T(`${sysEq(A)},\\quad \\mathbf{X}(0) = ${RS(vec(x0, y0))}`)}`,
+    legend: leg(['amarelo', '\\lambda'], ['azul', '\\mathbf v'], ['verde', '\\mathbf w'], ['rosa', '\\mathbf X(0)']),
     steps: [
-      `Polinômio característico: $${ch.tex.replace(' = 0', '')} = ${lam === 0 ? '\\lambda^2' : `(\\lambda ${lam < 0 ? '+' : '-'} ${Math.abs(lam)})^2`}$: autovalor <b>repetido</b> $\\lambda = ${lam}$.`,
-      `$${shift(lam)} = ${mat(Nm)}$ tem posto 1: só há um autovetor, $\\mathbf v = ${vec(u, v)}$. Falta uma solução.`,
-      `Autovetor generalizado: $(A - \\lambda I)\\mathbf w = \\mathbf v$ dá, por exemplo, $\\mathbf w = ${vec(w[0], w[1])}$. Solução geral: $\\mathbf X = c_1${E}\\mathbf v + c_2${E}(t\\mathbf v + \\mathbf w)$.`,
-      `Atalho: como $(A - \\lambda I)^2 = 0$, $\\mathbf X(t) = e^{\\lambda t}\\left[\\mathbf X(0) + t(A - \\lambda I)\\mathbf X(0)\\right]$, com $(A - \\lambda I)\\mathbf X(0) = ${vec(k * u, k * v)}$.`,
-      `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
+      `Polinômio característico: $${ch.tex.replace(' = 0', '')} = ${lam === 0 ? '\\lambda^2' : `(\\lambda ${lam < 0 ? '+' : '-'} ${Math.abs(lam)})^2`}$: autovalor <b>repetido</b> $${AM(`\\lambda = ${lam}`)}$.`,
+      `$${shift(lam)} = ${mat(Nm)}$ tem posto 1: só há um autovetor, $${AZ('\\mathbf v')} = ${AZ(vec(u, v))}$. Falta uma solução.`,
+      `Autovetor generalizado: $(A - ${AM('\\lambda')} I)${VD('\\mathbf w')} = ${AZ('\\mathbf v')}$ dá, por exemplo, $${VD('\\mathbf w')} = ${VD(vec(w[0], w[1]))}$. Solução geral: $\\mathbf X = c_1e^{${AM('\\lambda')} t}${AZ('\\mathbf v')} + c_2e^{${AM('\\lambda')} t}(t${AZ('\\mathbf v')} + ${VD('\\mathbf w')})$.`,
+      `Atalho: como $(A - \\lambda I)^2 = 0$, $\\mathbf X(t) = e^{${AM('\\lambda')} t}\\left[${RS('\\mathbf X(0)')} + t(A - \\lambda I)${RS('\\mathbf X(0)')}\\right]$, com $(A - \\lambda I)${RS('\\mathbf X(0)')} = ${AZ(vec(k * u, k * v))}$ (sempre um múltiplo de ${T(AZ('\\mathbf v'))}).`,
+      `$x(t) = ${compC(x0, k * u)}$ e $y(t) = ${compC(y0, k * v)}$: a parte rosa vem de $\\mathbf X(0)$ e a azul, da direção ${T(AZ('\\mathbf v'))}.`,
     ],
     ans: vecAns(X.f, Y.f, X.tex, Y.tex),
     spec: { type: 'system', A, X0: [x0, y0], sol: t => [X.f(t), Y.f(t)] },

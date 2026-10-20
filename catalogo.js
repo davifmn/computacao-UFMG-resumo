@@ -278,7 +278,7 @@ export const PERIODOS = [
           { titulo: 'Campo de direções', arquivo: 'campo-de-direcoes.html', descricao: 'Inclinações, existência e unicidade, e Euler × Heun × RK4 com a ordem de convergência medida.' },
           { titulo: 'Oscilador massa-mola', arquivo: 'oscilador.html', descricao: 'Amortecimento sub, crítico e super, batimentos, ressonância e a curva de resposta A(ω).' },
           { titulo: 'Plano de fase', arquivo: 'plano-de-fase.html', descricao: 'Partículas seguindo x\' = Ax, autovetores e o diagrama traço-determinante.' },
-          { titulo: 'Treino para as provas', arquivo: 'treino.html', descricao: 'Questões infinitas no formato das listas, correção de fórmulas, níveis de domínio, simulado intercalado e revisão espaçada.' },
+          { titulo: 'Treino para as provas', arquivo: 'treino.html', descricao: 'Trilhas teoria → exemplo → exercícios, questões infinitas com correção de fórmulas, folha de fórmulas ao lado, cores que acompanham cada objeto, níveis de domínio e simulado.' },
           { titulo: 'Guia da prova', arquivo: 'guia-da-prova.html', tipo: 'tutorial', descricao: 'O que cai em cada prova, receitas por tipo de questão e as listas 1 a 4 resolvidas e conferidas.' },
         ],
       },
