@@ -260,11 +260,18 @@ export function satisfiesOde(y, { a, g, v = 'x', domain, avoid = [] }) {
  *   potential { f(env), domain }                       → ψ a menos de constante (aceita aψ + b)
  *   number    { value }                                → aceita expressões ("e^2/4")
  *   choice    { options, correct, accept? }            → input = índice escolhido
+ *   vec       { fs: [x, y], vars, domain }              → input = [x(t), y(t)]
  */
 export function check(ans, input) {
   if (ans.kind === 'choice') {
     const ok = input === ans.correct || (ans.accept ?? []).includes(input);
     return { ok };
+  }
+  if (ans.kind === 'vec') {
+    const parts = ans.fs.map((g, i) => check({ kind: 'expr', vars: ans.vars, f: g, domain: ans.domain }, input[i] ?? ''));
+    const err = parts.find(p => p.error);
+    if (err) return { ok: false, error: err.error, parts };
+    return { ok: parts.every(p => p.ok), parts };
   }
   let ast;
   const vars = ans.kind === 'number' ? [] : ans.vars;
@@ -1319,12 +1326,161 @@ function genConvolucao(r) {
   };
 }
 
+// ---------- Lista 4: sistemas lineares X' = AX ----------
+
+const mat = ([[a, b], [c, d]]) => `\\begin{pmatrix} ${q(a).tex()} & ${q(b).tex()} \\\\ ${q(c).tex()} & ${q(d).tex()} \\end{pmatrix}`;
+const vec = (a, b) => `\\begin{pmatrix} ${q(a).tex()} \\\\ ${q(b).tex()} \\end{pmatrix}`;
+const sysEq = A => `\\mathbf{X}' = ${mat(A)}\\mathbf{X}`;
+const charSys = A => {
+  const tr = q(A[0][0]).add(A[1][1]), det = q(A[0][0]).mul(A[1][1]).sub(q(A[0][1]).mul(A[1][0]));
+  const rest = lin([[tr.neg(), '\\lambda'], [det, '']]).tex;
+  return { tr, det, tex: `\\lambda^2${rest === '0' ? '' : rest.startsWith('-') ? ` - ${rest.slice(1)}` : ` + ${rest}`} = 0` };
+};
+/** A − λI em TeX, sem "A - -3I". */
+const shift = l => (l === 0 ? 'A' : l < 0 ? `A + ${-l === 1 ? '' : -l}I` : `A - ${l === 1 ? '' : l}I`);
+/** Monta a resposta vetorial { x(t), y(t) } a partir das funções e do TeX de cada componente. */
+function vecAns(fx, fy, xtex, ytex, domain = { t: [0, 1.5] }) {
+  return { kind: 'vec', vars: ['t'], fs: [e => fx(e.t), e => fy(e.t)], labels: ['x(t)', 'y(t)'], domain, tex: [xtex, ytex] };
+}
+const pvi = (A, x0, y0) => `${sysEq(A)},\\quad \\mathbf{X}(0) = ${vec(x0, y0)}`;
+
+function genSistemaReal(r) {
+  // A = P D P⁻¹ com det P = ±1, para A inteira e autovetores inteiros
+  let l1, l2;
+  do { l1 = ri(r, -3, 3); l2 = r() < 0.3 ? 0 : ri(r, -3, 3); } while (l1 === l2);
+  let p, qq, rr, s;
+  do { [p, qq, rr, s] = [ri(r, -2, 2), ri(r, -2, 2), ri(r, -2, 2), ri(r, -2, 2)]; }
+  while (Math.abs(p * s - qq * rr) !== 1 || (!p && !qq) || (!rr && !s) || (p === 0 && s === 0) || (qq === 0 && rr === 0));
+  const D = p * s - qq * rr;
+  // A = P diag(l1, l2) P⁻¹, P = [[p, rr], [qq, s]] (colunas v1, v2)
+  const A = [
+    [(l1 * p * s - l2 * rr * qq) / D, (-l1 * p * rr + l2 * rr * p) / D],
+    [(l1 * qq * s - l2 * s * qq) / D, (-l1 * qq * rr + l2 * s * p) / D],
+  ];
+  const v1 = [p, qq], v2 = [rr, s];
+  const ch = charSys(A);
+  const E = l => (l === 0 ? '' : ex(l));
+  const gen = `\\mathbf{X}(t) = c_1${E(l1)}${vec(...v1)} + c_2${E(l2)}${vec(...v2)}`;
+  if (r() < 0.3) {
+    const opts = [
+      gen,
+      `\\mathbf{X}(t) = c_1${E(l1)}${vec(...v2)} + c_2${E(l2)}${vec(...v1)}`,
+      `\\mathbf{X}(t) = c_1${E(-l1)}${vec(...v1)} + c_2${E(-l2)}${vec(...v2)}`,
+      `\\mathbf{X}(t) = c_1${E(l1)}${vec(-v1[1], v1[0])} + c_2${E(l2)}${vec(-v2[1], v2[0])}`,
+    ];
+    if (new Set(opts).size < 4) return genSistemaReal(r);
+    return {
+      skill: 'sistemaReal', metodos: ['reais'], eq: sysEq(A), A,
+      q: `Qual é a solução geral de ${T(sysEq(A))}?`,
+      steps: [
+        `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$, raízes $\\lambda_1 = ${l1}$ e $\\lambda_2 = ${l2}$.`,
+        `Autovetores, de $(A - \\lambda I)\\mathbf v = 0$: $\\mathbf v_1 = ${vec(...v1)}$ e $\\mathbf v_2 = ${vec(...v2)}$ (qualquer múltiplo serve).`,
+        `Confira: $A\\mathbf v_1 = ${l1}\\mathbf v_1$. Trocar os autovetores de autovalor é o erro mais comum.`,
+        `$${gen}$`,
+      ],
+      ans: { kind: 'choice', options: opts.map(o => `$${o}$`), correct: 0 },
+    };
+  }
+  const c1 = nz(r, -2, 2), c2 = nz(r, -2, 2);
+  const x0 = c1 * p + c2 * rr, y0 = c1 * qq + c2 * s;
+  const X = lin([[c1 * p, E(l1), t => Math.exp(l1 * t)], [c2 * rr, E(l2), t => Math.exp(l2 * t)]]);
+  const Y = lin([[c1 * qq, E(l1), t => Math.exp(l1 * t)], [c2 * s, E(l2), t => Math.exp(l2 * t)]]);
+  const eq = pvi(A, x0, y0);
+  return {
+    skill: 'sistemaReal', metodos: ['reais'], eq: sysEq(A), A,
+    q: `Resolva o PVI ${T(eq)}`,
+    steps: [
+      `Polinômio característico: $\\det(A - \\lambda I) = ${ch.tex}$ (traço ${ch.tr.tex()}, determinante ${ch.det.tex()}), com raízes $\\lambda_1 = ${l1}$ e $\\lambda_2 = ${l2}$.${l1 === 0 || l2 === 0 ? ' Autovalor nulo: $\\det A = 0$ e a parcela dele é constante.' : ''}`,
+      `Autovetores: $(${shift(l1)})\\mathbf v_1 = 0 \\Rightarrow \\mathbf v_1 = ${vec(...v1)}$; $(${shift(l2)})\\mathbf v_2 = 0 \\Rightarrow \\mathbf v_2 = ${vec(...v2)}$.`,
+      `Solução geral: $${gen}$.`,
+      `Em $t = 0$: $c_1${vec(...v1)} + c_2${vec(...v2)} = ${vec(x0, y0)}$, logo $c_1 = ${c1}$ e $c_2 = ${c2}$.`,
+      `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
+    ],
+    ans: vecAns(X.f, Y.f, X.tex, Y.tex),
+    spec: { type: 'system', A, X0: [x0, y0], sol: t => [X.f(t), Y.f(t)] },
+  };
+}
+
+function genSistemaComplexo(r) {
+  // λ = α ± βi: A = [[α + m, n], [−(β² + m²)/n, α − m]]
+  const al = ri(r, -2, 2), be = pk(r, [1, 2, 3]), m = ri(r, -2, 2), N = be * be + m * m;
+  const divs = []; for (let d = 1; d <= Math.min(N, 5); d++) if (N % d === 0) divs.push(d, -d);
+  const n = pk(r, divs);
+  const A = [[al + m, n], [-N / n, al - m]];
+  let x0, y0; do { x0 = ri(r, -2, 3); y0 = ri(r, -2, 3); } while (!x0 && !y0);
+  // X(t) = e^{αt}[cos βt X0 + sen βt (A − αI)X0/β]
+  const px = q(m * x0 + n * y0, be), py = q((-N / n) * x0 - m * y0, be);
+  const comp = (c0, cs) => {
+    const inner = lin([[c0, cos(be), t => Math.cos(be * t)], [cs, sen(be), t => Math.sin(be * t)]]);
+    const two = inner.tex.includes(' + ') || inner.tex.slice(1).includes(' - ');
+    const tex = al === 0 ? inner.tex : inner.tex === '0' ? '0' : two ? `${ex(al)}\\left(${inner.tex}\\right)` : lin([[c0 || cs, `${ex(al)}${c0 ? cos(be) : sen(be)}`]]).tex;
+    return { tex, f: t => Math.exp(al * t) * inner.f(t) };
+  };
+  const X = comp(x0, px), Y = comp(y0, py);
+  const ch = charSys(A);
+  const lam = `${al === 0 ? '' : `${al} `}\\pm ${be === 1 ? '' : be}i`;
+  const lp = `${al === 0 ? '' : `${al} + `}${be === 1 ? '' : be}i`;
+  const ea = al === 0 ? '' : `e^{${kv(al, 't')}}`;
+  const eq = pvi(A, x0, y0);
+  return {
+    skill: 'sistemaComplexo', metodos: ['complexos'], eq: sysEq(A), A,
+    q: `Resolva o PVI e escreva a solução com funções reais: ${T(eq)}`,
+    steps: [
+      `Polinômio característico: $${ch.tex}$, raízes $\\lambda = ${lam}$.`,
+      `Autovetor de $\\lambda = ${lp}$: da 1ª linha de $A - \\lambda I$, $(${m} - ${be === 1 ? '' : be}i)v_1 + ${n < 0 ? `(${n})` : n}v_2 = 0$, então $\\mathbf v = ${vec(n, -m)} + i${vec(0, be)} = \\mathbf a + i\\mathbf b$.`,
+      `Parte real e parte imaginária de $e^{\\lambda t}\\mathbf v$ são soluções reais: $\\mathbf u_1 = ${ea}(\\mathbf a\\cos ${kv(be, 't')} - \\mathbf b\\operatorname{sen} ${kv(be, 't')})$ e $\\mathbf u_2 = ${ea}(\\mathbf a\\operatorname{sen} ${kv(be, 't')} + \\mathbf b\\cos ${kv(be, 't')})$; $\\mathbf X = c_1\\mathbf u_1 + c_2\\mathbf u_2$.`,
+      `Em $t = 0$: $c_1\\mathbf a + c_2\\mathbf b = \\mathbf X(0)$, logo $c_1 = ${q(x0, n).tex()}$ e $c_2 = ${q(y0).add(q(m * x0, n)).div(be).tex()}$.`,
+      `Atalho que dá o mesmo: $\\mathbf X(t) = e^{\\alpha t}\\left[\\cos(\\beta t)\\,\\mathbf X(0) + \\operatorname{sen}(\\beta t)\\,\\frac{(A - \\alpha I)\\mathbf X(0)}{\\beta}\\right]$.`,
+      `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
+    ],
+    ans: vecAns(X.f, Y.f, X.tex, Y.tex),
+    spec: { type: 'system', A, X0: [x0, y0], sol: t => [X.f(t), Y.f(t)] },
+  };
+}
+
+function genSistemaRepetido(r) {
+  // A = λI + N, N = s·(u, v)ᵀ(v, −u) é nilpotente (N² = 0): um único autovetor (u, v)
+  const lam = ri(r, -2, 2);
+  let u, v; do { u = ri(r, -2, 2); v = ri(r, -2, 2); } while ((!u && !v) || gcd(u, v) !== 1);
+  if (u < 0 || (u === 0 && v < 0)) { u = -u; v = -v; } // N não muda (é quadrático em u, v)
+  const s = pk(r, [1, -1, 2]);
+  const Nm = [[s * u * v, -s * u * u], [s * v * v, -s * u * v]];
+  const A = [[lam + Nm[0][0], Nm[0][1]], [Nm[1][0], lam + Nm[1][1]]];
+  let x0, y0; do { x0 = ri(r, -2, 3); y0 = ri(r, -2, 3); } while (v * x0 - u * y0 === 0);
+  const k = s * (v * x0 - u * y0); // N X0 = k (u, v)
+  const w = v !== 0 ? [q(1, s * v), q(0)] : [q(0), q(-1, s * u)];
+  const E = lam === 0 ? '' : ex(lam);
+  const comp = (c, d) => {
+    const inner = lin([[c, '', null], [d, 't', t => t]]);
+    const two = inner.tex.includes(' ');
+    const tex = inner.tex === '0' ? '0' : !E ? inner.tex : two ? `\\left(${inner.tex}\\right)${E}` : lin([[c || d, `${c ? '' : 't'}${E}`]]).tex;
+    return { tex, f: t => Math.exp(lam * t) * inner.f(t) };
+  };
+  const X = comp(x0, k * u), Y = comp(y0, k * v);
+  const ch = charSys(A);
+  const eq = pvi(A, x0, y0);
+  return {
+    skill: 'sistemaRepetido', metodos: ['repetido'], eq: sysEq(A), A,
+    q: `Resolva o PVI ${T(eq)}`,
+    steps: [
+      `Polinômio característico: $${ch.tex.replace(' = 0', '')} = ${lam === 0 ? '\\lambda^2' : `(\\lambda ${lam < 0 ? '+' : '-'} ${Math.abs(lam)})^2`}$: autovalor <b>repetido</b> $\\lambda = ${lam}$.`,
+      `$${shift(lam)} = ${mat(Nm)}$ tem posto 1: só há um autovetor, $\\mathbf v = ${vec(u, v)}$. Falta uma solução.`,
+      `Autovetor generalizado: $(A - \\lambda I)\\mathbf w = \\mathbf v$ dá, por exemplo, $\\mathbf w = ${vec(w[0], w[1])}$. Solução geral: $\\mathbf X = c_1${E}\\mathbf v + c_2${E}(t\\mathbf v + \\mathbf w)$.`,
+      `Atalho: como $(A - \\lambda I)^2 = 0$, $\\mathbf X(t) = e^{\\lambda t}\\left[\\mathbf X(0) + t(A - \\lambda I)\\mathbf X(0)\\right]$, com $(A - \\lambda I)\\mathbf X(0) = ${vec(k * u, k * v)}$.`,
+      `$x(t) = ${X.tex}$ e $y(t) = ${Y.tex}$.`,
+    ],
+    ans: vecAns(X.f, Y.f, X.tex, Y.tex),
+    spec: { type: 'system', A, X0: [x0, y0], sol: t => [X.f(t), Y.f(t)] },
+  };
+}
+
 // ---------- "Qual método?" (prática intercalada de reconhecimento) ----------
 
 export const METODOS = {
   P1: { separavel: 'Separável', linear: 'Linear: fator integrante', exata: 'Exata', nenhum: 'Nenhum dos três (precisa de outra técnica)' },
   P2: { caracteristica: 'Homogênea: equação característica', coef: 'Coeficientes a determinar', variacao: 'Variação de parâmetros' },
   P3: { fracoes: 'Frações parciais (raízes reais)', quadrado: 'Completar quadrado', deslocamento: 'Deslocamento em t (fator $e^{-cs}$)', convolucao: 'Convolução' },
+  P4: { reais: 'Reais distintos: $c_1e^{\\lambda_1t}\\mathbf v_1 + c_2e^{\\lambda_2t}\\mathbf v_2$', complexos: 'Complexos: partes real e imaginária de $e^{\\lambda t}\\mathbf v$', repetido: 'Repetido: $c_1e^{\\lambda t}\\mathbf v + c_2e^{\\lambda t}(t\\mathbf v + \\mathbf w)$' },
 };
 // equações das listas, com a pista que denuncia o método
 const BANCO = {
@@ -1366,6 +1522,19 @@ const BANCO = {
     { eq: "\\frac{1}{s(s^2 + 4)}", m: ['convolucao', 'fracoes'], pista: 'Produto de $\\frac{1}{s}$ e $\\frac{1}{s^2 + 4}$; frações parciais também resolvem.' },
     { eq: "\\frac{2s + 5}{s^2 + 4s + 3}", m: ['fracoes'], pista: '$(s + 1)(s + 3)$.' },
   ],
+  P4: [
+    ['3 & -2 \\\\ 2 & -2', 'reais', 'tr 1, det −2: $\\Delta = 1 + 8 > 0$.'],
+    ['1 & -2 \\\\ 3 & -4', 'reais', 'tr −3, det 2: $\\Delta = 9 - 8 > 0$.'],
+    ['1 & 1 \\\\ 4 & -2', 'reais', 'tr −1, det −6: det negativo sempre dá reais (sela).'],
+    ['4 & -3 \\\\ 8 & -6', 'reais', 'det 0: um autovalor nulo, o outro é o traço (−2).'],
+    ['2 & 10 \\\\ -1 & -5', 'reais', 'det 0: autovalores 0 e −3.'],
+    ['3 & -2 \\\\ 4 & -1', 'complexos', 'tr 2, det 5: $\\Delta = 4 - 20 < 0$.'],
+    ['-1 & -4 \\\\ 1 & -1', 'complexos', 'tr −2, det 5: $\\Delta < 0$.'],
+    ['1 & -1 \\\\ 5 & -3', 'complexos', 'tr −2, det 2: $\\Delta = 4 - 8 < 0$.'],
+    ['3 & -4 \\\\ 1 & -1', 'repetido', 'tr 2, det 1: $\\Delta = 0$ e $A \\ne I$.'],
+    ['4 & -2 \\\\ 8 & -4', 'repetido', 'tr 0, det 0: $\\lambda = 0$ duplo e $A \\ne 0$.'],
+    ['-3 & \\frac{5}{2} \\\\ -\\frac{5}{2} & 2', 'repetido', 'tr −1, det 1/4: $\\Delta = 0$.'],
+  ].map(([m, k, pista]) => ({ eq: `\\mathbf{X}' = \\begin{pmatrix} ${m} \\end{pmatrix}\\mathbf{X}`, m: [k], pista: `${pista}` })),
 };
 
 function genMetodo(prova) {
@@ -1374,13 +1543,13 @@ function genMetodo(prova) {
     let item;
     if (r() < 0.5) item = pk(r, BANCO[prova]);
     else {
-      const gens = { P1: [genLinear1, genSeparavel, genExata], P2: [genHomogenea2, genCoefIndet, genVariacao], P3: [genLaplaceInversa, genConvolucao] }[prova];
+      const gens = { P1: [genLinear1, genSeparavel, genExata], P2: [genHomogenea2, genCoefIndet, genVariacao], P3: [genLaplaceInversa, genConvolucao], P4: [genSistemaReal, genSistemaComplexo, genSistemaRepetido] }[prova];
       const g = pk(r, gens)(r);
       if (!g.metodos.length || g.metodos.includes('nenhum') || !g.metodos.every(m => m in opts)) return genMetodo(prova)(r);
-      item = { eq: g.eq.replace(/^F\(s\) = /, '').replace(/,\\quad.*$/, '').replace(/,\\ x > 0$/, ''), m: g.metodos, pista: 'Gerada pelo treino: compare com as receitas do guia.' };
+      item = { eq: prova === 'P4' ? g.eq : g.eq.replace(/^F\(s\) = /, '').replace(/,\\quad.*$/, '').replace(/,\\ x > 0$/, ''), m: g.metodos, pista: prova === 'P4' ? 'Calcule traço e determinante: $\\Delta = \\text{tr}^2 - 4\\det$ decide (> 0 reais, < 0 complexos, = 0 repetido).' : 'Gerada pelo treino: compare com as receitas do guia.' };
     }
     const keys = Object.keys(opts);
-    const what = prova === 'P3' ? `Qual técnica inverte ${T(`F(s) = ${item.eq}`)}?` : `Qual método resolve ${T(item.eq)}?`;
+    const what = prova === 'P3' ? `Qual técnica inverte ${T(`F(s) = ${item.eq}`)}?` : prova === 'P4' ? `Qual é a forma da solução geral de ${T(item.eq)}?` : `Qual método resolve ${T(item.eq)}?`;
     return {
       skill: `metodo${prova}`, metodos: item.m, eq: item.eq,
       q: what,
@@ -1409,6 +1578,10 @@ export const SKILLS = [
   { id: 'laplacePvi', prova: 'P3', nome: 'PVI por Laplace', lista: 'L3 · 3, 5, 8', peso: 12, gen: genLaplacePvi },
   { id: 'convolucao', prova: 'P3', nome: 'Convolução', lista: 'L3 · 9–11', peso: 7, gen: genConvolucao },
   { id: 'metodoP3', prova: 'P3', nome: 'Qual técnica? (inversa)', lista: 'toda a L3', peso: 0, gen: genMetodo('P3') },
+  { id: 'sistemaReal', prova: 'P4', nome: 'Sistemas: autovalores reais (e nulo)', lista: 'L4 · 1, 2', peso: 10, gen: genSistemaReal },
+  { id: 'sistemaComplexo', prova: 'P4', nome: 'Sistemas: autovalores complexos', lista: 'L4 · 3', peso: 4, gen: genSistemaComplexo },
+  { id: 'sistemaRepetido', prova: 'P4', nome: 'Sistemas: autovalor repetido', lista: 'L4 · 4', peso: 4, gen: genSistemaRepetido },
+  { id: 'metodoP4', prova: 'P4', nome: 'Qual caso? (sistemas)', lista: 'toda a L4', peso: 0, gen: genMetodo('P4') },
 ];
 export const skillById = id => SKILLS.find(s => s.id === id);
 

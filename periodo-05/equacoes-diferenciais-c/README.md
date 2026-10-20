@@ -15,13 +15,13 @@ contato com simulação numérica, controle e modelagem de sistemas dinâmicos.
 |---|---|---|
 | 🧭 | [Campo de direções](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/campo-de-direcoes.html) | O campo de inclinações de seis EDOs (linear, logística, explosão em tempo finito, falta de unicidade…); clique para escolher a condição inicial e compare Euler, Heun e RK4 com a solução exata, com a tabela que mede a ordem de cada método |
 | 🪀 | [Oscilador massa-mola](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/oscilador.html) | A massa balançando ao lado do gráfico de y(t): regimes sub, crítico e superamortecido, envelope exponencial, força periódica, batimentos, ressonância e a curva de resposta A(ω) |
-| 🎯 | [Treino para as provas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html) | Questões infinitas no formato das três listas, com a fórmula digitada corrigida na hora, dicas que revelam um passo de cada vez, níveis de domínio no estilo Khan Academy, simulado intercalado e revisão espaçada |
-| 📝 | [Guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html) | O que cai em cada prova (mapa das listas), o fluxograma "qual método?", uma receita por tipo de questão e as listas 1, 2 e 3 resolvidas e conferidas no computador, com a errata do gabarito da lista 3 |
+| 🎯 | [Treino para as provas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html) | Questões infinitas no formato das quatro listas, com a fórmula (ou as duas componentes, nos sistemas) digitada corrigida na hora, dicas que revelam um passo de cada vez, níveis de domínio no estilo Khan Academy, simulado intercalado e revisão espaçada |
+| 📝 | [Guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html) | O que cai em cada prova (mapa das listas), o fluxograma "qual método?", uma receita por tipo de questão e as listas 1 a 4 resolvidas e conferidas no computador, com a errata dos gabaritos das listas 3 e 4 |
 | 🌀 | [Plano de fase](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/plano-de-fase.html) | Partículas seguindo x' = Ax, autovetores, selas, nós, espirais e centros, e o ponto (traço, determinante) andando no diagrama de classificação |
 
 ## 🧭 Como estudar para as provas
 
-As três listas do professor (1ª ordem → P1, 2ª ordem → P2, Laplace → P3) definem o que cai.
+As quatro listas do professor (1ª ordem, 2ª ordem, Laplace e sistemas lineares) definem o que cai.
 O [guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html)
 traz o mapa e as listas resolvidas; o [treino](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html)
 aplica o que a pesquisa em aprendizagem mostra que funciona:
@@ -76,7 +76,7 @@ python3 codigo/edo.py
 
 | Arquivo | Conteúdo |
 |---|---|
-| [`treino.js`](visualizacoes/treino.js) | Geradores das 16 habilidades do treino, leitor de fórmulas (com multiplicação implícita e degrau $u_c(t)$), correção por equivalência numérica e regras de domínio; os testes conferem centenas de questões sorteadas contra o próprio enunciado |
+| [`treino.js`](visualizacoes/treino.js) | Geradores das 20 habilidades do treino, leitor de fórmulas (com multiplicação implícita e degrau $u_c(t)$), correção por equivalência numérica e regras de domínio; os testes conferem centenas de questões sorteadas contra o próprio enunciado |
 | [`edo.py`](codigo/edo.py) | Euler, Heun e RK4 com as ordens de convergência medidas (1, 2, 4); oscilador nos três regimes contra a fórmula fechada; amplitude do regime permanente; ressonância $y'' + 4y = \cos 2t$; classificação de sistemas 2×2; tabela de Laplace conferida por integração numérica |
 
 ## ✍️ Exercícios

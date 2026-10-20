@@ -46,9 +46,9 @@
   </header>
 
   <main class="page">
-    <div class="eyebrow">Equações Diferenciais C · MAT040 · listas 1, 2 e 3</div>
+    <div class="eyebrow">Equações Diferenciais C · MAT040 · listas 1 a 4</div>
     <h1>Guia da prova</h1>
-    <p class="lead">As três listas que o professor passou para as provas, transformadas num roteiro: o que cai e com que frequência, uma <b>receita</b> para cada tipo de questão, as listas <b>resolvidas e conferidas no computador</b> e um <a href="../visualizacoes/treino.html">treino</a> com questões infinitas do mesmo formato.</p>
+    <p class="lead">As quatro listas que o professor passou para as provas, transformadas num roteiro: o que cai e com que frequência, uma <b>receita</b> para cada tipo de questão, as listas <b>resolvidas e conferidas no computador</b> e um <a href="../visualizacoes/treino.html">treino</a> com questões infinitas do mesmo formato.</p>
 
     <div class="with-toc">
       <nav class="toc" id="toc" aria-label="Sumário"></nav>
@@ -75,7 +75,7 @@
         </table>
 
         <h2>O que cai: o mapa das listas</h2>
-        <p>Não encontrei provas antigas da MAT040 publicadas, então o mapa vem das três listas, que o professor passou justamente para as provas. A coluna "itens" conta quantos itens de cada tipo aparecem; 📌 marca os tipos que mais aparecem.</p>
+        <p>O mapa vem das quatro listas que o professor passou para as provas. A coluna "itens" conta quantos itens de cada tipo aparecem; 📌 marca os tipos que mais aparecem.</p>
         <div class="grid2">
           <table class="data">
             <tr><th colspan="3">Lista 1 · equações de 1ª ordem (26 questões)</th></tr>
@@ -103,7 +103,15 @@
           <tr><td>📌 <a href="#r-laplaceInversa">Inversa: frações parciais, completar quadrado, deslocamento</a></td><td>2, 6</td><td>9</td></tr>
           <tr><td><a href="#r-convolucao">Convolução</a></td><td>9, 10, 11</td><td>7</td></tr>
         </table>
-        <div class="callout tip"><p><b>O padrão que se repete:</b> quase toda questão da Lista 1 pede, além da solução, o <b>intervalo de validade</b>. Esse costuma ser o ponto perdido por quem resolve certo e esquece de justificar o domínio. Na Lista 3, os itens com <b>degrau e delta</b> (questões 4 a 8) são mais da metade.</p></div>
+        <table class="data">
+          <tr><th colspan="3">Lista 4 · sistemas lineares $\mathbf X' = A\mathbf X$ (4 questões, 18 itens)</th></tr>
+          <tr><th>Tipo de questão</th><th>Questões</th><th>Itens</th></tr>
+          <tr><td>📌 <a href="#r-sistemaReal">Autovalores reais distintos</a></td><td>1</td><td>7</td></tr>
+          <tr><td><a href="#r-sistemaReal">Um autovalor nulo</a> (caso particular dos reais)</td><td>2</td><td>3</td></tr>
+          <tr><td><a href="#r-sistemaComplexo">Autovalores complexos: solução com funções reais</a></td><td>3</td><td>4</td></tr>
+          <tr><td><a href="#r-sistemaRepetido">Autovalor repetido: autovetor generalizado</a></td><td>4</td><td>4</td></tr>
+        </table>
+        <div class="callout tip"><p><b>O padrão que se repete:</b> quase toda questão da Lista 1 pede, além da solução, o <b>intervalo de validade</b>. Esse costuma ser o ponto perdido por quem resolve certo e esquece de justificar o domínio. Na Lista 3, os itens com <b>degrau e delta</b> (questões 4 a 8) são mais da metade. Na Lista 4, todo item começa igual: <b>traço e determinante</b> decidem qual dos três casos é.</p></div>
 
         <h2 id="metodo">Qual método? O fluxograma</h2>
         <p>A habilidade que a prova cobra sem avisar é <b>reconhecer o tipo</b>. Siga as perguntas na ordem. Treine com "Qual método?" no <a href="../visualizacoes/treino.html">treino</a>.</p>
@@ -126,8 +134,14 @@
           <div class="q">2. Denominador com raízes reais → frações parciais. Com $\Delta &lt; 0$ → completar quadrado.</div>
           <div class="q">3. Produto de duas transformadas conhecidas, ou fator complexo repetido como $(s^2 + 1)^2$ → <a href="#r-convolucao">convolução</a>.</div>
         </div>
+        <div class="flow" id="r-metodoP4" style="margin-top:12px">
+          <div class="q"><b>Sistema</b> $\mathbf X' = A\mathbf X$, $2 \times 2$: calcule $\text{tr}\,A$, $\det A$ e $\Delta = \text{tr}^2 - 4\det$.</div>
+          <div class="q">1. $\Delta &gt; 0$ → <a href="#r-sistemaReal">reais distintos</a> ($\det A = 0$: um deles é zero e sua parcela é constante).</div>
+          <div class="q">2. $\Delta &lt; 0$ → <a href="#r-sistemaComplexo">complexos</a> $\alpha \pm \beta i$.</div>
+          <div class="q">3. $\Delta = 0$ e $A \ne \lambda I$ → <a href="#r-sistemaRepetido">repetido com autovetor generalizado</a>.</div>
+        </div>
 
-        <h2>Receitas da prova 1 (Lista 1)</h2>
+        <h2>Receitas da Lista 1</h2>
 
         <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
           <h3 id="r-linear1">Linear de 1ª ordem: fator integrante</h3>
@@ -185,7 +199,7 @@
           <p>Veja também o <a href="../visualizacoes/campo-de-direcoes.html">campo de direções</a> com $y' = y(1 - y)$.</p>
         </div>
 
-        <h2>Receitas da prova 2 (Lista 2)</h2>
+        <h2>Receitas da Lista 2</h2>
 
         <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
           <h3 id="r-wronskiano">Superposição, Wronskiano e Abel</h3>
@@ -230,7 +244,7 @@
           <p><span class="tag">Pegadinhas</span> esquecer de dividir pelo coeficiente de $y''$ antes de ler $g$; esquecer o sinal de menos em $u_1'$; $\int \operatorname{tg} = -\ln|\cos|$; termos de $y_p$ que são da homogênea podem ser descartados. Integrais que aparecem: $\int \operatorname{cotg}(kx) = \frac{1}{k}\ln|\operatorname{sen} kx|$, $\int \frac{dw}{1 - 2w^2} = \frac{1}{2\sqrt 2}\ln\left|\frac{1 + \sqrt 2 w}{1 - \sqrt 2 w}\right|$ (q.15).</p>
         </div>
 
-        <h2>Receitas da prova 3 (Lista 3)</h2>
+        <h2>Receitas da Lista 3</h2>
 
         <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
           <h3 id="r-laplaceDireta">Tabela e propriedades de Laplace</h3>
@@ -285,6 +299,46 @@
           <h3 id="r-convolucao">Convolução</h3>
           <p>$(f * g)(t) = \int_0^t f(\tau)\,g(t - \tau)\,d\tau$ e $\mathcal{L}^{-1}\{F\,G\} = f * g$. Use quando $F(s)$ for <b>produto de duas transformadas conhecidas</b>, quando o forçamento é genérico, $g(t)$ (q.11a: $y = \frac{1}{2}\int_0^t g(\tau)\operatorname{sen} 2(t - \tau)\,d\tau$), ou com fatores complexos repetidos ($\frac{s}{(s^2 + 1)^2} = \frac{s}{s^2 + 1}\cdot\frac{1}{s^2 + 1}$ → $\cos * \operatorname{sen} = \frac{t}{2}\operatorname{sen} t$).</p>
           <p><span class="tag">Truque</span> expanda $\operatorname{sen}(t - \tau) = \operatorname{sen} t\cos\tau - \cos t\operatorname{sen}\tau$: o que só depende de $t$ sai da integral.</p>
+        </div>
+
+        <h2>Receitas da Lista 4</h2>
+        <p class="c-muted">O <a href="../visualizacoes/plano-de-fase.html">plano de fase</a> mostra cada caso: sela e nós (reais), espirais e centros (complexos), nó degenerado (repetido).</p>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-sistemaReal">Autovalores reais distintos (e o autovalor nulo)</h3>
+          <ol>
+            <li>$\det(A - \lambda I) = \lambda^2 - (\text{tr}\,A)\lambda + \det A = 0$.</li>
+            <li>Para cada $\lambda_i$, um autovetor: $(A - \lambda_iI)\mathbf v_i = 0$. As duas linhas são proporcionais; use uma só. Se $A - \lambda I = \begin{pmatrix} a &amp; b \\ \cdot &amp; \cdot \end{pmatrix}$, então $\mathbf v = \begin{pmatrix} b \\ -a \end{pmatrix}$ serve.</li>
+            <li>$\mathbf X(t) = c_1e^{\lambda_1t}\mathbf v_1 + c_2e^{\lambda_2t}\mathbf v_2$. Com PVI, resolva $c_1\mathbf v_1 + c_2\mathbf v_2 = \mathbf X(0)$.</li>
+          </ol>
+          <p><span class="tag">Autovalor nulo</span> acontece quando $\det A = 0$; o outro é $\lambda = \text{tr}\,A$. A parcela de $\lambda = 0$ é <b>constante</b>: $c_1\mathbf v_1$ (uma reta inteira de equilíbrios).</p>
+          <p><span class="tag">Pegadinhas</span> trocar os autovetores de autovalor; autovetores são definidos a menos de múltiplo, então $\begin{pmatrix} 1/2 \\ 1 \end{pmatrix}$ e $\begin{pmatrix} 1 \\ 2 \end{pmatrix}$ são a mesma resposta.</p>
+          <p><span class="tag">Confira</span> $A\mathbf v_i = \lambda_i\mathbf v_i$, uma multiplicação de matriz por vetor.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-sistemaComplexo">Autovalores complexos</h3>
+          <ol>
+            <li>$\lambda = \alpha \pm \beta i$. Basta um deles, $\alpha + \beta i$.</li>
+            <li>Autovetor complexo $\mathbf v$ e separe: $\mathbf v = \mathbf a + i\mathbf b$.</li>
+            <li>$e^{\lambda t}\mathbf v = e^{\alpha t}(\cos\beta t + i\operatorname{sen}\beta t)(\mathbf a + i\mathbf b)$. A parte real e a parte imaginária são duas soluções reais independentes:
+              $$\mathbf u_1 = e^{\alpha t}(\mathbf a\cos\beta t - \mathbf b\operatorname{sen}\beta t),\qquad \mathbf u_2 = e^{\alpha t}(\mathbf a\operatorname{sen}\beta t + \mathbf b\cos\beta t).$$</li>
+            <li>$\mathbf X = c_1\mathbf u_1 + c_2\mathbf u_2$.</li>
+          </ol>
+          <p><span class="tag">Atalho para PVI</span> $\mathbf X(t) = e^{\alpha t}\left[\cos(\beta t)\,\mathbf X(0) + \operatorname{sen}(\beta t)\,\frac{(A - \alpha I)\mathbf X(0)}{\beta}\right]$, porque $(A - \alpha I)^2 = -\beta^2I$.</p>
+          <p><span class="tag">Confira</span> substitua em <b>uma</b> das equações (por exemplo $x' = a_{11}x + a_{12}y$) num valor fácil, como $t = 0$. Foi esse teste que pegou os dois erros do gabarito da Lista 4.</p>
+        </div>
+
+        <div class="recipe"><a class="go" href="../visualizacoes/treino.html">treinar ↗</a>
+          <h3 id="r-sistemaRepetido">Autovalor repetido</h3>
+          <ol>
+            <li>$\Delta = 0$: $\lambda = \frac{\text{tr}\,A}{2}$ duplo. Se $A = \lambda I$, todo vetor é autovetor e acabou: $\mathbf X = e^{\lambda t}\mathbf C$.</li>
+            <li>Senão, há um só autovetor $\mathbf v$. A primeira solução é $e^{\lambda t}\mathbf v$.</li>
+            <li>Autovetor generalizado: resolva $(A - \lambda I)\mathbf w = \mathbf v$ (qualquer solução serve).</li>
+            <li>$\mathbf X(t) = c_1e^{\lambda t}\mathbf v + c_2e^{\lambda t}(t\mathbf v + \mathbf w)$.</li>
+          </ol>
+          <p><span class="tag">Pegadinhas</span> a segunda solução <b>não</b> é $te^{\lambda t}\mathbf v$ sozinha (falta o $\mathbf w$); e a equação de $\mathbf w$ é $(A - \lambda I)\mathbf w = \mathbf v$, não $= 0$.</p>
+          <p><span class="tag">Atalho para PVI</span> como $(A - \lambda I)^2 = 0$: $\mathbf X(t) = e^{\lambda t}\left[\mathbf X(0) + t(A - \lambda I)\mathbf X(0)\right]$.</p>
         </div>
 
         <h2>Lista 1 resolvida</h2>
@@ -454,11 +508,50 @@
         <details class="prob"><summary><b>11.</b> PVIs com convolução.</summary>
           <p>(a) $y = \frac{1}{2}\int_0^t g(\tau)\operatorname{sen} 2(t - \tau)\,d\tau$ · (b) $y = \frac{t}{a} - \frac{\operatorname{sen} at}{a^2}$.</p></details>
 
+        <h2>Lista 4: respostas e errata</h2>
+        <p>A Lista 4 traz respostas. Conferi todas substituindo no sistema: <b>16 estão certas e 2 estão erradas</b>, a 3(a) e a 3(c).</p>
+        <div class="callout warn">
+          <p><b>Errata das respostas da Lista 4.</b></p>
+          <ul>
+            <li><b>3(a)</b>: em $y(t)$ os sinais do seno estão trocados. O certo é $y(t) = e^t\left[c_1(\cos 2t + \operatorname{sen} 2t) + c_2(\operatorname{sen} 2t - \cos 2t)\right]$, com $x(t)$ como no gabarito. Teste: com $c_1 = 0$, $c_2 = 1$, $x = e^t\operatorname{sen} 2t$ e $x'(0) = 2$; a 1ª equação pede $x'(0) = 3x(0) - 2y(0) = -2y(0)$. O $y$ do gabarito tem $y(0) = 1$ e dá $-2$; o corrigido tem $y(0) = -1$ e dá $2$.</li>
+            <li><b>3(c)</b>: falta o fator $\frac{5}{6}$ em $x(t)$: $x(t) = \frac{5}{6}e^{t/2}\left[c_1\left(\cos\frac{3t}{2} - \operatorname{sen}\frac{3t}{2}\right) + c_2\left(\operatorname{sen}\frac{3t}{2} + \cos\frac{3t}{2}\right)\right]$, com $y(t)$ como no gabarito. Teste: a 2ª equação, $y' = \frac{9}{5}x - y$, em $t = 0$ com $c_1 = 1$, $c_2 = 0$: $y'(0) = \frac{1}{2}$, e $\frac{9}{5}\cdot\frac{5}{6} - 1 = \frac{1}{2}$. Sem o $\frac{5}{6}$, daria $\frac{4}{5}$.</li>
+          </ul>
+        </div>
+        <details class="prob exam"><summary><b>1.</b> Autovalores reais distintos (a–g).</summary>
+          <table class="data">
+            <tr><th></th><th>$A$</th><th>$\lambda$</th><th>autovetores</th></tr>
+            <tr><td>(a)</td><td>$\begin{pmatrix} 3 &amp; -2 \\ 2 &amp; -2 \end{pmatrix}$</td><td>$2,\ -1$</td><td>$(2, 1)$, $(1, 2)$</td></tr>
+            <tr><td>(b)</td><td>$\begin{pmatrix} 1 &amp; -2 \\ 3 &amp; -4 \end{pmatrix}$</td><td>$-1,\ -2$</td><td>$(1, 1)$, $(2, 3)$</td></tr>
+            <tr><td>(c)</td><td>$\begin{pmatrix} 2 &amp; -1 \\ 3 &amp; -2 \end{pmatrix}$</td><td>$1,\ -1$</td><td>$(1, 1)$, $(1, 3)$</td></tr>
+            <tr><td>(d)</td><td>$\begin{pmatrix} 1 &amp; 1 \\ 4 &amp; -2 \end{pmatrix}$</td><td>$2,\ -3$</td><td>$(1, 1)$, $(-1, 4)$</td></tr>
+            <tr><td>(e)</td><td>$\begin{pmatrix} -2 &amp; 1 \\ 1 &amp; -2 \end{pmatrix}$</td><td>$-1,\ -3$</td><td>$(1, 1)$, $(-1, 1)$</td></tr>
+            <tr><td>(f)</td><td>$\begin{pmatrix} 5/4 &amp; 3/4 \\ 3/4 &amp; 5/4 \end{pmatrix}$</td><td>$2,\ \frac{1}{2}$</td><td>$(1, 1)$, $(-1, 1)$</td></tr>
+            <tr><td>(g)</td><td>$\begin{pmatrix} 1 &amp; 1 \\ 4 &amp; 1 \end{pmatrix}$</td><td>$3,\ -1$</td><td>$(1, 2)$, $(-1, 2)$</td></tr>
+          </table>
+          <p>Em todos: $\mathbf X = c_1e^{\lambda_1t}\mathbf v_1 + c_2e^{\lambda_2t}\mathbf v_2$. O gabarito usa múltiplos destes vetores (por exemplo $(\frac{1}{2}, 1)$ no lugar de $(1, 2)$): é a mesma resposta.</p></details>
+        <details class="prob"><summary><b>2.</b> Um autovalor nulo (a–c).</summary>
+          <p>(a) $\lambda = 0, -2$: $\mathbf X = c_1\begin{pmatrix} 3 \\ 4 \end{pmatrix} + c_2e^{-2t}\begin{pmatrix} 1 \\ 2 \end{pmatrix}$ · (b) $\lambda = 0, -3$: $c_1\begin{pmatrix} 5 \\ -1 \end{pmatrix} + c_2e^{-3t}\begin{pmatrix} 2 \\ -1 \end{pmatrix}$ · (c) $\lambda = 0, 1$: $c_1\begin{pmatrix} 2 \\ -1 \end{pmatrix} + c_2e^{t}\begin{pmatrix} 3 \\ -1 \end{pmatrix}$.</p>
+          <p>Nos três, $\det A = 0$ e o autovalor não nulo é o traço.</p></details>
+        <details class="prob exam errata"><summary><b>3.</b> Autovalores complexos (⚠ errata em a e c).</summary>
+          <p>(a) $\lambda = 1 \pm 2i$, $\mathbf v = \begin{pmatrix} 1 \\ 1 - i \end{pmatrix}$: $x = e^t(c_1\cos 2t + c_2\operatorname{sen} 2t)$, $y = e^t[c_1(\cos 2t + \operatorname{sen} 2t) + c_2(\operatorname{sen} 2t - \cos 2t)]$.</p>
+          <p>(b) $\lambda = -1 \pm 2i$: $x = e^{-t}(-2c_1\operatorname{sen} 2t + 2c_2\cos 2t)$, $y = e^{-t}(c_1\cos 2t + c_2\operatorname{sen} 2t)$ (gabarito certo).</p>
+          <p>(c) $\lambda = \frac{1}{2} \pm \frac{3}{2}i$, $\mathbf v = \begin{pmatrix} \frac{5}{6}(1 + i) \\ 1 \end{pmatrix}$: $x = \frac{5}{6}e^{t/2}\left[c_1\left(\cos\frac{3t}{2} - \operatorname{sen}\frac{3t}{2}\right) + c_2\left(\operatorname{sen}\frac{3t}{2} + \cos\frac{3t}{2}\right)\right]$, $y = e^{t/2}\left(c_1\cos\frac{3t}{2} + c_2\operatorname{sen}\frac{3t}{2}\right)$.</p>
+          <p>(d) $\lambda = -1 \pm i$: $x = e^{-t}[c_1(2\cos t - \operatorname{sen} t) + c_2(2\operatorname{sen} t + \cos t)]$, $y = 5e^{-t}(c_1\cos t + c_2\operatorname{sen} t)$ (gabarito certo).</p></details>
+        <details class="prob exam"><summary><b>4.</b> Autovalor repetido (a–d).</summary>
+          <table class="data">
+            <tr><th></th><th>$\lambda$ duplo</th><th>$\mathbf v$</th><th>$\mathbf w$ com $(A - \lambda I)\mathbf w = \mathbf v$</th></tr>
+            <tr><td>(a)</td><td>$1$</td><td>$(2, 1)$</td><td>$(1, 0)$</td></tr>
+            <tr><td>(b)</td><td>$0$</td><td>$(1, 2)$</td><td>$(0, -\frac{1}{2})$</td></tr>
+            <tr><td>(c)</td><td>$-1$</td><td>$(2, 1)$</td><td>$(0, 2)$</td></tr>
+            <tr><td>(d)</td><td>$-\frac{1}{2}$</td><td>$(1, 1)$</td><td>$(0, \frac{2}{5})$</td></tr>
+          </table>
+          <p>Em todos: $\mathbf X = c_1e^{\lambda t}\mathbf v + c_2e^{\lambda t}(t\mathbf v + \mathbf w)$ (gabarito certo).</p></details>
+
         <h2>Véspera da prova</h2>
         <ol>
           <li>Faça um <b>simulado intercalado</b> no <a href="../visualizacoes/treino.html">treino</a>, sem dicas e cronometrado. Não releia o caderno: resolva.</li>
           <li>Refaça as questões marcadas com 📌 que você errou, sem abrir a solução.</li>
-          <li>Escreva de memória, numa folha em branco, a tabela de Laplace e as três formas da solução homogênea. Depois confira.</li>
+          <li>Escreva de memória, numa folha em branco, a tabela de Laplace, as três formas da solução homogênea e os três casos dos sistemas. Depois confira.</li>
           <li>Na prova: <b>justifique o intervalo</b>, escreva o teste $M_y = N_x$, mostre a equação característica e as frações parciais. E <b>confira</b> substituindo, se sobrar tempo.</li>
         </ol>
       </article>
