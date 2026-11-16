@@ -57,7 +57,7 @@ jobs:
                      periodo-05/algoritmos-2/trabalhos/envoltoria-convexa \
                      periodo-06/compiladores-1/trabalhos/tp-alocacao-de-registradores \
                      optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao; do
-            echo "== $dir"; (cd "$dir" && python -m unittest -v)
+            echo "== $dir"; (cd "$dir" && python -m unittest discover -v -p "test_*.py")
           done
 
       - uses: actions/setup-node@v4
