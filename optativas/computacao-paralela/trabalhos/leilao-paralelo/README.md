@@ -33,7 +33,8 @@ make CXX=g++-15            # no Linux: make
 ./leilao v0                # 15 execuções com n = 5000
 ./leilao v4 2000 8         # v3 e v4 aceitam n e o número de threads
 ./leilao todas
-make test CXX=g++-15       # verificador de corretude
+make test CXX=g++-15       # verificador de corretude (v0, v1, v1b, v3, v3b, v4)
+./verifica --v2            # inclui a v2 experimental (pode não terminar)
 ```
 
 ## Verificação de corretude
@@ -44,6 +45,7 @@ termina no **ótimo**, então cada versão precisa devolver uma atribuição per
 benefício da força bruta ($n \le 8$) ou da versão sequencial.
 
 ```
+$ ./verifica --v2
 120/120 verificações corretas (v0, v1, v1b, v3, v3b, v4)
 v2 (experimental): 7/20 corretas      # varia entre execuções (7 a 11 de 20 nos testes)
 ```
@@ -57,11 +59,18 @@ v2 (experimental): 7/20 corretas      # varia entre execuções (7 a 11 de 20 no
   complementar, e a v4 terminava abaixo do ótimo em parte das instâncias do verificador
   (inclusive em matrizes 7 × 7). Agora o preço é $p_t^{\text{início}} + \text{lance}$ e vence o maior
   lance, como no leilão de Jacobi.
+- **Mesma correção, versão assíncrona, na v1 e na v1b.** O lance era calculado com o
+  preço lido sem trava e, já com a trava, somado ao preço **atual**, que outra thread
+  podia ter aumentado nesse meio-tempo. Agora o preço oferecido é
+  $p_t^{\text{lido}} + \text{lance}$; se não supera o preço atual, o lance perde e o
+  trabalhador tenta de novo na rodada seguinte. Antes, a v1 errava de forma intermitente
+  (cerca de 1 execução do verificador em 4); depois, 25 execuções seguidas sem falha.
 - **v2 marcada como experimental, sem correção.** Ela tem uma condição de corrida de
   projeto: a cada 32 iterações, cada thread faz uma "varredura completa" de **todos** os
   trabalhadores, então duas threads podem processar o mesmo trabalhador ao mesmo tempo. Ele
   dá dois lances, só uma atribuição vinga, e o contador de livres chega a zero com
-  trabalhadores ainda sem tarefa. Corrigir exige reservar o trabalhador antes do lance (por
+  trabalhadores ainda sem tarefa (ou, se o contador desandar para o outro lado, as threads
+  giram para sempre). Por isso ela fica fora do `make test`. Corrigir exige reservar o trabalhador antes do lance (por
   exemplo, um CAS em `assignment[w]` de −1 para "ocupado"), o que muda o desenho da versão.
 - Arquivos renomeados (`prll1_opt.cpp` → `v1b_spinlock_alinhado.cpp` etc.), cabeçalhos
   descrevendo cada estratégia, `main.cpp` com seleção da versão pela linha de comando,

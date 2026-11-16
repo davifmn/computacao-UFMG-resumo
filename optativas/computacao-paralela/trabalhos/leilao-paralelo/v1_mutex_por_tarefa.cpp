@@ -65,8 +65,14 @@ pair<vector<int>, vector<double>> auction_algorithm_parallel(
             {
                 lock_guard<mutex> guard(task_locks[best_task]);
 
-                // atualiza preço
-                prices[best_task] += bid;
+                // O lance foi calculado com o preço lido SEM trava, que outra thread pode ter
+                // aumentado desde então. O preço oferecido é preço_lido + lance =
+                // benefício - segundo_melhor + epsilon; se ele não supera o preço atual, o
+                // lance perdeu e o trabalhador tenta de novo na próxima rodada. Somar o lance
+                // ao preço atual (versão original) cobrava a mais e às vezes saía do ótimo.
+                double oferta = cost[worker][best_task] - best_value + bid;
+                if (oferta <= prices[best_task]) continue;
+                prices[best_task] = oferta;
 
                 // desaloca dono anterior, se existir
                 int prev_worker = task_owner[best_task];

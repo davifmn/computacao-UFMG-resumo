@@ -6,8 +6,8 @@
 // sequencial (n médio).
 //
 // A v2 (assíncrona com CAS) é experimental: tem uma condição de corrida conhecida
-// (veja o README) e às vezes termina com trabalhadores sem tarefa. Ela é verificada
-// e o resultado é impresso, mas não reprova o teste.
+// (veja o README), às vezes termina com trabalhadores sem tarefa e pode até não
+// terminar. Por isso só é verificada com `./verifica --v2`, e nunca reprova o teste.
 
 #include <algorithm>
 #include <iostream>
@@ -52,7 +52,8 @@ static double forca_bruta(const Matriz& c) {
     return melhor;
 }
 
-int main() {
+int main(int argc, char** argv) {
+    const bool testa_v2 = argc > 1 && string(argv[1]) == "--v2";
     mt19937 gen(2025);
     int falhas = 0, verificacoes = 0, falhas_v2 = 0, total_v2 = 0;
     for (int n : {5, 7, 60, 200}) {
@@ -63,15 +64,15 @@ int main() {
             double eps = 1.0 / (n + 1);
 
             double alvo = n <= 8 ? forca_bruta(c) : beneficio(c, auction_algorithm(c, eps).first);
-            const vector<pair<string, Resultado>> res = {
+            vector<pair<string, Resultado>> res = {
                 {"v0", auction_algorithm(c, eps)},
                 {"v1", auction_algorithm_parallel(c, eps, 4)},
                 {"v1b", auction_algorithm_parallel_opt(c, eps, 4)},
-                {"v2", auction_algorithm_async_atomic_prll2(c, eps, 4, nullptr, 8)},
                 {"v3", auction_algorithm_batched(c, eps, 4, nullptr)},
                 {"v3b", auction_algorithm_batched_opt(c, eps, 4, nullptr)},
                 {"v4", auction_algorithm_search_parallel(c, eps, 4)},
             };
+            if (testa_v2) res.push_back({"v2", auction_algorithm_async_atomic_prll2(c, eps, 4, nullptr, 8)});
             for (auto& [nome, r] : res) {
                 bool ok = perfeita(r.first) && beneficio(c, r.first) == alvo;
                 if (nome == "v2") { total_v2++; falhas_v2 += !ok; continue; }
@@ -85,6 +86,6 @@ int main() {
         }
     }
     cout << verificacoes - falhas << "/" << verificacoes << " verificações corretas (v0, v1, v1b, v3, v3b, v4)\n";
-    cout << "v2 (experimental): " << total_v2 - falhas_v2 << "/" << total_v2 << " corretas\n";
+    if (testa_v2) cout << "v2 (experimental): " << total_v2 - falhas_v2 << "/" << total_v2 << " corretas\n";
     return falhas ? 1 : 0;
 }

@@ -34,6 +34,7 @@ jobs:
   trabalhos:
     name: Trabalhos práticos
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +42,7 @@ jobs:
         run: make -C periodo-04/algoritmos-1/trabalhos/tp3-centro-de-distribuicao test
 
       - name: Computação Paralela · leilão (C++ / OpenMP)
+        timeout-minutes: 5
         run: make -C optativas/computacao-paralela/trabalhos/leilao-paralelo test CXX=g++
 
       - uses: actions/setup-python@v5

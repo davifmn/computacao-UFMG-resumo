@@ -86,11 +86,15 @@ pair<vector<int>, vector<double>> auction_algorithm_parallel_opt(
 
             // Fase de Atualização (Lock Fino e Rápido)
             task_locks[best_task].acquire();
-            
-            // Re-checa se o preço mudou drasticamente (opcional, mas bom para estabilidade)
-            // Aqui assumimos a estratégia padrão do algoritmo: sobrescreve o bid
-            
-            prices[best_task] += bid;
+
+            // O lance foi calculado com o preço lido SEM trava, que outra thread pode ter
+            // aumentado desde então. O preço oferecido é preço_lido + lance =
+            // benefício - segundo_melhor + epsilon; se ele não supera o preço atual, o
+            // lance perdeu e o trabalhador tenta de novo na próxima rodada. Somar o lance
+            // ao preço atual (versão original) cobrava a mais e às vezes saía do ótimo.
+            double oferta = cost[worker][best_task] - best_value + bid;
+            if (oferta <= prices[best_task]) { task_locks[best_task].release(); continue; }
+            prices[best_task] = oferta;
             int prev_worker = task_owner[best_task];
             
             task_owner[best_task] = worker;
