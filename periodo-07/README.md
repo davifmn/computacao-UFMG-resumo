@@ -14,6 +14,15 @@ decidir e aprender (**Introdução à Inteligência Artificial**).
 
 Ética na Computação (DCC636, 30h) aparece como planejada em [`catalogo.js`](../catalogo.js).
 
+## Trabalhos práticos
+
+Os trabalhos entregues nas disciplinas deste período, revisados e documentados, cada um com README próprio.
+
+| Disciplina | Trabalho | Tecnologias |
+|---|---|---|
+| Introdução à IA | [Snake com A* (projeto extra)](introducao-a-inteligencia-artificial/projetos/snake-a-estrela-e-neat/) | Python, pygame |
+| Introdução à IA | [Carro autônomo com NEAT (projeto extra)](introducao-a-inteligencia-artificial/projetos/carro-autonomo-neat/) | Python, NEAT |
+
 ## Dicas de quem já passou por aqui
 
 - **Redes:** as provas são de contas (roteamento, endereçamento, janelas, temporizadores) e de conceitos. Refaça os exercícios resolvidos dos guias e use os simulados; para a prova 2, domine CIDR, maior prefixo, fragmentação, vetor de distância e o controle de congestionamento do TCP.

@@ -29,6 +29,15 @@
     .viz:hover { border-color: var(--c); transform: translateY(-2px); text-decoration: none; }
     .viz b { display: block; margin-bottom: 4px; }
     .viz span { color: var(--muted); font-size: 13px; line-height: 1.45; display: block; }
+    .tps { margin-top: 14px; }
+    .tps-title { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+    .tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+    .tp { display: block; border: 1px dashed var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); transition: border-color .15s; }
+    .tp:hover { border-color: var(--c); text-decoration: none; }
+    .tp b { display: block; margin-bottom: 4px; }
+    .tp span.d { color: var(--muted); font-size: 13px; line-height: 1.45; display: block; }
+    .tp .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tp .tags .badge { font-size: 11px; }
     .future { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
     .future .card h3 { font-size: 15px; color: var(--muted); }
     .future ul { margin: 0; padding-left: 18px; color: var(--faint); font-size: 14px; }
@@ -58,6 +67,7 @@
       <div class="pillar"><b class="c-yellow">{ } Código real</b><span>O mesmo código que roda em C++ e Python, com testes, está na pasta de cada disciplina.</span></div>
       <div class="pillar"><b class="c-green">✎ Exercícios</b><span>Perguntas comentadas e geradores que criam questões novas a cada clique.</span></div>
       <div class="pillar"><b class="c-pink">∑ Teoria</b><span>Cada disciplina tem um resumo com fórmulas, intuições e armadilhas comuns.</span></div>
+      <div class="pillar"><b class="c-teal">⚙ Trabalhos práticos</b><span>Os TPs feitos ao longo do curso, revisados, documentados e testados, ao lado da teoria de cada disciplina.</span></div>
     </div>
 
     <div id="periods"></div>
@@ -83,7 +93,10 @@
       const sec = h('section', { class: 'period', id: p.id });
       if (p.disciplinas) {
         const total = p.disciplinas.reduce((n, d) => n + d.visualizacoes.length, 0);
-        sec.append(h('div', { class: 'period-head' }, h('h2', {}, `${p.numero}º período`), h('span', { class: 'badge ok' }, `${total} páginas interativas`)));
+        const tps = p.disciplinas.reduce((n, d) => n + (d.trabalhos?.length ?? 0), 0);
+        sec.append(h('div', { class: 'period-head' }, h('h2', {}, p.titulo ?? `${p.numero}º período`),
+          h('span', { class: 'badge ok' }, `${total} páginas interativas`),
+          tps ? h('span', { class: 'badge info' }, `${tps} ${tps === 1 ? 'trabalho prático' : 'trabalhos práticos'}`) : null));
         for (const d of p.disciplinas) {
           sec.append(h('article', { class: 'disc', id: d.id, style: `--c: var(--${d.cor})` },
             h('div', { class: 'disc-head' },
@@ -93,7 +106,14 @@
             h('div', { class: 'viz-grid' }, ...d.visualizacoes.map(v =>
               h('a', { class: 'viz', href: `${d.pasta}/${v.tipo === 'tutorial' ? 'tutoriais' : 'visualizacoes'}/${v.arquivo}` },
                 h('b', {}, v.titulo, v.tipo === 'tutorial' ? h('span', { class: 'badge info', style: 'margin-left:8px;display:inline-block' }, 'tutorial') : null),
-                h('span', {}, v.descricao))))));
+                h('span', {}, v.descricao)))),
+            d.trabalhos?.length ? h('div', { class: 'tps' },
+              h('div', { class: 'tps-title' }, 'Trabalhos práticos e projetos'),
+              h('div', { class: 'tp-grid' }, ...d.trabalhos.map(t =>
+                h('a', { class: 'tp', href: src(`${d.pasta}/${t.pasta}`) },
+                  h('b', {}, t.titulo, t.extra ? h('span', { class: 'badge warn', style: 'margin-left:8px;display:inline-block' }, 'projeto extra') : null),
+                  h('span', { class: 'd' }, t.descricao),
+                  h('div', { class: 'tags' }, ...(t.tags ?? []).map(x => h('span', { class: 'badge' }, x))))))) : null));
         }
       }
       root.append(sec);

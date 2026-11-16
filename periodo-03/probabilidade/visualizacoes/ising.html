@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modelo de Ising e Metropolis · Probabilidade</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    #rede { max-width: 620px; margin: 0 auto; }
+    .ctl { display: grid; grid-template-columns: 6.5em 1fr 4em; gap: 8px; align-items: center; padding: 8px 14px 12px; font-size: 14px; color: var(--muted); }
+    .ctl output { font-family: var(--mono); color: var(--text); text-align: right; }
+    .readout { padding: 6px 14px 14px; font-size: 15px; display: grid; gap: 6px; }
+    .readout b { font-family: var(--mono); }
+    .btns { display: flex; gap: 8px; padding: 0 14px 14px; flex-wrap: wrap; }
+    .plots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+    .plots figure { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
+    .plots figcaption { font-size: 13px; color: var(--muted); padding: 4px 6px 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-03">3º período</a>
+      <span class="sep">/</span><a href="../../../index.html#probabilidade">Probabilidade</a>
+      <span class="sep">/</span><span>Modelo de Ising e Metropolis</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Probabilidade · projeto extra</div>
+    <h1>Metropolis: sortear de uma distribuição que você não consegue escrever</h1>
+    <p class="lead">Uma rede de $L \times L$ ímãs minúsculos (spins $\pm 1$) quer se alinhar com os vizinhos, mas o calor bagunça tudo. A probabilidade de cada configuração é $\propto e^{-E/T}$, só que há $2^{L^2}$ configurações: impossível calcular a constante de normalização. O <b>algoritmo de Metropolis</b> monta uma <b>cadeia de Markov</b> que visita as configurações exatamente nessa proporção, sem nunca precisar dela.</p>
+
+    <h2>1. Uma tentativa de cada vez</h2>
+    <div class="toolbar">
+      <label>temperatura T <input id="t1" type="range" min="0.5" max="5" step="0.1" value="2.0"><output id="t1-o"></output></label>
+      <button class="btn small" id="nova">Nova rede</button>
+    </div>
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#58c4dd"></i>spin +1</span><span><i style="background:#ff9f43"></i>spin −1</span><span><i style="background:#e6e8eb"></i>spin sorteado</span><span><i style="background:#83c167"></i>aceita</span><span><i style="background:#fc6255"></i>rejeita</span></div>
+
+    <h2>2. O laboratório: 16 384 spins ao vivo</h2>
+    <div class="lab">
+      <div class="stage"><canvas id="rede" width="128" height="128" aria-label="Rede de spins 128 por 128"></canvas></div>
+      <div class="side">
+        <div class="panel">
+          <div class="panel-title">Controles</div>
+          <div class="ctl">
+            <span>T</span><input id="t2" type="range" min="0.5" max="5" step="0.01" value="2.27"><output id="t2-o"></output>
+            <span>velocidade</span><input id="vel" type="range" min="1" max="10" value="2"><output id="vel-o"></output>
+          </div>
+          <div class="btns">
+            <button class="btn primary" id="play">⏸ Pausar</button>
+            <button class="btn" id="tc">T = Tc</button>
+            <button class="btn" id="rand">Aleatória (T = ∞)</button>
+            <button class="btn" id="up">Alinhada (T = 0)</button>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-title">Agora</div><div class="readout" id="info"></div></div>
+        <div class="panel"><div class="panel-title">Histórico de |m| (azul) e e (laranja)</div><canvas id="hist" width="320" height="140"></canvas></div>
+      </div>
+    </div>
+    <p class="c-muted" style="max-width:900px">Comece em T = 1,5 a partir da rede aleatória: surgem domínios que crescem devagar (às vezes duas faixas ficam presas por muito tempo). Em T = 3,5 a rede vira chiado. Perto de $T_c \approx 2{,}269$ aparecem aglomerados de todos os tamanhos, que é a assinatura de um <b>ponto crítico</b>.</p>
+
+    <h2>3. As curvas em função da temperatura</h2>
+    <div class="toolbar">
+      <label>L <select id="L"><option>8</option><option selected>16</option><option>24</option></select></label>
+      <button class="btn primary" id="curvas">Simular 24 temperaturas</button>
+      <span class="c-muted" id="prog"></span>
+    </div>
+    <div class="plots">
+      <figure><canvas id="pe" width="300" height="200"></canvas><figcaption>Energia por spin $e$</figcaption></figure>
+      <figure><canvas id="pm" width="300" height="200"></canvas><figcaption>$\langle|m|\rangle$ e a solução exata (linha)</figcaption></figure>
+      <figure><canvas id="pc" width="300" height="200"></canvas><figcaption>Calor específico $c$</figcaption></figure>
+      <figure><canvas id="px" width="300" height="200"></canvas><figcaption>Susceptibilidade $\chi$</figcaption></figure>
+    </div>
+
+    <section class="prose">
+      <h2>Por que isso funciona</h2>
+      <p>Queremos amostrar da distribuição de Boltzmann $\pi(\sigma) = e^{-E(\sigma)/T} / Z$. Metropolis propõe virar um spin e aceita com probabilidade $\min(1, e^{-\Delta E/T})$. Isso garante o <b>balanço detalhado</b>:</p>
+      <p>$$\pi(\sigma)\,P(\sigma \to \sigma') = \pi(\sigma')\,P(\sigma' \to \sigma),$$</p>
+      <p>porque a razão das aceitações é exatamente $e^{-(E' - E)/T} = \pi(\sigma')/\pi(\sigma)$, e o $Z$ se cancela. Uma cadeia irredutível e aperiódica com balanço detalhado tem $\pi$ como <b>distribuição estacionária</b>: depois de "esquecer" o estado inicial (a <b>termalização</b>), as configurações visitadas são amostras de $\pi$, e médias ao longo do tempo estimam valores esperados (é a Lei dos Grandes Números para cadeias de Markov).</p>
+      <h2>Das flutuações às grandezas físicas</h2>
+      <p>Com $N = L^2$ spins, as respostas do sistema saem da <b>variância</b> das medidas:</p>
+      <p>$$c = \frac{\langle E^2\rangle - \langle E\rangle^2}{N\,T^2} \qquad \chi = \frac{\langle M^2\rangle - \langle |M|\rangle^2}{N\,T}$$</p>
+      <p>Abaixo de $T_c$ o sistema é <b>ferromagnético</b> (os spins se alinham, $|m| \to 1$ e $e \to -2$); acima, <b>paramagnético</b> ($m \to 0$, $e$ sobe em direção a 0). Em $T_c$ as flutuações divergem no limite $L \to \infty$, e $c$ e $\chi$ têm picos que ficam mais altos e mais estreitos quando $L$ cresce. Onsager resolveu o modelo em 1944: $T_c = 2/\ln(1+\sqrt{2})$.</p>
+      <div class="callout tip"><p><b>Do projeto para a página.</b> O <a href="https://github.com/davifmn/computacao-UFMG-resumo/tree/main/periodo-03/probabilidade/projetos/modelo-de-ising">notebook original</a> implementa o mesmo Metropolis em Python. Duas correções estão incorporadas aqui: as fórmulas de $c$ e $\chi$ (o notebook dividia $\langle E^2\rangle$ e $\langle E\rangle$ por $N$ separadamente, o que mistura escalas) e a leitura da energia, que <b>cresce</b> com a temperatura.</p></div>
+      <div class="callout warn"><p><b>Armadilhas.</b> (1) Começar a medir antes de termalizar enviesa as médias. (2) Amostras consecutivas são correlacionadas, e perto de $T_c$ a correlação dura muito (o <i>critical slowing down</i>): o erro real é maior que $\sigma/\sqrt{n}$. (3) Abaixo de $T_c$, $M$ pode trocar de sinal numa rede pequena, por isso se mede $\langle |M| \rangle$.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, randInt, pick } from '../../../engine/page.js';
+    import { rng } from '../../../engine/random.js';
+    import { CODE, TC, criarRede, varredura, energia, magnetizacao, medir, mExata, passosMetropolis } from './ising.js';
+
+    // ---------- 1. Player: tentativas individuais ----------
+    const L1 = 8, C = 46, OX = 40, OY = 40, W = 900, H = 460;
+    const corSpin = v => (v > 0 ? COLORS.blue : COLORS.orange);
+    const player = new StepPlayer($('#player'), {
+      code: CODE, lang: 'python', width: W, height: H, codeTitle: 'ising.ipynb',
+      render(p, s) {
+        const [ai, aj] = p.alvo ?? [-1, -1];
+        const viz = p.viz ? [[(ai + 1) % L1, aj], [ai, (aj + 1) % L1], [(ai - 1 + L1) % L1, aj], [ai, (aj - 1 + L1) % L1]] : [];
+        for (let i = 0; i < L1; i++) for (let j = 0; j < L1; j++) {
+          const alvo = i === ai && j === aj, ehViz = viz.some(([a, b]) => a === i && b === j);
+          s.rect(`c${i}-${j}`, { x: OX + j * C, y: OY + i * C, w: C - 4, h: C - 4, rx: 6, fill: corSpin(p.rede[i * L1 + j]),
+            stroke: alvo ? (p.aceito === true ? COLORS.green : p.aceito === false ? COLORS.red : COLORS.text) : ehViz ? COLORS.text : 'transparent', sw: alvo ? 4 : 2, opacity: alvo || ehViz || ai < 0 ? 1 : 0.55 });
+          s.text(`t${i}-${j}`, p.rede[i * L1 + j] > 0 ? '+' : '−', { x: OX + j * C + (C - 4) / 2, y: OY + i * C + (C - 4) / 2 + 7, size: 20, weight: 700, fill: COLORS.bg });
+        }
+        const X0 = OX + L1 * C + 40;
+        s.text('eL', 'Energia', { x: X0, y: 70, anchor: 'start', fill: COLORS.muted, size: 14 });
+        s.text('eV', p.E, { x: X0, y: 104, anchor: 'start', size: 30, mono: true, weight: 700 });
+        s.text('mL', 'Magnetização', { x: X0 + 150, y: 70, anchor: 'start', fill: COLORS.muted, size: 14 });
+        s.text('mV', p.M, { x: X0 + 150, y: 104, anchor: 'start', size: 30, mono: true, weight: 700 });
+        // barra de aceitação: [0, 1], com p = e^{-ΔE/T} e o sorteio u
+        const v = p.vars ?? {};
+        if (v['e^(-dE/T)'] != null) {
+          const BW = 260, by = 200, pr = +v['e^(-dE/T)'], u = +v.u;
+          s.rect('bar', { x: X0, y: by, w: BW, h: 26, rx: 4, fill: COLORS.surface3, stroke: COLORS.border });
+          s.rect('barp', { x: X0, y: by, w: Math.max(2, BW * pr), h: 26, rx: 4, fill: 'rgba(131,193,103,.45)', stroke: COLORS.green });
+          s.line('baru', X0 + BW * u, by - 10, X0 + BW * u, by + 36, { stroke: p.aceito ? COLORS.green : COLORS.red, sw: 3, layer: 'fx' });
+          s.text('barl', `aceita se u < ${pr.toFixed(3)}`, { x: X0, y: by - 18, anchor: 'start', size: 14, fill: COLORS.muted });
+          s.text('baru-t', `u = ${u.toFixed(3)}`, { x: X0 + BW * u, y: by + 56, size: 13, mono: true, fill: p.aceito ? COLORS.green : COLORS.red });
+        } else {
+          s.text('barl', v.dE != null ? `ΔE = ${v.dE}` : '', { x: X0, y: 182, anchor: 'start', size: 22, mono: true, weight: 700, fill: v.dE > 0 ? COLORS.orange : COLORS.green });
+        }
+        s.text('regra', 'ΔE ≤ 0 → aceita sempre;  ΔE > 0 → aceita com prob. e^(−ΔE/T)', { x: X0, y: 330, anchor: 'start', size: 13, fill: COLORS.muted });
+        s.text('tab', `T = ${$('#t1').value}:  e^(−4/T) = ${Math.exp(-4 / $('#t1').value).toFixed(3)}   e^(−8/T) = ${Math.exp(-8 / $('#t1').value).toFixed(3)}`, { x: X0, y: 356, anchor: 'start', size: 13, mono: true, fill: COLORS.muted });
+      },
+    });
+    let seed1 = 7;
+    function carrega() { $('#t1-o').value = (+$('#t1').value).toFixed(1); player.load(passosMetropolis(L1, +$('#t1').value, 30, rng(seed1))); }
+    $('#t1').addEventListener('input', carrega);
+    $('#nova').addEventListener('click', () => { seed1++; carrega(); });
+    carrega();
+
+    // ---------- 2. Laboratório ao vivo ----------
+    const L2 = 128, r2 = rng(42);
+    let s2 = criarRede(L2, r2), rodando = true, aceitas = 0;
+    const cv = $('#rede'), cx = cv.getContext('2d'), img = cx.createImageData(L2, L2);
+    const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+    const [UP, DN] = [hex(COLORS.blue), hex(COLORS.orange)];
+    const histM = [], histE = [];
+    function desenhaRede() {
+      for (let k = 0; k < s2.length; k++) { const c = s2[k] > 0 ? UP : DN; img.data.set([c[0], c[1], c[2], 255], k * 4); }
+      cx.putImageData(img, 0, 0);
+    }
+    function desenhaHist() {
+      const hc = $('#hist'), g = hc.getContext('2d'), w = hc.width, h = hc.height;
+      g.clearRect(0, 0, w, h);
+      g.strokeStyle = COLORS.border; g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+      const linha = (arr, cor, f) => { g.strokeStyle = cor; g.lineWidth = 2; g.beginPath(); arr.forEach((v, k) => { const x = (k / 299) * w, y = f(v); k ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); };
+      linha(histM, COLORS.blue, v => h - 6 - v * (h - 12));          // |m| ∈ [0, 1]
+      linha(histE, COLORS.orange, v => h - 6 - ((v + 2) / 2) * (h - 12)); // e ∈ [−2, 0]: −2 embaixo, 0 em cima
+    }
+    function tick() {
+      if (rodando) {
+        const T = +$('#t2').value;
+        aceitas = 0;
+        for (let k = 0; k < +$('#vel').value; k++) aceitas += varredura(s2, L2, T, r2);
+        const N = L2 * L2, m = Math.abs(magnetizacao(s2)) / N, e = energia(s2, L2) / N;
+        histM.push(m); histE.push(e);
+        if (histM.length > 300) { histM.shift(); histE.shift(); }
+        desenhaRede(); desenhaHist();
+        $('#info').innerHTML = `<div>T = <b>${T.toFixed(2)}</b> (T/Tc = <b>${(T / TC).toFixed(2)}</b>)</div><div>|m| = <b>${m.toFixed(3)}</b> &nbsp; exato (L→∞): <b>${mExata(T).toFixed(3)}</b></div><div>e = <b>${e.toFixed(3)}</b> por spin</div><div>viradas aceitas: <b>${(100 * aceitas / (N * +$('#vel').value)).toFixed(1)}%</b></div>`;
+      }
+      requestAnimationFrame(tick);
+    }
+    const syncOut = () => { $('#t2-o').value = (+$('#t2').value).toFixed(2); $('#vel-o').value = $('#vel').value; };
+    $('#t2').addEventListener('input', syncOut); $('#vel').addEventListener('input', syncOut); syncOut();
+    $('#play').addEventListener('click', () => { rodando = !rodando; $('#play').textContent = rodando ? '⏸ Pausar' : '▶ Continuar'; });
+    $('#tc').addEventListener('click', () => { $('#t2').value = TC.toFixed(2); syncOut(); });
+    $('#rand').addEventListener('click', () => { s2 = criarRede(L2, r2); desenhaRede(); });
+    $('#up').addEventListener('click', () => { s2 = criarRede(L2, r2, 'cima'); desenhaRede(); });
+    desenhaRede();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(tick);
+    else { rodando = false; $('#play').textContent = '▶ Continuar'; requestAnimationFrame(tick); }
+
+    // ---------- 3. Curvas ----------
+    function plota(id, pts, { yMin, yMax, exata, cor }) {
+      const c = $(id), g = c.getContext('2d'), w = c.width, h = c.height, m = 28;
+      const X = T => m + ((T - 0.5) / 4) * (w - m - 8), Y = v => h - m - ((v - yMin) / (yMax - yMin)) * (h - m - 8);
+      g.clearRect(0, 0, w, h);
+      g.strokeStyle = COLORS.border; g.lineWidth = 1; g.strokeRect(m, 8, w - m - 8, h - m - 8);
+      g.fillStyle = COLORS.muted; g.font = '11px system-ui';
+      for (const T of [1, 2, 3, 4]) g.fillText(T, X(T) - 3, h - m + 14);
+      g.fillText(yMax.toFixed(yMax < 2 ? 1 : 0), 2, 16); g.fillText(yMin.toFixed(1), 2, h - m);
+      g.setLineDash([4, 4]); g.strokeStyle = COLORS.yellow; g.beginPath(); g.moveTo(X(TC), 8); g.lineTo(X(TC), h - m); g.stroke(); g.setLineDash([]);
+      g.fillStyle = COLORS.yellow; g.fillText('Tc', X(TC) + 3, 20);
+      if (exata) { g.strokeStyle = COLORS.text; g.lineWidth = 1.5; g.beginPath(); for (let T = 0.5; T <= 4.5; T += 0.01) { const y = Y(exata(T)); T === 0.5 ? g.moveTo(X(T), y) : g.lineTo(X(T), y); } g.stroke(); }
+      g.fillStyle = cor;
+      for (const [T, v] of pts) { g.beginPath(); g.arc(X(T), Y(Math.min(Math.max(v, yMin), yMax)), 3.5, 0, 2 * Math.PI); g.fill(); }
+    }
+    let gerando = false;
+    async function curvas() {
+      if (gerando) return;
+      gerando = true;
+      const L = +$('#L').value, r = rng(L * 31), res = [];
+      const Ts = Array.from({ length: 24 }, (_, k) => 4.5 - (4 * k) / 23); // do quente para o frio, reaproveitando a rede
+      let s = null;
+      for (const T of Ts) {
+        const out = medir(L, T, { termalizacao: 300, medidas: 1200, r, s });
+        s = out.s; res.push(out);
+        $('#prog').textContent = `T = ${T.toFixed(2)} (${res.length}/24)`;
+        const cMax = Math.max(1.5, ...res.map(o => o.c)), xMax = Math.max(1, ...res.map(o => o.chi));
+        plota('#pe', res.map(o => [o.T, o.e]), { yMin: -2, yMax: 0, cor: COLORS.orange });
+        plota('#pm', res.map(o => [o.T, o.m]), { yMin: 0, yMax: 1, exata: mExata, cor: COLORS.blue });
+        plota('#pc', res.map(o => [o.T, o.c]), { yMin: 0, yMax: cMax * 1.1, cor: COLORS.pink });
+        plota('#px', res.map(o => [o.T, o.chi]), { yMin: 0, yMax: xMax * 1.1, cor: COLORS.purple });
+        await new Promise(ok => setTimeout(ok, 0));
+      }
+      const pico = res.reduce((a, b) => (b.c > a.c ? b : a));
+      $('#prog').textContent = `pronto: pico do calor específico em T ≈ ${pico.T.toFixed(2)} (Tc exato = ${TC.toFixed(3)}; redes finitas deslocam o pico)`;
+      gerando = false;
+    }
+    $('#curvas').addEventListener('click', curvas);
+    for (const id of ['#pe', '#pm', '#pc', '#px']) plota(id, [], { yMin: 0, yMax: 1, cor: COLORS.blue });
+
+    // ---------- Exercícios ----------
+    mountQuiz($('#quiz'), [
+      { q: 'Por que Metropolis não precisa da constante $Z = \\sum_\\sigma e^{-E(\\sigma)/T}$?', options: ['Porque só usa razões $\\pi(\\sigma\')/\\pi(\\sigma)$, e o $Z$ se cancela', 'Porque $Z = 1$', 'Porque calcula $Z$ por amostragem antes', 'Porque a rede é pequena'], answer: 0, explain: 'A aceitação depende de $e^{-\\Delta E/T}$, que é a razão entre as probabilidades das duas configurações.' },
+      { q: 'Um spin com os 4 vizinhos iguais a ele é sorteado. O que acontece em T = 1?', options: ['$\\Delta E = 8$: vira com probabilidade $e^{-8} \\approx 0{,}0003$', 'Vira sempre', 'Nunca vira', '$\\Delta E = -8$: vira sempre'], answer: 0, explain: 'Virar quebra 4 ligações satisfeitas: $\\Delta E = 2 \\cdot 1 \\cdot 4 = 8$.' },
+      { q: 'Por que medir $\\langle |M| \\rangle$ em vez de $\\langle M \\rangle$ abaixo de $T_c$?', options: ['Numa rede finita o sistema troca entre "todos +" e "todos −", e $\\langle M\\rangle \\to 0$ mesmo ordenado', 'Porque $M$ é sempre positivo', 'Para economizar memória', 'Porque $|M|$ tem menos variância por definição'], answer: 0, explain: 'A simetria $\\sigma \\to -\\sigma$ faz as duas fases ordenadas igualmente prováveis; o módulo mede o quanto está ordenado.' },
+      { q: 'O que acontece com o pico do calor específico quando $L$ aumenta?', options: ['Fica mais alto e mais estreito, aproximando-se de $T_c$', 'Some', 'Vai para $T = 0$', 'Não muda'], answer: 0, explain: 'No limite termodinâmico o calor específico do Ising 2D diverge logaritmicamente em $T_c$.' },
+    ]);
+    mountGenerator($('#gen'), {
+      label: 'Nova tentativa',
+      generate() {
+        const S = pick([1, -1]), viz = Array.from({ length: 4 }, () => pick([1, -1])), soma = viz.reduce((a, b) => a + b, 0);
+        const T = pick([1, 1.5, 2, 2.5, 3, 4]), dE = 2 * S * soma;
+        const p = dE <= 0 ? 1 : Math.exp(-dE / T);
+        return { q: `Spin $s = ${S > 0 ? '+1' : '-1'}$ com vizinhos $${viz.map(v => (v > 0 ? '+1' : '-1')).join(', ')}$ e $T = ${T}$. Qual a probabilidade de aceitar a virada? (3 casas)`, input: true, answer: p.toFixed(3), check: v => Math.abs(parseFloat(String(v).replace(',', '.')) - p) < 0.0015,
+          explain: `$\\Delta E = 2 \\cdot (${S}) \\cdot (${soma}) = ${dE}$. ${dE <= 0 ? 'Como $\\Delta E \\le 0$, aceita sempre: 1.' : `$e^{-${dE}/${T}} = ${p.toFixed(3)}$.`}` };
+      },
+    });
+  </script>
+</body>
+</html>

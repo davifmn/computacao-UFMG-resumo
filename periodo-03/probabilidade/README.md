@@ -13,6 +13,7 @@ simulações de Monte Carlo.
 | 📈 | [Distribuições](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/distribuicoes.html) | Binomial, geométrica, Poisson, uniforme, exponencial e normal: parâmetros, área de P(a ≤ X ≤ b), média, variância e amostragem sobre a curva teórica |
 | 🎯 | [Teorema Central do Limite](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/limite-central.html) | Tábua de Galton animada, médias de amostras de distribuições bem diferentes da normal virando um sino, e a Lei dos Grandes Números |
 | 🩺 | [Bayes e Monty Hall](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/bayes.html) | Teste diagnóstico com 1000 pessoas (falácia da taxa-base) e o problema de Monty Hall jogável e simulado |
+| 🧲 | [Modelo de Ising e Metropolis](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/ising.html) | Cadeia de Markov Monte Carlo: cada tentativa de virar um spin com ΔE e o sorteio de aceitação, uma rede de 16 384 spins ao vivo com controle de temperatura e as curvas de energia, magnetização, calor específico e susceptibilidade com o pico em Tc |
 
 ## 📚 Resumo teórico
 
@@ -51,10 +52,22 @@ Padronização: $Z = (X - \mu)/\sigma \sim N(0, 1)$.
 - **Lei dos Grandes Números:** $\bar X_n \to \mu$.
 - **Teorema Central do Limite:** $\bar X_n \approx N(\mu, \sigma^2/n)$ para $n$ grande, qualquer que seja a distribuição original (com variância finita).
 
+### 5. Simulação: Monte Carlo e cadeias de Markov
+
+- **Monte Carlo:** estimar $E[g(X)]$ pela média de $g$ em amostras; pela LGN converge, e pelo TCL o erro cai como $\sigma/\sqrt{n}$.
+- **Cadeia de Markov:** o próximo estado só depende do atual, $P(X_{t+1} = j \mid X_t = i) = P_{ij}$. Uma distribuição $\pi$ é **estacionária** se $\pi P = \pi$; cadeias irredutíveis e aperiódicas convergem para ela.
+- **Metropolis (MCMC):** para amostrar de $\pi(x) \propto f(x)$ sem conhecer a constante, propõe-se um vizinho $x'$ e aceita-se com probabilidade $\min(1, f(x')/f(x))$. Isso garante o **balanço detalhado** $\pi(x)P(x \to x') = \pi(x')P(x' \to x)$, logo $\pi$ é estacionária. Veja a visualização do modelo de Ising.
+
 ## 💻 Código
 
 [`codigo/probabilidade.py`](codigo/probabilidade.py): fmp e fda em Python puro, Bayes,
 simulação de Monty Hall e verificação do TCL. Execute com `python3 codigo/probabilidade.py`.
+
+## 🧪 Projeto extra
+
+| Projeto | Tema | Tecnologias |
+|---|---|---|
+| [Modelo de Ising com Metropolis](projetos/modelo-de-ising/) | Simulação Monte Carlo do ferromagneto 2D: termalização, energia, magnetização, calor específico, susceptibilidade e a transição de fase. O README traz notas de revisão sobre as fórmulas de flutuação | Python, numpy, Jupyter |
 
 ## ✍️ Exercícios
 

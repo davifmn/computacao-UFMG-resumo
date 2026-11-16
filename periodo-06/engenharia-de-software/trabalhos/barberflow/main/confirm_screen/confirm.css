@@ -1,0 +1,182 @@
+@import "../app_view.css";
+
+
+body {
+    background: url('../../assets/bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
+
+
+.confirm-card {
+    width: 450px;
+    max-width: 90%;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    padding: 35px;
+    backdrop-filter: blur(2px);
+    transition: transform 0.2s ease;
+}
+
+.confirm-card:hover {
+    transform: translateY(-3px);
+}
+
+.confirm-card h2 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: #5a5a7a;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+/* Блок с резюме */
+.summary-box {
+    background-color: #f9f7ff;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #e8e4f5;
+}
+
+.summary-box p {
+    margin: 10px 0;
+    color: #4a4a6a;
+    font-size: 15px;
+}
+
+.summary-box strong {
+    color: #5a5a7a;
+}
+
+.summary-box ul {
+    margin: 8px 0 0 20px;
+    padding: 0;
+    color: #6a6a8a;
+}
+
+.summary-box li {
+    margin: 5px 0;
+}
+
+/* Блок с Pix */
+.pix-area {
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed #b5a8e5;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    background-color: #f9f7ff;
+}
+
+.pix-area p {
+    margin: 0 0 10px 0;
+    color: #5a5a7a;
+    font-weight: 500;
+}
+
+.pix-area code {
+    display: inline-block;
+    background: #e8e4f5;
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #5a5a7a;
+    word-break: break-all;
+}
+
+/* Кнопка копирования Pix */
+.btn-copy {
+    background: linear-gradient(135deg, #b5a8e5, #9b8ad0);
+    border: none;
+    border-radius: 40px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(155, 138, 208, 0.3);
+}
+
+.btn-copy:hover {
+    background: linear-gradient(135deg, #a595d8, #8a78c0);
+    transform: scale(1.02);
+    box-shadow: 0 4px 10px rgba(155, 138, 208, 0.4);
+}
+
+/* Кнопка подтверждения */
+.btn-confirm-final {
+    width: 100%;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #7ec8a0, #5aaf7a);
+    border: none;
+    border-radius: 40px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(90, 175, 122, 0.3);
+}
+
+.btn-confirm-final:hover {
+    background: linear-gradient(135deg, #6ab88a, #4a9a6a);
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(90, 175, 122, 0.4);
+}
+
+/* Кнопка отмены */
+.btn-cancel {
+    width: 100%;
+    background: none;
+    background-color: transparent;
+    border: 1px solid #ddd8f0;
+    border-radius: 40px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: normal;
+    color: #8a8aaa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: none;
+}
+
+.btn-cancel:hover {
+    background-color: rgba(138, 138, 170, 0.1);
+    color: #5a5a7a;
+    border-color: #b5a8e5;
+    transform: scale(1.01);
+}
+
+/* Адаптация для маленьких экранов */
+@media (max-width: 500px) {
+    .confirm-card {
+        padding: 25px;
+        width: 85%;
+    }
+    
+    .confirm-card h2 {
+        font-size: 24px;
+    }
+    
+    .summary-box {
+        padding: 15px;
+    }
+    
+    .pix-area code {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+    
+    .btn-confirm-final,
+    .btn-cancel {
+        padding: 12px;
+        font-size: 14px;
+    }
+}

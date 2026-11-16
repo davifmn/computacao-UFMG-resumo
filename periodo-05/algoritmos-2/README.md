@@ -63,6 +63,13 @@ cd codigo && make test
 | [`cadeias.cpp`](codigo/cadeias.cpp) | Força bruta, KMP e Horspool conferidos entre si em 20 mil textos aleatórios; Huffman com decodificação; LZW com o decodificador (incluindo o caso cScSc) |
 | [`geometria.cpp`](codigo/geometria.cpp) | Andrew e Jarvis comparados com uma envoltória por força bruta em 3000 nuvens de pontos, interseção de segmentos, 2-aproximações de cobertura por vértices e caixeiro métrico contra o ótimo |
 
+## 🧪 Trabalhos práticos
+
+| Trabalho | Tema | Tecnologias |
+|---|---|---|
+| [TP2 · Caixeiro viajante](trabalhos/tp2-caixeiro-viajante/) | Branch and bound exato contra twice-around-the-tree (2) e Christofides (1,5), com testes que conferem as garantias | Python, networkx |
+| [Envoltória convexa](trabalhos/envoltoria-convexa/) | Graham e Jarvis animados em matplotlib e conferidos contra força bruta | Python, matplotlib |
+
 ## ✍️ Exercícios
 
 1. Calcule a função de falha de `ABACABAB`.

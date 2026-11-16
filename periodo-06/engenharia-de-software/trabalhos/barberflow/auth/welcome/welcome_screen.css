@@ -1,0 +1,117 @@
+@import "../../main/app_view.css";
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url('../../assets/bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 50px 40px;
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 400px;
+    max-width: 90%;
+    backdrop-filter: blur(2px);
+    transition: transform 0.2s ease;
+}
+
+.container:hover {
+    transform: translateY(-4px);
+}
+
+.logo-icon {
+    font-size: 56px;
+    margin-bottom: 10px;
+}
+
+.container h1 {
+    color: #5a5a7a;
+    font-size: 32px;
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.divider {
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg, #b5a8e5, #7ec8a0);
+    border-radius: 3px;
+    margin: 15px auto 20px auto;
+}
+
+.container p {
+    color: #8a8aaa;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.actions button {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#btnSignIn {
+    background: linear-gradient(135deg, #b5a8e5, #9b8ad0);
+    color: white;
+    box-shadow: 0 2px 8px rgba(155, 138, 208, 0.3);
+}
+
+#btnSignIn:hover {
+    background: linear-gradient(135deg, #a595d8, #8a78c0);
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(155, 138, 208, 0.4);
+}
+
+#btnSignUp {
+    background: linear-gradient(135deg, #7ec8a0, #5aaf7a);
+    color: white;
+    box-shadow: 0 2px 8px rgba(90, 175, 122, 0.3);
+}
+
+#btnSignUp:hover {
+    background: linear-gradient(135deg, #6ab88a, #4a9a6a);
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(90, 175, 122, 0.4);
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 35px 25px;
+    }
+    
+    .logo-icon {
+        font-size: 44px;
+    }
+    
+    .container h1 {
+        font-size: 26px;
+    }
+    
+    .container p {
+        font-size: 14px;
+    }
+    
+    .actions button {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+}

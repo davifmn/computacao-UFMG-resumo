@@ -1,0 +1,5 @@
+let x <- 4 in
+  let y <- x * x in
+    y - x / 2
+  end
+end

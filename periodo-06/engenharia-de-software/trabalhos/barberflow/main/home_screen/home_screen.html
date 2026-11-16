@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Choose Service</title>
+    <link rel="stylesheet" href="home_screen.css">
+</head>
+<body>
+    <header class="header">
+        <h2 id="greeting">Hello, User</h2>
+        <div class="user-icon">👤</div>
+    </header>
+
+    <main class="main-container">
+        <div class="cards-wrapper">
+            <!-- Card 1: Serviçõs -->
+            <div class="service-box">
+                <h3>Choose Service</h3>
+                <div class="services">
+                    <label class="service-option">
+                        <input type="checkbox" name="service" value="Corte de Cabelo">
+                        <span>Corte de Cabelo</span>
+                    </label>
+                    <label class="service-option">
+                        <input type="checkbox" name="service" value="Barba">
+                        <span>Barba</span>
+                    </label>
+                    <label class="service-option">
+                        <input type="checkbox" name="service" value="Cabelo e Barba">
+                        <span>Cabelo e Barba</span>
+                    </label>
+                    <label class="service-option">
+                        <input type="checkbox" name="service" value="Sobrancelha">
+                        <span>Sobrancelha</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Card 2: Profissionais -->
+            <div class="service-box">
+                <h3>Choose Worker</h3>
+                <div class="services" id="workerList">
+                    <p>Carregando especialistas...</p>
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </div>
+        
+        <button id="btnNext" class="btn-next-large">Next</button>
+    </main>
+
+    <script src="home.js"></script>
+</body>
+</html>

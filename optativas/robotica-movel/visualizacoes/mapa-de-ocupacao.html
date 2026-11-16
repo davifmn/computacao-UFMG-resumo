@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa de ocupação · Robótica Móvel</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 520px; font-size: 12px; } .scene .sn { transition-duration: 220ms; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#optativas">Optativas</a>
+      <span class="sep">/</span><a href="../../../index.html#robotica">Robótica Móvel</a>
+      <span class="sep">/</span><span>Mapa de ocupação</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Robótica Móvel</div>
+    <h1>Mapa de ocupação: o robô desenhando a sala com um laser</h1>
+    <p class="lead">O robô anda pela sala sabendo onde está (a pose vem da odometria ou do simulador) e, a cada passo, dispara um <b>laser</b>. Ele não sabe onde estão as paredes: divide o chão em células e mantém, para cada uma, a probabilidade de estar <b>ocupada</b>. Cada feixe é uma evidência: as células que ele atravessa provavelmente estão livres; a célula onde ele bate provavelmente tem um obstáculo.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Modelo do sensor">
+        <button class="btn" data-m="1">Modelo corrigido</button>
+        <button class="btn" data-m="0">Versão original do TP (com o bug)</button>
+      </div>
+      <label><input type="checkbox" id="ruido"> ruído no laser (σ = 5 cm)</label>
+      <label><input type="checkbox" id="real" checked> mostrar paredes reais</label>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#f4d35e"></i>ocupada (p → 1)</span><span><i style="background:#3a414d"></i>desconhecida (p = 0,5)</span><span><i style="background:#0e1116;border:1px solid #5d6673"></i>livre (p → 0)</span><span><i style="background:#fc6255"></i>feixe que bateu</span><span><i style="background:#58c4dd"></i>feixe sem retorno (alcance máximo)</span></div>
+
+    <section class="prose">
+      <h2>Bayes em cada célula, com uma soma</h2>
+      <p>Para uma célula $m$, depois das leituras $z_{1:t}$, a regra de Bayes (supondo células independentes e o mundo estático) vira uma atualização recursiva. Em vez de probabilidades, guarda-se o <b>log-odds</b> $l = \ln \frac{p}{1-p}$, e aí cada leitura só <b>soma</b> um termo:</p>
+      <p>$$l_t(m) = l_{t-1}(m) + \underbrace{\ln \frac{p(m \mid z_t)}{1 - p(m \mid z_t)}}_{\text{modelo inverso do sensor}} - l_0$$</p>
+      <p>O <b>modelo inverso do sensor</b> do TP é simples: $p(m \mid z) = 0{,}85$ para a célula atingida ($l_{occ} = +1{,}73$) e $0{,}15$ para as atravessadas ($l_{free} = -1{,}73$). Com $l_0 = 0$ (célula desconhecida, $p = 0{,}5$), a probabilidade volta por $p = 1 - 1/(1 + e^{l})$. O log-odds é limitado a $[-5, 5]$ para o mapa conseguir mudar de ideia se algo se mover.</p>
+      <h2>O bug que apagava as paredes</h2>
+      <p>No código original, <code>update</code> somava $l_{occ}$ na célula atingida e depois chamava <code>bresenham_line</code>, que marcava como livre <b>todas</b> as células do segmento, inclusive a última. Como $l_{occ} + l_{free} = 0$ exatamente, as paredes ficavam em $p = 0{,}5$ para sempre, e só as células livres apareciam. Aperte "versão original" e compare o mapa final: o contorno da sala some. A correção é uma linha: o laço de Bresenham para <b>antes</b> de marcar a célula final.</p>
+      <div class="callout tip"><p><b>Do TP para a página.</b> O <a href="https://github.com/davifmn/computacao-UFMG-resumo/tree/main/optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao">TP3</a> faz isso no CoppeliaSim com um Kobuki e um laser Hokuyo, coletando as leituras durante 2 minutos e montando o mapa depois. Aqui a sala é simulada com <i>ray casting</i> contra os segmentos das paredes, mas a atualização é a mesma, linha por linha.</p></div>
+      <div class="callout warn"><p><b>Limites do método.</b> A grade supõe a pose conhecida. Com odometria real, o erro acumula e as paredes "dobram": resolver pose e mapa ao mesmo tempo é o problema de <b>SLAM</b>. A resolução também importa: células grandes borram detalhes; pequenas demais precisam de muito mais leituras para sair de 0,5.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, pick } from '../../../engine/page.js';
+    import { rng } from '../../../engine/random.js';
+    import { CODE, MUNDO, passosMapeamento, prob, L_OCC, L_FREE } from './robotica.js';
+
+    const W = 900, H = 600, S = 72, OX = 18, OY = 12;
+    const X = x => OX + x * S, Y = y => OY + (MUNDO.H - y) * S;
+    const mix = (a, b, t) => '#' + [1, 3, 5].map(k => Math.round(parseInt(a.slice(k, k + 2), 16) * (1 - t) + parseInt(b.slice(k, k + 2), 16) * t).toString(16).padStart(2, '0')).join('');
+    const DESC = '#3a414d', LIVRE = '#0e1116', OCUP = COLORS.yellow;
+    const cor = p => (p < 0.5 ? mix(DESC, LIVRE, (0.5 - p) * 2) : mix(DESC, OCUP, (p - 0.5) * 2));
+    let corrigido = true;
+
+    const player = new StepPlayer($('#player'), {
+      code: CODE, lang: 'python', width: W, height: H, codeTitle: 'occupancy_grid.py',
+      render(p, s) {
+        const cs = p.res * S;
+        for (let j = 0; j < p.ny; j++) for (let i = 0; i < p.nx; i++) {
+          s.rect(`g${i}-${j}`, { x: X(i * p.res), y: Y((j + 1) * p.res), w: cs + 0.5, h: cs + 0.5, rx: 0, sw: 0, stroke: 'none', fill: cor(prob(p.l[j * p.nx + i])), layer: 'bg' });
+        }
+        if ($('#real').checked) MUNDO.segs.forEach(([x1, y1, x2, y2], k) => s.line(`w${k}`, X(x1), Y(y1), X(x2), Y(y2), { stroke: COLORS.text, sw: 1.5, opacity: 0.35 }));
+        if (p.pose) {
+          const { x, y, th } = p.pose;
+          (p.leituras ?? []).forEach((b, k) => {
+            const d = b.d ?? 5, a = th + b.ang;
+            s.line(`b${k}`, X(x), Y(y), X(x + d * Math.cos(a)), Y(y + d * Math.sin(a)), { stroke: b.d != null ? COLORS.red : COLORS.blue, sw: 1.2, opacity: 0.7, layer: 'fx' });
+          });
+          s.circle('robo', { x: X(x), y: Y(y), r: 13, fill: COLORS.green, stroke: COLORS.bg, sw: 2, layer: 'fx' });
+          s.line('rumo', X(x), Y(y), X(x + 0.32 * Math.cos(th)), Y(y + 0.32 * Math.sin(th)), { stroke: COLORS.bg, sw: 3, layer: 'fx' });
+        }
+      },
+    });
+
+    function run() {
+      $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.m === +corrigido)));
+      const i = player.index;
+      player.load(passosMapeamento({ r: rng(3), ruido: $('#ruido').checked ? 0.05 : 0, corrigido }));
+      if (i) player.go(Math.min(i, player.steps.length - 1));
+    }
+    $$('[data-m]').forEach(b => b.addEventListener('click', () => { corrigido = b.dataset.m === '1'; run(); }));
+    $('#ruido').addEventListener('change', run);
+    $('#real').addEventListener('change', () => player.go(player.index));
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Por que guardar log-odds em vez da probabilidade?', options: ['Porque a atualização de Bayes vira uma soma e não há problema numérico perto de 0 ou 1', 'Porque ocupa menos memória', 'Porque o laser mede log-odds', 'Por nenhuma razão, é só convenção'], answer: 0, explain: 'Multiplicar razões de chance vira somar logaritmos; e $l$ pode ir de $-\\infty$ a $+\\infty$ sem perder precisão perto dos extremos.' },
+      { q: 'Uma célula foi atravessada 3 vezes e atingida 1 vez. Qual o log-odds?', options: ['$3 \\cdot (-1{,}73) + 1{,}73 = -3{,}47$: provavelmente livre', '$+1{,}73$', '0', '$-5$'], answer: 0, explain: 'Cada evidência soma o seu termo: $-5{,}20 + 1{,}73 = -3{,}47$, $p \\approx 0{,}03$.' },
+      { q: 'O que as células cinzas no fim do percurso significam?', options: ['Nunca foram observadas: ficaram atrás de obstáculos ou fora do alcance', 'Estão livres', 'São paredes', 'São erros do laser'], answer: 0, explain: 'Sem evidência, $l$ continua 0 e $p = 0{,}5$. Um robô explorador escolheria ir para perto delas (exploração por fronteiras).' },
+      { q: 'Na versão original, por que as paredes nunca escurecem?', options: ['A célula atingida recebe $l_{occ}$ e depois $l_{free} = -l_{occ}$: saldo zero', 'Porque o laser não alcança as paredes', 'Porque a resolução é baixa', 'Porque falta normalizar'], answer: 0, explain: 'O Bresenham incluía o ponto final. Com probabilidades 0,85 e 0,15, os dois termos se cancelam exatamente.' },
+    ]);
+    mountGenerator($('#gen'), {
+      label: 'Nova célula',
+      generate() {
+        const a = pick([0, 1, 2, 3, 4]), b = pick([0, 1, 2, 3]);
+        let l = 0;
+        for (let k = 0; k < a; k++) l = Math.max(-5, l + L_FREE);
+        for (let k = 0; k < b; k++) l = Math.min(5, l + L_OCC);
+        const p = prob(l), satura = a * L_FREE < -5;
+        return { q: `Uma célula começa em $p = 0{,}5$, é atravessada por ${a} feixe(s) e atingida por ${b} (nessa ordem, com saturação em $\\pm 5$). Qual a probabilidade final de estar ocupada? (2 casas)`, input: true, answer: p.toFixed(2), check: v => Math.abs(parseFloat(String(v).replace(',', '.')) - p) < 0.011,
+          explain: (satura ? `Os ${a} feixes levariam $l$ a $${(a * L_FREE).toFixed(2)}$, mas ele satura em $-5$; somando ${b} vez(es) $${L_OCC.toFixed(2)}$ fica $l = ${l.toFixed(2)}$.` : `$l = ${a} \\cdot (${L_FREE.toFixed(2)}) + ${b} \\cdot ${L_OCC.toFixed(2)} = ${l.toFixed(2)}$.`) + ` Então $p = 1 - 1/(1 + e^{${l.toFixed(2)}}) = ${p.toFixed(2)}$.` };
+      },
+    });
+  </script>
+</body>
+</html>

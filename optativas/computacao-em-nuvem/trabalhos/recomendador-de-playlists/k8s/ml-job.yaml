@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: ml-train-job-
+  namespace: davineves
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      containers:
+      - name: ml-generator
+        image: davineves/ml-generator:v2
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /shared
+        - name: dataset-volume
+          mountPath: /app/home/datasets/spotify/2023_spotify_ds1.csv
+          subPath: 2023_spotify_ds2.csv
+      volumes:
+      - name: shared-volume
+        persistentVolumeClaim:
+          claimName: project2-pvc
+      - name: dataset-volume
+        hostPath:
+          path: /home/datasets/spotify
+          type: Directory
+      restartPolicy: Never
+  backoffLimit: 2

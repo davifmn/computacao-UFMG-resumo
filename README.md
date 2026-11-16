@@ -28,6 +28,7 @@ intervalo encolhendo, com a linha do código acendendo e as variáveis `ini`, `f
 | **Tutorial** | Para temas que pedem texto guiado em vez de animação (ex.: montar um projeto C++, teorias da administração), com código real embutido e exercícios. | `periodo-XX/<disciplina>/tutoriais/` |
 | **Resumo teórico** | O essencial da disciplina: definições, fórmulas, intuições e armadilhas. | `periodo-XX/<disciplina>/README.md` |
 | **Código e exercícios** | Implementações em C++/Python que compilam e se testam sozinhas, exercícios com gabarito e geradores de questões. | `codigo/` e o próprio README |
+| **Trabalhos práticos** | Os TPs que entreguei ao longo do curso, revisados, documentados e com testes, ao lado da teoria da disciplina. Projetos pessoais ligados ao tema ficam em `projetos/`. | `trabalhos/` e `projetos/` |
 
 ## Como usar
 
@@ -78,7 +79,7 @@ python3 -m http.server 8000     # ou: npx serve
 | [Introdução a Bancos de Dados](periodo-03/introducao-a-bancos-de-dados/) · DCC222 | **Tutorial:** SQL no navegador · JOINs | Python + SQLite |
 | [Álgebra Linear Computacional](periodo-03/algebra-linear-computacional/) · DCC639 | Mínimos quadrados · PageRank · SVD | Python |
 | [Cálculo Diferencial e Integral II](periodo-03/calculo-diferencial-e-integral-2/) · MAT039 | Taylor · Superfícies 3D · Descida do gradiente | Python |
-| [Probabilidade](periodo-03/probabilidade/) · EST032 | Distribuições · TCL e Galton · Bayes e Monty Hall | Python |
+| [Probabilidade](periodo-03/probabilidade/) · EST032 | Distribuições · TCL e Galton · Bayes e Monty Hall · Ising e Metropolis | Python |
 
 ### 4º período
 
@@ -116,6 +117,33 @@ python3 -m http.server 8000     # ou: npx serve
 | [Fundamentos de Sistemas Paralelos e Distribuídos](periodo-07/fundamentos-de-sistemas-paralelos-e-distribuidos/) · DCC641 | Speedup e DAGs · Relógios lógicos · Eleição de líder · MapReduce | Python (multiprocessing) |
 | [Introdução à Inteligência Artificial](periodo-07/introducao-a-inteligencia-artificial/) · DCC642 | Busca (A*) · Minimax e alfa-beta · Decisões sob incerteza (MDP) · Perceptron e redes neurais | Python |
 
+### Optativas
+
+| Disciplina | Páginas interativas | Código |
+|---|---|---|
+| [Robótica Móvel](optativas/robotica-movel/) | Mapa de ocupação | Python + CoppeliaSim |
+| [Computação Paralela](optativas/computacao-paralela/) | Algoritmo de leilão | C++ (OpenMP, atômicos) |
+| [Computação em Nuvem](optativas/computacao-em-nuvem/) | — | Python, Docker, Kubernetes |
+
+## Trabalhos práticos
+
+Os trabalhos que fiz nas disciplinas moravam em repositórios separados. Agora cada um fica
+dentro da pasta da sua disciplina, com README (problema, solução, como executar, testes) e
+uma seção **"O que mudou na migração"** que registra cada correção feita na revisão.
+
+| Período | Disciplina | Trabalho | Tecnologias |
+|---|---|---|---|
+| 3º | Probabilidade | [Modelo de Ising com Metropolis](periodo-03/probabilidade/projetos/modelo-de-ising/) *(projeto extra)* | Python, Jupyter |
+| 4º | Algoritmos I | [TP3 · Centro de distribuição](periodo-04/algoritmos-1/trabalhos/tp3-centro-de-distribuicao/) | C++ |
+| 5º | Algoritmos II | [TP2 · Caixeiro viajante](periodo-05/algoritmos-2/trabalhos/tp2-caixeiro-viajante/) · [Envoltória convexa](periodo-05/algoritmos-2/trabalhos/envoltoria-convexa/) | Python |
+| 5º | Pesquisa Operacional | [TP1 · Clique máxima](periodo-05/pesquisa-operacional/trabalhos/tp1-clique-maxima/) | Julia, JuMP |
+| 6º | Compiladores I | [Gerador de código e alocação de registradores](periodo-06/compiladores-1/trabalhos/tp-alocacao-de-registradores/) | Python |
+| 6º | Engenharia de Software | [BarberFlow](periodo-06/engenharia-de-software/trabalhos/barberflow/) | Node.js, MongoDB, Jest |
+| 7º | Introdução à IA | [Snake com A\*](periodo-07/introducao-a-inteligencia-artificial/projetos/snake-a-estrela-e-neat/) · [Carro autônomo com NEAT](periodo-07/introducao-a-inteligencia-artificial/projetos/carro-autonomo-neat/) *(projetos extras)* | Python, pygame |
+| Optativa | Robótica Móvel | [TP1 · Transformações](optativas/robotica-movel/trabalhos/tp1-transformacoes-e-cena/) · [TP3 · Mapa de ocupação](optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao/) · [Robô garçom](optativas/robotica-movel/trabalhos/tp-final-robo-garcom/) | Python, CoppeliaSim |
+| Optativa | Computação Paralela | [Leilão paralelo](optativas/computacao-paralela/trabalhos/leilao-paralelo/) | C++, OpenMP |
+| Optativa | Computação em Nuvem | [Recomendador de playlists](optativas/computacao-em-nuvem/trabalhos/recomendador-de-playlists/) | Python, Kubernetes |
+
 ### Próximos períodos
 
 Ética na Computação (7º período) e os períodos 8 a 10 estão listados em [`catalogo.js`](catalogo.js) e aparecem como
@@ -141,7 +169,10 @@ python3 -m http.server 8000     # ou: npx serve
 │       ├── README.md           #   resumo teórico + exercícios
 │       ├── codigo/             #   implementações testáveis (C++/Python)
 │       ├── visualizacoes/      #   páginas .html + lógica .js (pura e testada)
-│       └── tutoriais/          #   páginas-tutorial (quando fizer mais sentido que animação)
+│       ├── tutoriais/          #   páginas-tutorial (quando fizer mais sentido que animação)
+│       ├── trabalhos/          #   trabalhos práticos entregues, cada um com README
+│       └── projetos/           #   projetos extras ligados à disciplina
+├── optativas/                  # disciplinas fora da grade obrigatória, no mesmo formato
 └── tests/                      # testes automatizados da lógica das visualizações
 ```
 
@@ -170,7 +201,11 @@ para criar uma visualização nova em ~100 linhas.
 npm test            # testes da lógica das visualizações (node --test, sem dependências)
 make -C periodo-01/programacao-e-desenvolvimento-de-software-1/codigo test   # exemplos C++
 python3 periodo-01/introducao-a-logica-computacional/codigo/logica.py        # exemplos Python
+make -C periodo-04/algoritmos-1/trabalhos/tp3-centro-de-distribuicao test    # um trabalho prático
 ```
+
+Os trabalhos práticos têm testes próprios (veja o README de cada um); os que não dependem
+de simulador ou banco de dados também rodam na integração contínua.
 
 A integração contínua (`.github/workflows/ci.yml`) roda tudo isso a cada push.
 

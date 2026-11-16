@@ -57,6 +57,12 @@ python3 codigo/compilador.py
 |---|---|
 | [`compilador.py`](codigo/compilador.py) | Um compilador completo do mini-C desta página: léxico com expressões regulares, gerador de tabelas LL(1) e SLR (conferidos nos exemplos do livro do Dragão), parser descendente recursivo, gerador de código de três endereços com dobramento de constantes e um interpretador que confere o código gerado contra a avaliação direta da árvore em centenas de programas aleatórios |
 
+## 🧪 Trabalhos práticos
+
+| Trabalho | Tema | Tecnologias |
+|---|---|---|
+| [Gerador de código e alocação de registradores](trabalhos/tp-alocacao-de-registradores/) | Subconjunto de SML compilado para RISC-V: lexer, parser descendente, renomeação de variáveis, geração de código e alocação com spill para 4 registradores, com testes em programas aleatórios | Python |
+
 ## ✍️ Exercícios
 
 1. Quantos tokens tem `if(x>=10)y=y+1;`? Liste-os.

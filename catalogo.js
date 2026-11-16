@@ -1,6 +1,9 @@
 // Catálogo do repositório: fonte única da página inicial.
 // Para publicar uma página nova, adicione-a em `visualizacoes` da disciplina.
 // Páginas com `tipo: 'tutorial'` ficam em <disciplina>/tutoriais/; as demais em <disciplina>/visualizacoes/.
+// `trabalhos` lista os trabalhos práticos (TPs) feitos na disciplina, cada um numa pasta
+// <disciplina>/<pasta> com README próprio; `extra: true` marca projetos pessoais ligados ao tema.
+// O bloco `optativas` (sem `numero`) reúne disciplinas fora da grade obrigatória.
 // Grade: Bacharelado em Ciência da Computação — UFMG, versão 2024.
 
 // URL do repositório no GitHub (ex.: 'https://github.com/usuario/resumao-cc').
@@ -169,6 +172,10 @@ export const PERIODOS = [
           { titulo: 'Distribuições', arquivo: 'distribuicoes.html', descricao: 'Seis distribuições com parâmetros, áreas, momentos e amostragem sobre a curva teórica.' },
           { titulo: 'Teorema Central do Limite', arquivo: 'limite-central.html', descricao: 'Tábua de Galton, médias virando uma normal e a Lei dos Grandes Números.' },
           { titulo: 'Bayes e Monty Hall', arquivo: 'bayes.html', descricao: 'O teste diagnóstico com 1000 pessoas e o problema das três portas, jogável.' },
+          { titulo: 'Modelo de Ising e Metropolis', arquivo: 'ising.html', descricao: 'Cadeia de Markov Monte Carlo: cada tentativa de virar um spin, 16 mil spins ao vivo e a transição de fase.' },
+        ],
+        trabalhos: [
+          { titulo: 'Modelo de Ising com Metropolis', pasta: 'projetos/modelo-de-ising', extra: true, tags: ['Python', 'Jupyter'], descricao: 'Ferromagneto 2D simulado por Monte Carlo: termalização, médias termodinâmicas e a transição de fase perto de Tc ≈ 2,27.' },
         ],
       },
     ],
@@ -187,6 +194,9 @@ export const PERIODOS = [
           { titulo: 'Árvore geradora mínima', arquivo: 'arvore-geradora.html', descricao: 'Kruskal com a união-busca colorida e Prim crescendo a partir da raiz.' },
           { titulo: 'Programação dinâmica', arquivo: 'programacao-dinamica.html', descricao: 'Mochila 0/1, LCS e distância de edição: a tabela, as dependências e a reconstrução.' },
           { titulo: 'Teorema mestre', arquivo: 'divisao-e-conquista.html', descricao: 'A árvore de recursão de aT(n/b) + nᶜ e o custo de cada nível: raiz, folhas ou empate.' },
+        ],
+        trabalhos: [
+          { titulo: 'TP3 · Centro de distribuição', pasta: 'trabalhos/tp3-centro-de-distribuicao', tags: ['C++', 'Programação dinâmica'], descricao: 'Menor número de ligas metálicas para atender uma demanda (troco com moedas ilimitadas) em O(k·D), com relatório e discussão de NP-completude.' },
         ],
       },
       {
@@ -247,6 +257,10 @@ export const PERIODOS = [
           { titulo: 'Envoltória convexa', arquivo: 'envoltoria-convexa.html', descricao: 'Cadeia monótona de Andrew e embrulho de Jarvis, com o teste de orientação; clique para pôr pontos.' },
           { titulo: 'NP-completude e aproximação', arquivo: 'aproximacao.html', descricao: '2-aproximações para cobertura por vértices e caixeiro métrico, comparadas com o ótimo.' },
         ],
+        trabalhos: [
+          { titulo: 'TP2 · Caixeiro viajante', pasta: 'trabalhos/tp2-caixeiro-viajante', tags: ['Python', 'networkx'], descricao: 'Branch and bound exato contra twice-around-the-tree (fator 2) e Christofides (fator 1,5), com testes que conferem as garantias.' },
+          { titulo: 'Envoltória convexa', pasta: 'trabalhos/envoltoria-convexa', tags: ['Python', 'matplotlib'], descricao: 'Graham e Jarvis com animação em matplotlib, conferidos contra força bruta em milhares de instâncias.' },
+        ],
       },
       {
         id: 'lp', codigo: 'DCC024', nome: 'Linguagens de Programação', cor: 'purple',
@@ -268,6 +282,9 @@ export const PERIODOS = [
           { titulo: 'Simplex', arquivo: 'simplex.html', descricao: 'O tableau pivô a pivô ao lado do caminho de vértice em vértice.' },
           { titulo: 'Branch and bound', arquivo: 'branch-and-bound.html', descricao: 'A árvore de ramificação e a região fatiada, com as três podas.' },
           { titulo: 'Fluxo máximo', arquivo: 'fluxo-maximo.html', descricao: 'Edmonds-Karp com caminhos aumentantes, arestas ao contrário e o corte mínimo.' },
+        ],
+        trabalhos: [
+          { titulo: 'TP1 · Clique máxima', pasta: 'trabalhos/tp1-clique-maxima', tags: ['Julia', 'JuMP', 'HiGHS'], descricao: 'A clique máxima como programa linear inteiro: uma restrição x_i + x_j ≤ 1 para cada par de vértices não adjacentes.' },
         ],
       },
       {
@@ -309,6 +326,9 @@ export const PERIODOS = [
           { titulo: 'Análise SLR', arquivo: 'analise-slr.html', descricao: 'Itens LR(0), tabela ACTION/GOTO e empilha-reduz construindo a árvore de baixo para cima.' },
           { titulo: 'Geração de código', arquivo: 'geracao-de-codigo.html', descricao: 'Da árvore sintática a código de três endereços ou de pilha, com dobramento de constantes.' },
         ],
+        trabalhos: [
+          { titulo: 'Gerador de código e alocação de registradores', pasta: 'trabalhos/tp-alocacao-de-registradores', tags: ['Python', 'RISC-V'], descricao: 'Compilador de um subconjunto de SML para assembly RISC-V: lexer, parser descendente, renomeação de variáveis e alocação com spill para 4 registradores.' },
+        ],
       },
       {
         id: 'es', codigo: 'DCC · 60h', nome: 'Engenharia de Software', cor: 'green',
@@ -319,6 +339,9 @@ export const PERIODOS = [
           { titulo: 'Testes e cobertura', arquivo: 'testes.html', descricao: 'Monte uma suíte e veja cobertura de comandos e ramos e quantos mutantes ela mata.' },
           { titulo: 'Processos de software', arquivo: 'processos.html', tipo: 'tutorial', descricao: 'Cascata, Manifesto Ágil, Scrum, XP, Kanban e DevOps, com um burndown interativo.' },
           { titulo: 'Projeto de software', arquivo: 'projeto.html', tipo: 'tutorial', descricao: 'Coesão, acoplamento, SOLID, padrões de projeto e refatoração, com código testado.' },
+        ],
+        trabalhos: [
+          { titulo: 'BarberFlow', pasta: 'trabalhos/barberflow', tags: ['Node.js', 'Express', 'MongoDB', 'Jest'], descricao: 'Secretaria virtual para barbearias, feita em dupla: API REST, telas de agendamento e testes com 90% de cobertura.' },
         ],
       },
     ],
@@ -390,9 +413,52 @@ export const PERIODOS = [
           { titulo: 'Decisões sob incerteza', arquivo: 'mdp.html', descricao: 'Iteração de valor no mundo 4×3 e a política mudando com a recompensa.' },
           { titulo: 'Perceptron e redes neurais', arquivo: 'redes-neurais.html', descricao: 'Regiões de decisão aprendidas: o perceptron falha no XOR, a rede escondida resolve.' },
         ],
+        trabalhos: [
+          { titulo: 'Snake com A*', pasta: 'projetos/snake-a-estrela-e-neat', extra: true, tags: ['Python', 'pygame'], descricao: 'O jogo da cobrinha jogado por A* em grade toroidal, numa versão que prevê a cauda saindo do caminho.' },
+          { titulo: 'Carro autônomo com NEAT', pasta: 'projetos/carro-autonomo-neat', extra: true, tags: ['Python', 'pygame', 'NEAT'], descricao: 'Desenhe uma pista e evolua redes neurais que dirigem o carro a partir de sensores de distância.' },
+        ],
       },
     ],
     planejadas: ['Ética na Computação'],
+  },
+  {
+    id: 'optativas',
+    titulo: 'Optativas',
+    disciplinas: [
+      {
+        id: 'robotica', codigo: 'DCC · optativa', nome: 'Robótica Móvel', cor: 'teal',
+        pasta: 'optativas/robotica-movel',
+        resumo: 'Transformações homogêneas, cinemática de robôs com rodas, sensores, mapeamento com grade de ocupação e navegação, tudo no CoppeliaSim.',
+        visualizacoes: [
+          { titulo: 'Mapa de ocupação', arquivo: 'mapa-de-ocupacao.html', descricao: 'O robô varre a sala com um laser e a grade de log-odds vai desenhando as paredes (e o bug que as apagava).' },
+        ],
+        trabalhos: [
+          { titulo: 'TP1 · Transformações e cena', pasta: 'trabalhos/tp1-transformacoes-e-cena', tags: ['Python', 'CoppeliaSim', 'Jupyter'], descricao: 'Cena com Pioneer 3DX montada por script, referenciais de cada objeto e as matrizes homogêneas entre eles.' },
+          { titulo: 'TP3 · Mapa de ocupação', pasta: 'trabalhos/tp3-mapa-de-ocupacao', tags: ['Python', 'CoppeliaSim', 'numpy'], descricao: 'Kobuki com laser Hokuyo explorando a sala e construindo a grade de ocupação com modelo inverso do sensor.' },
+          { titulo: 'Trabalho final · Robô garçom', pasta: 'trabalhos/tp-final-robo-garcom', tags: ['Python', 'CoppeliaSim', 'sympy'], descricao: 'Base móvel que vai até as mesas e um braço UR5 que pega e entrega objetos, com jacobiano e cinemática inversa.' },
+        ],
+      },
+      {
+        id: 'paralela', codigo: 'DCC · optativa', nome: 'Computação Paralela', cor: 'orange',
+        pasta: 'optativas/computacao-paralela',
+        resumo: 'Paralelismo em memória compartilhada: OpenMP, threads, travas, atômicos, falso compartilhamento e como medir speedup.',
+        visualizacoes: [
+          { titulo: 'Algoritmo de leilão', arquivo: 'leilao.html', descricao: 'Lances, preços e a ε-folga complementar; Gauss-Seidel contra Jacobi e o bug dos lances somados.' },
+        ],
+        trabalhos: [
+          { titulo: 'Leilão paralelo para o problema da atribuição', pasta: 'trabalhos/leilao-paralelo', tags: ['C++', 'OpenMP', 'atomics'], descricao: 'Sete versões do algoritmo de Bertsekas (mutex, spinlock alinhado, CAS, lances em lote) e um verificador contra a versão sequencial.' },
+        ],
+      },
+      {
+        id: 'nuvem', codigo: 'DCC · optativa', nome: 'Computação em Nuvem', cor: 'blue',
+        pasta: 'optativas/computacao-em-nuvem',
+        resumo: 'Contêineres, Kubernetes, volumes persistentes, jobs, serviços e entrega contínua com GitOps (Argo CD).',
+        visualizacoes: [],
+        trabalhos: [
+          { titulo: 'Recomendador de playlists', pasta: 'trabalhos/recomendador-de-playlists', tags: ['Python', 'Docker', 'Kubernetes', 'Argo CD'], descricao: 'Regras de associação (FP-Growth) treinadas num Job do Kubernetes e servidas por uma API Flask que recarrega o modelo sem reiniciar.' },
+        ],
+      },
+    ],
   },
   { numero: 8, id: 'periodo-08', planejadas: ['Computação e Sociedade'] },
   { numero: 9, id: 'periodo-09', planejadas: ['Projeto Orientado em Computação I'] },

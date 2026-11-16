@@ -1,0 +1,56 @@
+/* Estilos Globais e Base */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+/* Centralização padrão para telas de tela cheia (como auth) */
+.full-screen-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Card padrão para formulários e caixas de seleção */
+.base-card {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* Estilos globais para inputs e botões */
+input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+button.link-btn {
+    background: none;
+    color: #007bff;
+    padding: 0;
+    font-weight: normal;
+}
+
+button.link-btn:hover {
+    text-decoration: underline;
+    background: none;
+}

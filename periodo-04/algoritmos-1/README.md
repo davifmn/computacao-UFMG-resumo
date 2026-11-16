@@ -74,6 +74,12 @@ cd codigo && make test
 | [`grafos.cpp`](codigo/grafos.cpp) | BFS, ordenação topológica com detecção de ciclo, Dijkstra, Bellman-Ford, união-busca, Kruskal e Prim. Testados nos exemplos do CLRS e comparados entre si em centenas de grafos aleatórios |
 | [`pd.cpp`](codigo/pd.cpp) | Mochila 0/1 (tabela 2D com reconstrução e versão $O(W)$ de memória), LCS e distância de edição, conferidas contra força bruta |
 
+## 🧪 Trabalhos práticos
+
+| Trabalho | Tema | Tecnologias |
+|---|---|---|
+| [TP3 · Centro de distribuição](trabalhos/tp3-centro-de-distribuicao/) | Menor número de ligas metálicas para uma demanda (troco com moedas ilimitadas) por programação dinâmica O(k·D), com 7 casos de teste e relatório sobre NP-completude | C++17, Makefile |
+
 ## ✍️ Exercícios
 
 1. Mostre que um grafo é bipartido se e somente se não tem ciclo de comprimento ímpar, e use a BFS para testá-lo.

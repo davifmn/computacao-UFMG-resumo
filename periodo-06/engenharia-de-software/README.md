@@ -68,6 +68,12 @@ python3 git_objetos.py
 | [`padroes.py`](codigo/padroes.py) + [`test_padroes.py`](codigo/test_padroes.py) | Uma loja virtual com Strategy, Observer, Adapter, Decorator e Factory; o teste do Observer usa um `Mock` no lugar do servidor de e-mail; o caso Quadrado × Retângulo mostrando a violação de Liskov |
 | [`git_objetos.py`](codigo/git_objetos.py) | Como o Git calcula o id de um arquivo (SHA-1 de `blob <tamanho>\0<conteúdo>`), conferido com `git hash-object` |
 
+## 🧪 Trabalhos práticos
+
+| Trabalho | Tema | Tecnologias |
+|---|---|---|
+| [BarberFlow](trabalhos/barberflow/) | Secretaria virtual para barbearias, feita em dupla a partir de histórias de usuário: API REST, telas de agendamento e testes com 90% de cobertura | Node.js, Express, MongoDB, Jest |
+
 ## ✍️ Exercícios
 
 1. Escreva uma história de usuário (com critérios de aceitação) para "recuperar senha por e-mail".

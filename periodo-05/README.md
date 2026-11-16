@@ -14,6 +14,16 @@ restrições (**Pesquisa Operacional**); e a matemática dos sistemas que mudam 
 | [Pesquisa Operacional](pesquisa-operacional/) | DCC035 | 60h | [Método gráfico](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/pesquisa-operacional/visualizacoes/metodo-grafico.html) · [Simplex](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/pesquisa-operacional/visualizacoes/simplex.html) · [Branch and bound](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/pesquisa-operacional/visualizacoes/branch-and-bound.html) · [Fluxo máximo](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/pesquisa-operacional/visualizacoes/fluxo-maximo.html) |
 | [Equações Diferenciais C](equacoes-diferenciais-c/) | MAT040 | 60h | [Campo de direções](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/campo-de-direcoes.html) · [Oscilador](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/oscilador.html) · [Plano de fase](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/plano-de-fase.html) · [Treino para as provas](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/visualizacoes/treino.html) · [Guia da prova](https://davifmn.github.io/computacao-UFMG-resumo/periodo-05/equacoes-diferenciais-c/tutoriais/guia-da-prova.html) |
 
+## Trabalhos práticos
+
+Os trabalhos entregues nas disciplinas deste período, revisados e documentados, cada um com README próprio.
+
+| Disciplina | Trabalho | Tecnologias |
+|---|---|---|
+| Algoritmos II | [TP2 · Caixeiro viajante: branch and bound × aproximações](algoritmos-2/trabalhos/tp2-caixeiro-viajante/) | Python |
+| Algoritmos II | [Envoltória convexa: Graham e Jarvis](algoritmos-2/trabalhos/envoltoria-convexa/) | Python |
+| Pesquisa Operacional | [TP1 · Clique máxima por programação inteira](pesquisa-operacional/trabalhos/tp1-clique-maxima/) | Julia/JuMP |
+
 ## Dicas de quem já passou por aqui
 
 - **Algoritmos II:** as provas cobram reduções. Aprenda a cadeia SAT → 3-SAT → Clique → Cobertura por vértices de cor e salteado, e pratique a direção certa ("reduzo o problema conhecido ao novo"). Calcule à mão funções de falha e árvores de Huffman até ficar automático.

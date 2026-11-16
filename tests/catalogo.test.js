@@ -28,3 +28,14 @@ test('ids de disciplina são únicos (são as âncoras da home)', () => {
   const ids = PERIODOS.flatMap(p => (p.disciplinas ?? []).map(d => d.id));
   assert.equal(new Set(ids).size, ids.length);
 });
+
+test('todo trabalho prático do catálogo tem pasta com README', () => {
+  for (const p of PERIODOS) for (const d of p.disciplinas ?? []) for (const t of d.trabalhos ?? []) {
+    assert.ok(t.titulo && t.descricao && t.pasta, `${d.id}: trabalho incompleto`);
+    assert.ok(existsSync(`${d.pasta}/${t.pasta}/README.md`), `falta ${d.pasta}/${t.pasta}/README.md`);
+  }
+});
+
+test('todo período tem número ou título (o bloco de optativas não tem número)', () => {
+  for (const p of PERIODOS) assert.ok(p.numero || p.titulo, p.id);
+});

@@ -14,6 +14,14 @@ de dados (**Introdução à Ciência dos Dados**).
 | [Álgebra A](algebra-a/) | MAT034 | 60h | [Grupos](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/algebra-a/visualizacoes/grupos.html) · [Permutações](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/algebra-a/visualizacoes/permutacoes.html) · [Teorema Chinês do Resto](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/algebra-a/visualizacoes/teorema-chines.html) |
 | [Introdução à Ciência dos Dados](introducao-a-ciencia-dos-dados/) | DCC212 | 60h | [Bootstrap](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/introducao-a-ciencia-dos-dados/visualizacoes/bootstrap.html) · [Teste A/B](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/introducao-a-ciencia-dos-dados/visualizacoes/teste-ab.html) · [Correlação](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/introducao-a-ciencia-dos-dados/visualizacoes/correlacao.html) · [k-NN](https://davifmn.github.io/computacao-UFMG-resumo/periodo-04/introducao-a-ciencia-dos-dados/visualizacoes/knn.html) |
 
+## Trabalhos práticos
+
+Os trabalhos entregues nas disciplinas deste período, revisados e documentados, cada um com README próprio.
+
+| Disciplina | Trabalho | Tecnologias |
+|---|---|---|
+| Algoritmos I | [TP3 · Centro de distribuição (programação dinâmica)](algoritmos-1/trabalhos/tp3-centro-de-distribuicao/) | C++ |
+
 ## Dicas de quem já passou por aqui
 
 - **Algoritmos I:** as provas pedem demonstrações (corretude, invariantes, argumentos de troca), não só código. Pratique escrever provas curtas e implemente cada algoritmo de grafos pelo menos uma vez.

@@ -1,0 +1,262 @@
+@import "../app_view.css";
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    background: url('../../assets/bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
+
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #5a5a7a;
+}
+
+.user-icon {
+    font-size: 24px;
+    background: #e8e4f5;
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s;
+    color: #5a5a7a;
+}
+
+.user-icon:hover {
+    background: #ddd6f0;
+}
+
+/* Основной контейнер — занимает всё свободное место */
+.main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    gap: 30px;
+}
+
+/* Обертка для двух карточек рядом */
+.cards-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 30px;
+    width: 100%;
+    max-width: 1200px;
+    flex-wrap: wrap;
+}
+
+/* Карточки услуг и специалистов — одинакового размера */
+.service-box {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    flex: 1;
+    min-width: 280px;
+    max-width: 500px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    backdrop-filter: blur(2px);
+}
+
+.service-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.service-box h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 22px;
+    color: #5a5a7a;
+    font-weight: 600;
+}
+
+/* Контейнер для списка услуг/специалистов */
+.services {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Стиль для каждого элемента (услуга или специалист) */
+.service-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid #ddd8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #fefefe;
+}
+
+.service-option:hover {
+    background-color: #f5f0ff;
+    border-color: #b5a8e5;
+    transform: scale(1.01);
+}
+
+/* Радио-кнопки и чекбоксы */
+.service-option input[type="radio"],
+.service-option input[type="checkbox"] {
+    margin: 0;
+    transform: scale(1.2);
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #7ec8a0;
+}
+
+/* Текст внутри опции */
+.service-option span,
+.service-option div {
+    flex: 1;
+    text-align: left;
+}
+
+.service-option strong {
+    font-size: 16px;
+    color: #4a4a6a;
+}
+
+/* Совместимый специалист */
+.service-option.compatible {
+    border: 2px solid #7ec8a0;
+    background-color: #f0fff4;
+}
+
+/* Несовместимый специалист */
+.service-option.incompatible {
+    opacity: 0.5;
+    background-color: #f5f5f5;
+    border-color: #ddd8f0;
+}
+
+/* Бейдж "✓ Atende" */
+.compatible-badge {
+    color: #5aaf7a;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: auto;
+    background-color: #e8f5e9;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: none;
+}
+
+.service-option.compatible .compatible-badge {
+    display: inline-block;
+}
+
+/* Кнопка Next */
+.btn-next-large {
+    width: 100%;
+    max-width: 400px;
+    padding: 14px 28px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 40px;
+    background: linear-gradient(135deg, #7ec8a0, #5aaf7a);
+    color: white;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(90, 175, 122, 0.3);
+}
+
+.btn-next-large:hover {
+    background: linear-gradient(135deg, #6ab88a, #4a9a6a);
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(90, 175, 122, 0.4);
+}
+
+/* Адаптация для маленьких экранов */
+@media (max-width: 768px) {
+    .header {
+        padding: 12px 20px;
+    }
+    
+    .header h2 {
+        font-size: 18px;
+    }
+    
+    .user-icon {
+        font-size: 18px;
+        padding: 8px;
+    }
+    
+    .cards-wrapper {
+        gap: 20px;
+    }
+    
+    .service-box {
+        padding: 18px;
+        min-width: 240px;
+    }
+    
+    .service-box h3 {
+        font-size: 18px;
+    }
+    
+    .services {
+        max-height: 300px;
+    }
+    
+    .service-option {
+        padding: 10px 12px;
+    }
+    
+    .btn-next-large {
+        max-width: 280px;
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+}
+
+/* Для очень маленьких телефонов */
+@media (max-width: 600px) {
+    .cards-wrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .service-box {
+        width: 90%;
+        max-width: none;
+    }
+}

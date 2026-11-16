@@ -54,6 +54,13 @@ python3 codigo/ia.py
 |---|---|
 | [`ia.py`](codigo/ia.py) | A* contra custo uniforme em 200 grades aleatórias (mesmo custo, menos expansões); alfa-beta contra minimax em 300 árvores; o jogo da velha (empate com jogo perfeito, 5478 posições legais); iteração de valor com as utilidades do livro; perceptron e uma rede que aprende o XOR com retropropagação |
 
+## 🧪 Projetos extras
+
+| Projeto | Tema | Tecnologias |
+|---|---|---|
+| [Snake com A\*](projetos/snake-a-estrela-e-neat/) | A cobrinha jogada por A\* em grade toroidal, com uma versão que prevê a cauda saindo do caminho e um caixeiro viajante sobre as comidas | Python, pygame |
+| [Carro autônomo com NEAT](projetos/carro-autonomo-neat/) | Neuroevolução: redes que aprendem a dirigir numa pista desenhada por você, a partir de sensores de distância | Python, pygame, neat-python |
+
 ## ✍️ Exercícios
 
 1. Numa árvore com fator de ramificação $b = 10$ e solução na profundidade $d = 5$, quantos nós a busca em largura gera, no pior caso?

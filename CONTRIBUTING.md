@@ -135,6 +135,23 @@ Crie `periodo-XX/<nome-da-disciplina-em-kebab-case>/` com `README.md`, `codigo/`
 `visualizacoes/`. Siga a estrutura dos READMEs do 1º período: ementa, resumo por
 tópicos, visualizações, código e exercícios com gabarito em `<details>`.
 
+## Trabalhos práticos e optativas
+
+Um trabalho prático entregue numa disciplina fica em `<disciplina>/trabalhos/<nome-em-kebab-case>/`
+(projetos pessoais ligados ao tema, em `<disciplina>/projetos/`). Cada um precisa de:
+
+- um `README.md` com o problema, a solução, como executar, como testar e uma seção
+  **"O que mudou na migração"** listando toda correção feita em relação ao entregue;
+- testes que rodem sem infraestrutura externa sempre que possível (e, nesse caso, um passo
+  no job `trabalhos` de `.github/workflows/ci.yml`);
+- nada de segredos (`.env`), dependências instaladas (`node_modules/`), artefatos de build,
+  dados grandes ou material do professor (enunciados, listas).
+
+Registre-o em `trabalhos` da disciplina no [`catalogo.js`](catalogo.js)
+(`{ titulo, pasta, descricao, tags, extra? }`) e na seção 🧪 do README da disciplina; o teste
+do catálogo confere que a pasta tem README. Disciplinas optativas ficam em
+`optativas/<disciplina>/`, no bloco `optativas` do catálogo, com a mesma estrutura de pastas.
+
 ## Checklist do pull request
 
 - [ ] `npm test` passa (inclui um teste que confere se tudo que está no catálogo existe)

@@ -13,6 +13,15 @@ o que é preciso para construir software de verdade, em equipe e por anos
 
 \* Na grade de 2024 o código de Engenharia de Software ainda aparece como "DCCXXX", e a disciplina é marcada como conteúdo extensionista.
 
+## Trabalhos práticos
+
+Os trabalhos entregues nas disciplinas deste período, revisados e documentados, cada um com README próprio.
+
+| Disciplina | Trabalho | Tecnologias |
+|---|---|---|
+| Compiladores I | [Gerador de código e alocação de registradores](compiladores-1/trabalhos/tp-alocacao-de-registradores/) | Python |
+| Engenharia de Software | [BarberFlow · secretaria virtual para barbearias](engenharia-de-software/trabalhos/barberflow/) | Node.js, MongoDB |
+
 ## Dicas de quem já passou por aqui
 
 - **Sistemas Operacionais:** os trabalhos são em C, com threads e às vezes dentro de um núcleo didático (xv6). Aprenda a usar `gdb` e o `-fsanitize=thread` antes de precisar. Nas provas, refaça à mão os gráficos de Gantt, as tabelas de páginas e o banqueiro: é conta, não decoreba.

@@ -10,7 +10,15 @@ e três disciplinas matemáticas que alimentam ciência de dados e aprendizado d
 | [Introdução a Bancos de Dados](introducao-a-bancos-de-dados/) | DCC222 | 60h | [Tutorial de SQL](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/introducao-a-bancos-de-dados/tutoriais/sql.html) · [JOINs](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/introducao-a-bancos-de-dados/visualizacoes/joins.html) |
 | [Álgebra Linear Computacional](algebra-linear-computacional/) | DCC639 | 60h | [Mínimos quadrados](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/minimos-quadrados.html) · [PageRank](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/pagerank.html) · [SVD](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/algebra-linear-computacional/visualizacoes/svd.html) |
 | [Cálculo Diferencial e Integral II](calculo-diferencial-e-integral-2/) | MAT039 | 60h | [Taylor](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/taylor.html) · [Superfícies](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/superficies.html) · [Gradiente](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/calculo-diferencial-e-integral-2/visualizacoes/gradiente.html) |
-| [Probabilidade](probabilidade/) | EST032 | 60h | [Distribuições](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/distribuicoes.html) · [TCL](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/limite-central.html) · [Bayes](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/bayes.html) |
+| [Probabilidade](probabilidade/) | EST032 | 60h | [Distribuições](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/distribuicoes.html) · [TCL](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/limite-central.html) · [Bayes](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/bayes.html) · [Ising e Metropolis](https://davifmn.github.io/computacao-UFMG-resumo/periodo-03/probabilidade/visualizacoes/ising.html) |
+
+## Trabalhos práticos
+
+Os trabalhos entregues nas disciplinas deste período, revisados e documentados, cada um com README próprio.
+
+| Disciplina | Trabalho | Tecnologias |
+|---|---|---|
+| Probabilidade | [Modelo de Ising com Metropolis (projeto extra)](probabilidade/projetos/modelo-de-ising/) | Python, Jupyter |
 
 ## Dicas de quem já passou por aqui
 

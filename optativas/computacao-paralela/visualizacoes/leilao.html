@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Algoritmo de leilão · Computação Paralela</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>.player .code { max-height: 460px; font-size: 12px; }</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#optativas">Optativas</a>
+      <span class="sep">/</span><a href="../../../index.html#paralela">Computação Paralela</a>
+      <span class="sep">/</span><span>Algoritmo de leilão</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Computação Paralela</div>
+    <h1>Algoritmo de leilão: preços que resolvem a atribuição</h1>
+    <p class="lead">$n$ trabalhadores, $n$ tarefas e um benefício $c_{wt}$ para cada par: quem faz o quê para o benefício total ser máximo? O <b>algoritmo de leilão</b> de Bertsekas resolve isso como um mercado. Cada tarefa tem um preço; cada trabalhador livre "compra" a tarefa de maior valor líquido $c_{wt} - p_t$ e paga um lance que faz o preço subir. Como cada lance só lê preços e escreve numa tarefa, o algoritmo é um ótimo candidato a paralelização.</p>
+
+    <div class="toolbar">
+      <div class="chips" role="group" aria-label="Variante">
+        <button class="btn" data-v="gs">Gauss-Seidel (sequencial)</button>
+        <button class="btn" data-v="jacobi">Jacobi (paralelizável)</button>
+        <button class="btn" data-v="soma">Jacobi com lances somados (bug da v4)</button>
+      </div>
+      <label>ε <input id="eps" type="range" min="0.05" max="2" step="0.05" value="0.2"><output id="eps-o"></output></label>
+      <label>n <select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+      <button class="btn small" id="exemplo">Exemplo do bug</button>
+      <button class="btn small" id="sorteia">Sortear benefícios</button>
+    </div>
+
+    <div id="player"></div>
+    <div class="legend"><span><i style="background:#83c167"></i>atribuição atual</span><span><i style="background:#f4d35e"></i>melhor tarefa do trabalhador da vez</span><span><i style="background:#58c4dd"></i>lance (Jacobi)</span><span><i style="background:#fc6255"></i>trabalhador que perdeu a tarefa</span></div>
+
+    <section class="prose">
+      <h2>Por que termina, e por que no ótimo</h2>
+      <p>O lance $(v_1 - v_2) + \varepsilon$ é o máximo que o trabalhador pode pagar a mais mantendo a tarefa escolhida pelo menos tão boa quanto a segunda opção, a menos de $\varepsilon$. Isso mantém a <b>$\varepsilon$-folga complementar</b>: todo trabalhador atribuído está numa tarefa no máximo $\varepsilon$ pior que a melhor para ele aos preços atuais. Daí saem as duas garantias:</p>
+      <ul>
+        <li><b>Termina:</b> cada lance aumenta um preço em pelo menos $\varepsilon$, e uma tarefa disputada não pode ficar cara para sempre (uma vez atribuída, fica atribuída a alguém).</li>
+        <li><b>Quase ótimo:</b> o benefício final fica a no máximo $n\varepsilon$ do ótimo. Com benefícios inteiros e $\varepsilon < 1/n$, é <b>exatamente</b> o ótimo. Aumente o ε e veja o algoritmo ficar mais rápido e menos preciso.</li>
+      </ul>
+      <h2>Gauss-Seidel × Jacobi</h2>
+      <p>No <b>Gauss-Seidel</b> um trabalhador por vez dá o lance, sempre com os preços mais recentes. No <b>Jacobi</b> todos os livres calculam lances ao mesmo tempo, com os preços do início da rodada: a busca (a parte cara, $O(n)$ por trabalhador) vira um <code>parallel for</code>. O preço da paralelização é resolver as disputas: se dois trabalhadores querem a mesma tarefa, vence o <b>maior lance</b>, e o preço passa a ser $p_t^{\text{início}} + \text{lance}$.</p>
+      <div class="callout warn"><p><b>O bug da v4 original.</b> A <a href="https://github.com/davifmn/computacao-UFMG-resumo/tree/main/optativas/computacao-paralela/trabalhos/leilao-paralelo">versão 4 do TP</a> aplicava os lances em sequência com <code>preco[t] += lance</code>. Quando dois lances caíam na mesma tarefa, os incrementos se somavam: o vencedor pagava mais do que tinha oferecido, a $\varepsilon$-folga quebrava e o resultado podia ficar abaixo do ótimo. Use "Exemplo do bug" e compare as duas variantes de Jacobi: o mesmo problema termina com benefício 29 (ótimo) ou 25.</p></div>
+      <div class="callout tip"><p><b>No TP.</b> Sete versões em C++ (OpenMP e <code>std::thread</code>) com $n = 5000$: mutex por tarefa, spinlocks alinhados à linha de cache para evitar falso compartilhamento, lances em lote com redução por thread, CAS atômico. Um verificador confere todas contra a versão sequencial.</p></div>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+    <section class="prose"><h2>Exercícios gerados</h2></section>
+    <div id="gen" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { StepPlayer } from '../../../engine/player.js';
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz, mountGenerator } from '../../../engine/quiz.js';
+    import { $, $$, randInt } from '../../../engine/page.js';
+    import { CODES, EXEMPLO, passosGaussSeidel, passosJacobi } from './leilao.js';
+
+    const W = 900, H = 520;
+    let variante = 'gs', c = EXEMPLO.map(l => l.slice());
+    const fmt = x => (Number.isInteger(x) ? String(x) : x.toFixed(2));
+
+    const player = new StepPlayer($('#player'), {
+      code: CODES.gs, lang: 'cpp', width: W, height: H, codeTitle: 'leilao.cpp',
+      render(p, s) {
+        const n = c.length, CW = Math.min(110, 560 / n), CH = Math.min(72, 380 / n), OX = Math.max(150, (W - n * CW) / 2 + 40), OY = 110;
+        s.text('hT', 'tarefas →', { x: OX + (n * CW) / 2, y: 30, size: 14, fill: COLORS.muted });
+        s.text('hP', 'preço', { x: OX - 20, y: 84, anchor: 'end', size: 14, fill: COLORS.muted });
+        for (let t = 0; t < n; t++) {
+          s.text(`tt${t}`, `t${t}`, { x: OX + t * CW + CW / 2, y: 56, size: 16, weight: 700 });
+          s.text(`pr${t}`, fmt(p.preco[t]), { x: OX + t * CW + CW / 2, y: 86, size: 16, mono: true, fill: COLORS.yellow });
+        }
+        const lances = p.lances ?? [];
+        for (let w = 0; w < n; w++) {
+          const ativo = p.w === w, perdeu = p.expulso === w;
+          s.text(`ww${w}`, `trab. ${w}`, { x: OX - 20, y: OY + w * CH + CH / 2 + 5, anchor: 'end', size: 15, weight: ativo ? 700 : 500, fill: perdeu ? COLORS.red : ativo ? COLORS.text : COLORS.muted });
+          for (let t = 0; t < n; t++) {
+            const meu = p.tarefa[w] === t, melhor = ativo && p.melhor === t;
+            const lance = lances.find(b => b.w === w && b.t === t);
+            s.rect(`c${w}-${t}`, { x: OX + t * CW + 3, y: OY + w * CH + 3, w: CW - 6, h: CH - 6, rx: 8,
+              fill: meu ? 'rgba(131,193,103,.28)' : COLORS.surface2,
+              stroke: melhor ? COLORS.yellow : lance ? COLORS.blue : meu ? COLORS.green : COLORS.border, sw: melhor || lance || meu ? 3 : 1.5 });
+            s.text(`v${w}-${t}`, c[w][t], { x: OX + t * CW + CW / 2, y: OY + w * CH + CH / 2 + (ativo && p.liq ? -2 : 6), size: 18, mono: true, weight: 700, fill: meu ? COLORS.green : COLORS.text });
+            if (ativo && p.liq) s.text(`l${w}-${t}`, `líq ${fmt(p.liq[t])}`, { x: OX + t * CW + CW / 2, y: OY + w * CH + CH / 2 + 20, size: 12, mono: true, fill: melhor ? COLORS.yellow : COLORS.muted });
+            else if (lance) s.text(`l${w}-${t}`, `+${fmt(lance.lance)}`, { x: OX + t * CW + CW / 2, y: OY + w * CH + CH / 2 + 22, size: 12, mono: true, fill: COLORS.blue });
+          }
+        }
+        if (p.fim && p.otimo) {
+          p.otimo.tarefa.forEach((t, w) => s.circle(`o${w}`, { x: OX + t * CW + CW - 14, y: OY + w * CH + 16, r: 6, fill: COLORS.purple, stroke: 'none', layer: 'fx' }));
+          s.text('olegend', '● = uma atribuição ótima', { x: OX + n * CW - 4, y: OY + n * CH + 28, anchor: 'end', size: 13, fill: COLORS.purple });
+        }
+      },
+    });
+
+    function run() {
+      $$('[data-v]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === variante)));
+      $('#eps-o').value = (+$('#eps').value).toFixed(2);
+      const eps = +$('#eps').value;
+      player.setCode(CODES[variante], 'cpp');
+      player.load(variante === 'gs' ? passosGaussSeidel(c, eps) : passosJacobi(c, eps, { soma: variante === 'soma' }));
+    }
+    $$('[data-v]').forEach(b => b.addEventListener('click', () => { variante = b.dataset.v; run(); }));
+    $('#eps').addEventListener('input', run);
+    $('#exemplo').addEventListener('click', () => { c = EXEMPLO.map(l => l.slice()); $('#n').value = 4; $('#eps').value = 0.2; run(); });
+    const sorteia = () => { const n = +$('#n').value; c = Array.from({ length: n }, () => Array.from({ length: n }, () => randInt(1, 9))); run(); };
+    $('#sorteia').addEventListener('click', sorteia);
+    $('#n').addEventListener('change', sorteia);
+    run();
+
+    mountQuiz($('#quiz'), [
+      { q: 'Valores líquidos de um trabalhador: 7, 4, 6. Qual o lance com ε = 0,1?', options: ['$(7 - 6) + 0{,}1 = 1{,}1$ na tarefa de valor 7', '$7 + 0{,}1$', '$(7 - 4) + 0{,}1 = 3{,}1$', '$0{,}1$'], answer: 0, explain: 'O lance usa a diferença entre a melhor e a <b>segunda</b> melhor opção.' },
+      { q: 'Por que somar ε ao lance?', options: ['Para o preço subir mesmo quando há empate ($v_1 = v_2$); sem isso o algoritmo pode ficar em ciclo', 'Para arredondar', 'Para o resultado ser exato', 'Para usar menos memória'], answer: 0, explain: 'Com $v_1 = v_2$, o lance seria 0 e dois trabalhadores poderiam trocar a mesma tarefa para sempre.' },
+      { q: 'Qual fase do Jacobi é paralela sem nenhuma trava?', options: ['A busca do melhor e do segundo melhor de cada trabalhador livre', 'A atualização dos preços', 'A atribuição', 'Nenhuma'], answer: 0, explain: 'Na busca todos só leem os preços do início da rodada. A escrita (resolver quem leva cada tarefa) precisa de redução, travas ou ser sequencial.' },
+      { q: 'Benefícios inteiros, $n = 100$. Qual ε garante o ótimo?', options: ['Qualquer $\\varepsilon < 1/100$', '$\\varepsilon = 1$', '$\\varepsilon = 0$', '$\\varepsilon < 1/2$'], answer: 0, explain: 'O erro é no máximo $n\\varepsilon < 1$; como o benefício é inteiro, erro menor que 1 é erro zero.' },
+    ]);
+    mountGenerator($('#gen'), {
+      label: 'Novo lance',
+      generate() {
+        const n = 4, cc = Array.from({ length: n }, () => randInt(2, 12)), pp = Array.from({ length: n }, () => randInt(0, 5));
+        const liq = cc.map((x, t) => x - pp[t]), ord = [...liq].sort((a, b) => b - a), eps = 0.5;
+        const t = liq.indexOf(ord[0]), lance = ord[0] - ord[1] + eps;
+        return { q: `Benefícios do trabalhador: $(${cc.join(', ')})$; preços: $(${pp.join(', ')})$; ε = 0,5. Qual é o lance (quanto o preço da tarefa escolhida sobe)?`, input: true, answer: String(lance).replace('.', ','), check: v => Math.abs(parseFloat(String(v).replace(',', '.')) - lance) < 1e-9,
+          explain: `Valores líquidos $(${liq.join(', ')})$. Melhor: tarefa ${t} com ${ord[0]}; segunda: ${ord[1]}. Lance $= ${ord[0]} - ${ord[1]} + 0{,}5 = ${lance}$.` };
+      },
+    });
+  </script>
+</body>
+</html>

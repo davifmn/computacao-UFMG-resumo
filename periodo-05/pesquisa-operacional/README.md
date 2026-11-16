@@ -59,6 +59,12 @@ python3 codigo/po.py
 |---|---|
 | [`po.py`](codigo/po.py) | Simplex de duas fases com frações exatas (devolve também os duais), dualidade forte no Wyndor, branch and bound conferido por força bruta, Edmonds-Karp conferido contra o corte mínimo por força bruta em 300 redes aleatórias. Os resultados também foram conferidos com o `scipy.optimize` |
 
+## 🧪 Trabalhos práticos
+
+| Trabalho | Tema | Tecnologias |
+|---|---|---|
+| [TP1 · Clique máxima](trabalhos/tp1-clique-maxima/) | A clique máxima como programa linear inteiro, com uma restrição $x_i + x_j \le 1$ por par não adjacente | Julia, JuMP, HiGHS |
+
 ## ✍️ Exercícios
 
 1. Resolva graficamente: $\max\ 3x_1 + 2x_2$ s.a. $x_1 + x_2 \le 4$, $x_1 + 3x_2 \le 6$, $x_1 \le 3$, $x \ge 0$.
