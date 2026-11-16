@@ -55,7 +55,7 @@ treino, mas a opção 3 do menu lê `best.pickle`, que não existia. Ficou só o
 ## Veja também
 
 - Visualização: [perceptron e redes neurais](https://davifmn.github.io/computacao-UFMG-resumo/periodo-07/introducao-a-inteligencia-artificial/visualizacoes/redes-neurais.html)
-- Outro projeto: [Snake jogado por A\*](../snake-a-estrela-e-neat/)
+- Outro projeto: [Snake e algoritmos de busca](../snake-algoritmos-de-busca/) (inclui um algoritmo genético que evolui os pesos de uma função de avaliação)
 
 ---
 Autor: Davi Fraga · migrado de [`davifmn/CAR_draw_and_-IA-RUN`](https://github.com/davifmn/CAR_draw_and_-IA-RUN)

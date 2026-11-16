@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snake e algoritmos de busca · Introdução à IA</title>
+  <link rel="icon" href="../../../assets/favicon.svg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="../../../engine/theme.css">
+  <style>
+    .familias { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 10px; }
+    .familia { text-align: left; padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+    .familia b { display: block; font-size: 17px; }
+    .familia span { color: var(--muted); font-size: 14px; }
+    .familia[aria-pressed=true] { border-color: var(--blue); background: rgba(88, 196, 221, .08); }
+    .familia[aria-pressed=true] b { color: var(--blue); }
+    .grupos { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 4px 0 12px; }
+    .grupo small { display: block; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    .stage { position: relative; }
+    .stage canvas { display: block; width: 100%; height: auto; }
+    .fim { position: absolute; inset: 0; display: none; place-items: center; background: rgba(14, 17, 22, .55); }
+    .fim.on { display: grid; }
+    .fim div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 22px; text-align: center; }
+    .fim b { font-size: 20px; display: block; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; margin: 10px 0; }
+    .stats div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 2px 0; }
+    .stats span { color: var(--muted); }
+    .stats b { font-family: var(--mono); font-weight: 600; }
+    .ficha { font-size: 13px; width: 100%; border-collapse: collapse; margin: 6px 0; }
+    .ficha td { padding: 3px 0; vertical-align: top; border-bottom: 1px solid var(--border); }
+    .ficha td:first-child { color: var(--muted); width: 84px; }
+    .ideia { font-size: 14px; color: #d4d8de; margin: 4px 0 8px; }
+    .pens { font-size: 14px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; min-height: 64px; }
+    .cands { list-style: none; margin: 6px 0 0; padding: 0; font-family: var(--mono); font-size: 13px; }
+    .cands li { display: flex; gap: 8px; align-items: center; padding: 1px 0; color: var(--muted); }
+    .cands li.esc { color: var(--yellow); }
+    .cands i { display: inline-block; height: 6px; border-radius: 3px; background: currentColor; opacity: .7; }
+    .seed { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-top: 8px; }
+    .ga { display: none; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; margin-top: 16px; }
+    .ga.on { display: grid; }
+    .ga canvas { width: 100%; height: auto; display: block; }
+    .pesos div { display: grid; grid-template-columns: 130px 1fr 52px; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+    .pesos .barra { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px; }
+    .pesos .barra i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+    .pesos .barra::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--faint); }
+    .pesos b { font-family: var(--mono); text-align: right; font-weight: 500; }
+    #corrida td .bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--green); vertical-align: middle; margin-right: 6px; opacity: .8; }
+    #corrida td:first-child { text-align: left; font-family: var(--font); }
+    #corrida tr.melhor td:first-child { color: var(--yellow); }
+    progress { width: 220px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../index.html">Resumão<span>.</span>CC</a>
+    <nav class="crumbs">
+      <span class="sep">/</span><a href="../../../index.html#periodo-07">7º período</a>
+      <span class="sep">/</span><a href="../../../index.html#ia">Introdução à IA</a>
+      <span class="sep">/</span><span>Snake e busca</span>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="eyebrow">Introdução à Inteligência Artificial</div>
+    <h1>Snake: quinze maneiras de pensar</h1>
+    <p class="lead">O jogo da cobrinha é um laboratório de busca: a cabeça precisa planejar um caminho até a comida sem se encurralar no próprio corpo. Escolha uma família, um algoritmo, e veja o que ele <b>pensa</b> antes de cada passo. Os <b>determinísticos</b> repetem a mesma partida sempre; os <b>não determinísticos</b> sorteiam, e cada tentativa termina de um jeito.</p>
+
+    <div class="familias" role="group" aria-label="Família de algoritmos">
+      <button class="familia" data-fam="deterministicos"><b>Determinísticos</b><span>Mesma entrada, mesma decisão: buscas cega e informada, A* adaptado à cobra e o ciclo hamiltoniano.</span></button>
+      <button class="familia" data-fam="nao_deterministicos"><b>Não determinísticos</b><span>Decidem com sorteios: busca local, simulações de Monte Carlo, MCTS e evolução.</span></button>
+    </div>
+    <div class="grupos" id="grupos"></div>
+
+    <div class="toolbar">
+      <button class="btn primary small" id="play">▶ Jogar</button>
+      <button class="btn small" id="passo" title="Um passo (tecla N)">Passo ⏭</button>
+      <button class="btn small" id="repetir" title="Mesma semente da comida; o agente sorteia de novo">↻ Mesma partida</button>
+      <button class="btn small" id="nova">🎲 Outra partida</button>
+      <label>velocidade <input id="vel" type="range" min="0" max="100" value="45"><output id="vel-o"></output></label>
+      <select id="tam" aria-label="Tamanho"></select>
+      <select id="bordas" aria-label="Bordas"><option value="0">bordas são paredes</option><option value="1">bordas atravessam (toro)</option></select>
+      <select id="ncom" aria-label="Comidas"><option value="1">1 comida</option><option value="3">3 comidas</option></select>
+      <label><input type="checkbox" id="mostrar" checked> pensamento</label>
+      <span class="spacer"></span>
+      <button class="btn small" id="humano" title="Setas ou WASD">🎮 Você joga</button>
+    </div>
+
+    <div class="two">
+      <div class="stage">
+        <canvas id="tab" width="760" height="507" aria-label="Tabuleiro do Snake"></canvas>
+        <div class="fim" id="fim"><div><b id="fim-t"></b><span id="fim-s"></span></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title" id="alg-grupo"></div>
+        <div class="panel-body">
+          <h3 id="alg-nome" style="margin:2px 0 0"></h3>
+          <p class="ideia" id="alg-ideia"></p>
+          <table class="ficha"><tr><td>completo?</td><td id="alg-completo"></td></tr><tr><td>ótimo?</td><td id="alg-otimo"></td></tr><tr><td>na prática</td><td id="alg-morte"></td></tr></table>
+          <div class="stats">
+            <div><span>comidas</span><b id="s-com">0</b></div>
+            <div><span>tamanho</span><b id="s-tam">3</b></div>
+            <div><span>passos</span><b id="s-pas">0</b></div>
+            <div><span>fome</span><b id="s-fome">0</b></div>
+            <div><span>nós</span><b id="s-nos">0</b></div>
+            <div><span>nós/comida</span><b id="s-npc">—</b></div>
+          </div>
+          <div class="pens" id="pens"></div>
+          <div class="seed" id="seed"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="legenda"></div>
+
+    <div class="ga" id="ga">
+      <div class="panel"><div class="panel-title">Evolução da população (aptidão = 100 por comida + 0,05 por passo)</div><div class="panel-body"><canvas id="ga-graf" width="760" height="220"></canvas></div></div>
+      <div class="panel"><div class="panel-title">Pesos do agente</div><div class="panel-body">
+        <div class="pesos" id="pesos"></div>
+        <p class="ideia" id="ga-info">Pesos do campeão pré-treinado. Cada treino começa de uma população sorteada e chega a pesos diferentes.</p>
+        <p class="ideia" style="color:var(--muted);font-size:13px">A curva oscila porque cada geração joga partidas novas (outras comidas): a aptidão é uma estimativa ruidosa, como tudo que vem de amostragem.</p>
+        <button class="btn small primary" id="ga-treinar">🧬 Evoluir do zero</button>
+        <button class="btn small" id="ga-campeao">Campeão pré-treinado</button>
+      </div></div>
+    </div>
+
+    <section class="prose">
+      <h2>Corrida</h2>
+      <p>Todos os algoritmos da família, nas mesmas partidas (mesmas sementes da comida), no tamanho e nas bordas escolhidos acima. <b>Nós</b> conta células expandidas nas buscas, passos simulados no Monte Carlo e no MCTS e movimentos avaliados no genético.</p>
+    </section>
+    <div class="toolbar"><button class="btn small primary" id="correr">🏁 Rodar 8 partidas de cada</button><progress id="prog" value="0" max="1" hidden></progress><span id="prog-t" style="color:var(--muted);font-size:14px"></span></div>
+    <table class="data" id="corrida"></table>
+
+    <section class="prose">
+      <h2>Por que a cobra é um problema difícil de busca</h2>
+      <p>O estado verdadeiro do jogo é a posição de <b>todo o corpo</b>, não só a da cabeça: o número de formas que uma cobra longa pode ocupar numa grade 18 × 12 cresce exponencialmente com o tamanho dela. Nenhum agente aqui busca nesse espaço. As buscas trabalham num <b>modelo simplificado</b>, em que só a cabeça se move e o corpo é uma parede fixa (exceto a cauda, que sai do lugar). É o mesmo truque do <a href="busca.html">labirinto</a>, e é ele que mata a cobra: o caminho até a comida é ótimo <i>no modelo</i>, mas o modelo esquece que, depois de comer, o corpo continua lá. Cada adaptação do A* conserta um pedaço do modelo:</p>
+      <ul>
+        <li><b>Ciente do tempo</b>: um segmento a $k$ posições da cauda sai do lugar em $k$ passos. Se a cabeça chega em $g \ge k$ passos, a célula está livre. O modelo do presente fica exato; o do futuro, não.</li>
+        <li><b>Seguro</b>: simula a cobra comendo (o <i>fantasma</i>) e só vai se, depois, ela ainda tiver rota de fuga. É olhar além do objetivo imediato.</li>
+        <li><b>Caixeiro viajante</b>: com três comidas, a ordem de visita importa; são $3! = 6$ ordens, cada trecho com custo dado pelo A*.</li>
+      </ul>
+      <p>A heurística é a distância de Manhattan. No toro ela "dá a volta": $h(a, b) = \min(|\Delta x|, W - |\Delta x|) + \min(|\Delta y|, H - |\Delta y|)$, que continua <b>admissível</b> (nunca superestima), então o A* continua ótimo.</p>
+
+      <h2>Determinístico × não determinístico</h2>
+      <p>Um algoritmo é <b>determinístico</b> quando a mesma entrada produz sempre a mesma saída. Clique em <b>↻ Mesma partida</b> com o A*: a cobra refaz cada passo igual. Faça o mesmo com o Monte Carlo: a semente da comida é a mesma, mas o agente sorteia outras simulações e a partida diverge. Os determinísticos são reprodutíveis e fáceis de depurar e de provar (completude, otimalidade). Os aleatórios trocam essas garantias por algo que a busca exaustiva não tem: escapar de ótimos locais (têmpera), estimar o futuro por amostragem quando ele é grande demais para enumerar (Monte Carlo, MCTS) ou explorar um espaço de soluções sem gradiente (genético).</p>
+      <div class="callout"><p><b>Cuidado com o nome.</b> No Russell e Norvig, "ambiente <i>não determinístico</i>" é outra coisa: é quando a <b>ação</b> pode ter vários resultados (o aspirador que às vezes suja o chão), e a resposta é a busca E-OU, que devolve um plano condicional. Aqui o ambiente é determinístico (só a comida nova é sorteada); quem sorteia é o <b>algoritmo</b>. O nome mais preciso é algoritmo <b>aleatorizado</b> ou <b>estocástico</b>.</p></div>
+      <div class="callout tip"><p><b>O genético é um caso curioso:</b> o <i>treino</i> é aleatório (população sorteada, cruzamento, mutação), mas o agente treinado joga de forma determinística: dá nota a cada movimento com pesos fixos e escolhe a maior. Por isso ele passa no teste "↻ Mesma partida" depois de treinado.</p></div>
+
+      <h2>Os algoritmos</h2>
+      <div id="tabelas"></div>
+
+      <h2>Fórmulas que aparecem aqui</h2>
+      <ul>
+        <li><b>A*</b>: expande o menor $f(n) = g(n) + h(n)$. Gulosa: menor $h(n)$. Custo uniforme: menor $g(n)$. Aqui o custo uniforme usa um custo de "risco" por célula, $1 + 2 \times$ (vizinhos bloqueados), e por isso difere da BFS.</li>
+        <li><b>Têmpera simulada</b>: uma piora $\Delta &lt; 0$ é aceita com probabilidade $e^{\Delta / T}$, com $T = T_0 \alpha^{t}$ ($T_0 = 1$, $\alpha = 0{,}85$, $t$ = passos desde a última comida).</li>
+        <li><b>Monte Carlo</b> e <b>MCTS</b>: recompensa $+1$ por comida e $-1$ na morte, descontada por $\gamma = 0{,}95$ a cada passo. No MCTS, a seleção escolhe o filho com maior UCB1: $\bar Q_i + c\sqrt{\ln N / n_i}$, equilibrando o que já se mostrou bom ($\bar Q_i$) com o que foi pouco testado ($n_i$ pequeno).</li>
+        <li><b>Genético</b>: nota de um movimento $= \sum_i w_i\, x_i$, com $x$ = (morre, distância à comida, espaço livre, rota de fuga, aperto). Seleção por torneio, cruzamento uniforme, mutação gaussiana em 30% dos genes e elitismo dos 2 melhores.</li>
+      </ul>
+
+      <h2>Experimentos</h2>
+      <ol>
+        <li><b>BFS × A*</b> em 24 × 16: o caminho tem o mesmo tamanho, mas a mancha azul (nós expandidos) do A* é bem menor.</li>
+        <li><b>DFS</b>: o caminho serpenteia pelo tabuleiro inteiro antes de chegar à comida. Completo, mas longe de ótimo.</li>
+        <li><b>A* × A* seguro</b> na corrida: o seguro come muito mais. Veja o fantasma tracejado: é a cobra imaginada depois de comer.</li>
+        <li><b>Ciclo hamiltoniano</b>: vence sempre, sem busca alguma, mas leva até $W \cdot H$ passos por comida. Garantia × eficiência.</li>
+        <li><b>Subida de encosta × têmpera</b>: a aleatoriedade quase não ajuda, porque o que mata a cobra não é um ótimo local, é o próprio corpo. Aleatoriedade não é melhor por si só.</li>
+        <li><b>Monte Carlo × MCTS</b>: veja as simulações (linhas finas) e compare na corrida a comida média e o custo por decisão.</li>
+        <li><b>Genético</b>: treine duas vezes. Os pesos saem diferentes, mas quase sempre com peso positivo para espaço livre e negativo para distância.</li>
+      </ol>
+      <p>O mesmo jogo, com os mesmos algoritmos em Python e pygame, está no projeto <a href="https://github.com/davifmn/computacao-UFMG-resumo/tree/main/periodo-07/introducao-a-inteligencia-artificial/projetos/snake-algoritmos-de-busca">snake-algoritmos-de-busca</a>.</p>
+      <h2>Teste seu entendimento</h2>
+    </section>
+    <div id="quiz" class="prose"></div>
+  </main>
+
+  <script type="module">
+    import { COLORS } from '../../../engine/scene.js';
+    import { mountQuiz } from '../../../engine/quiz.js';
+    import { $, $$, renderMath } from '../../../engine/page.js';
+    import * as S from './snake.js';
+
+    // ---------------- estado da página ----------------
+    let fam = 'deterministicos', alg = S.porId('astar'), humano = false;
+    let tamanho = 'medio', toroidal = false, nComidas = 1;
+    let sementeJogo = 1, sementeAgente = 1;
+    let pesos = S.PESOS_CAMPEAO.slice();
+    let jogo, agente, pendente, nos = 0, rodando = false, dirHumano = 1;
+
+    const cv = $('#tab'), ctx = cv.getContext('2d');
+    const DPR = window.devicePixelRatio || 1;
+    const CW = 760, CH = 507;
+    cv.width = CW * DPR; cv.height = CH * DPR; ctx.scale(DPR, DPR);
+
+    const fabrica = a => (a.id === 'genetico' ? S.agenteGenetico(pesos) : a.criar);
+
+    function reiniciar() {
+      const { w, h } = S.TAMANHOS[tamanho];
+      jogo = S.novoJogo({ w, h, comidas: nComidas, toroidal, semente: sementeJogo });
+      agente = humano ? null : fabrica(alg)(S.rng(sementeAgente));
+      nos = 0; dirHumano = 1;
+      pendente = humano ? null : agente.decidir(jogo);
+      if (pendente) nos += pendente.pensamento?.nos ?? 0;
+      $('#fim').classList.remove('on');
+      parar();
+      painel(); desenhar();
+    }
+
+    function passoJogo() {
+      if (!jogo.vivo) return;
+      S.passo(jogo, humano ? dirHumano : pendente.dir);
+      pendente = null;
+      if (jogo.vivo && !humano) { pendente = agente.decidir(jogo); nos += pendente.pensamento?.nos ?? 0; }
+      if (!jogo.vivo) fim();
+    }
+
+    function fim() {
+      parar();
+      const msg = { venceu: ['🏆 Venceu!', 'a cobra ocupou o tabuleiro inteiro'], parede: ['💥 Bateu na parede', 'sem saída, ou sem enxergar a borda'], corpo: ['💥 Bateu no próprio corpo', 'o plano não previu o corpo'], fome: ['💤 Morreu de fome', `${jogo.limiteFome} passos sem comer: preso num laço`] }[jogo.motivo];
+      $('#fim-t').textContent = msg[0];
+      $('#fim-s').textContent = `${msg[1]} · ${jogo.comidos} comidas em ${jogo.passos} passos`;
+      $('#fim').classList.add('on');
+    }
+
+    // ---------------- laço de animação ----------------
+    const velocidade = () => { const v = +$('#vel').value; return Math.round(2 * Math.pow(250, v / 100)); }; // 2 a 500 passos/s
+    let acc = 0, ultimo = 0;
+    function quadro(t) {
+      if (!rodando) return;
+      acc += Math.min(250, t - (ultimo || t)); ultimo = t;
+      const intervalo = 1000 / velocidade();
+      let n = 0;
+      const t0 = performance.now();
+      while (acc >= intervalo && jogo.vivo && n < 200 && performance.now() - t0 < 30) { passoJogo(); acc -= intervalo; n++; }
+      if (acc > intervalo * 4) acc = 0;
+      painel(); desenhar();
+      if (rodando) requestAnimationFrame(quadro);
+    }
+    function jogar() { if (!jogo.vivo) reiniciar(); rodando = true; ultimo = 0; acc = 0; $('#play').textContent = '⏸ Pausar'; requestAnimationFrame(quadro); }
+    function parar() { rodando = false; $('#play').textContent = '▶ Jogar'; }
+
+    // ---------------- desenho ----------------
+    const geo = () => { const { w, h } = jogo; const cs = Math.min(CW / w, CH / h); return { cs, x0: (CW - cs * w) / 2, y0: (CH - cs * h) / 2 }; };
+    const centro = (v, g) => [g.x0 + (v % jogo.w + 0.5) * g.cs, g.y0 + (Math.floor(v / jogo.w) + 0.5) * g.cs];
+    const DIR_COR = [COLORS.blue, COLORS.orange, COLORS.purple, COLORS.pink];
+
+    function linha(cells, g, cor, larg, tracejado = null, alfa = 1) {
+      if (!cells || cells.length < 2) return;
+      ctx.save(); ctx.strokeStyle = cor; ctx.lineWidth = larg; ctx.globalAlpha = alfa; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (tracejado) ctx.setLineDash(tracejado);
+      ctx.beginPath();
+      for (let i = 0; i < cells.length; i++) {
+        const [x, y] = centro(cells[i], g);
+        // atravessar a borda do toro: interrompe a linha
+        if (i === 0 || S.distancia({ ...jogo, toroidal: false }, cells[i - 1], cells[i]) !== 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke(); ctx.restore();
+    }
+    function celula(v, g, cor, alfa = 1, pad = 1) {
+      ctx.globalAlpha = alfa; ctx.fillStyle = cor;
+      ctx.fillRect(g.x0 + (v % jogo.w) * g.cs + pad, g.y0 + Math.floor(v / jogo.w) * g.cs + pad, g.cs - 2 * pad, g.cs - 2 * pad);
+      ctx.globalAlpha = 1;
+    }
+
+    function desenhar() {
+      const g = geo(), { w, h } = jogo;
+      ctx.clearRect(0, 0, CW, CH);
+      ctx.fillStyle = COLORS.surface; ctx.fillRect(0, 0, CW, CH);
+      for (let v = 0; v < w * h; v++) celula(v, g, ((v % w) + Math.floor(v / w)) % 2 ? '#1a1f27' : '#1d222b');
+      if (!toroidal) { ctx.strokeStyle = COLORS.faint; ctx.lineWidth = 2; ctx.strokeRect(g.x0 + 1, g.y0 + 1, g.cs * w - 2, g.cs * h - 2); }
+      const p = $('#mostrar').checked && pendente ? pendente.pensamento : null;
+      if (p) {
+        if (p.ciclo) linha([...p.ciclo, p.ciclo[0]], g, COLORS.faint, 1.5, null, 0.5);
+        // busca recém-feita: forte; busca antiga (só seguindo o plano): apagada
+        if (p.expandidos) { const al = p.replanejou === false ? 0.14 : 0.45; p.expandidos.forEach((v, k) => celula(v, g, `hsl(${200 + 80 * k / Math.max(1, p.expandidos.length)}, 55%, 42%)`, al)); }
+        if (p.fronteira && p.replanejou !== false) p.fronteira.forEach(v => celula(v, g, COLORS.yellow, 0.22));
+        if (p.rollouts) for (const r of p.rollouts) linha([jogo.corpo[0], ...r.celulas], g, DIR_COR[r.dir], 1.5, null, 0.45);
+        if (p.fantasma) for (const v of p.fantasma) { const x = g.x0 + (v % w) * g.cs, y = g.y0 + Math.floor(v / w) * g.cs; ctx.save(); ctx.strokeStyle = COLORS.teal; ctx.setLineDash([4, 3]); ctx.globalAlpha = 0.8; ctx.strokeRect(x + 4, y + 4, g.cs - 8, g.cs - 8); ctx.restore(); }
+        if (p.caminho) linha([jogo.corpo[0], ...p.caminho], g, p.perigo ? COLORS.red : COLORS.green, 3, p.perigo ? [6, 5] : null, 0.9);
+        if (p.cauda) linha([jogo.corpo[0], ...p.cauda], g, COLORS.orange, 3, null, 0.9);
+      }
+      // comida
+      for (const c of jogo.comidas) {
+        const [x, y] = centro(c, g);
+        ctx.save(); ctx.shadowColor = COLORS.red; ctx.shadowBlur = 12; ctx.fillStyle = COLORS.red;
+        ctx.beginPath(); ctx.arc(x, y, g.cs * 0.3, 0, 2 * Math.PI); ctx.fill(); ctx.restore();
+      }
+      // cobra: da cauda para a cabeça
+      const L = jogo.corpo.length;
+      for (let i = L - 1; i >= 0; i--) {
+        const v = jogo.corpo[i], f = i / Math.max(1, L - 1);
+        const pad = i === 0 ? 2 : 3 + f * g.cs * 0.12;
+        ctx.fillStyle = i === 0 ? (jogo.vivo || jogo.venceu ? '#b6f09a' : COLORS.red) : `hsl(${100 - 20 * f}, ${55 - 15 * f}%, ${56 - 22 * f}%)`;
+        const x = g.x0 + (v % w) * g.cs + pad, y = g.y0 + Math.floor(v / w) * g.cs + pad, s = g.cs - 2 * pad;
+        ctx.beginPath(); ctx.roundRect(x, y, s, s, s * 0.3); ctx.fill();
+      }
+      // olhos
+      const [hx, hy] = centro(jogo.corpo[0], g), d = S.DIRS[jogo.dir];
+      ctx.fillStyle = '#0e1116';
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(hx + d.dx * g.cs * 0.18 + (d.dy ? s : 0) * g.cs * 0.17, hy + d.dy * g.cs * 0.18 + (d.dx ? s : 0) * g.cs * 0.17, g.cs * 0.07, 0, 2 * Math.PI); ctx.fill(); }
+      // candidatos dos não determinísticos: rótulo ao lado da cabeça
+      if (p?.candidatos) {
+        ctx.font = `600 ${Math.max(10, g.cs * 0.28)}px Inter, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        for (const c of p.candidatos) {
+          const nv = S.vizinho(jogo, jogo.corpo[0], c.dir); if (nv < 0) continue;
+          const [x, y] = centro(nv, g);
+          ctx.fillStyle = c.dir === p.escolhido ? COLORS.yellow : COLORS.muted;
+          ctx.fillText(S.DIRS[c.dir].seta, x, y);
+        }
+      }
+    }
+
+    // ---------------- painel ----------------
+    const fmt = x => (Math.abs(x) >= 100 ? Math.round(x).toLocaleString('pt-BR') : x.toFixed(2).replace('.', ','));
+    function painel() {
+      const a = humano ? { nome: 'Você', grupo: 'Jogador humano', ideia: 'Setas ou WASD. Sem busca nenhuma: só os seus olhos e reflexos.', completo: '—', otimo: '—', morte: 'Depende de você.' } : alg;
+      $('#alg-grupo').textContent = humano ? 'Você' : `${fam === 'deterministicos' ? 'Determinístico' : 'Não determinístico'} · ${a.grupo}`;
+      $('#alg-nome').textContent = a.nome;
+      $('#alg-ideia').textContent = a.ideia;
+      $('#alg-completo').textContent = a.completo; $('#alg-otimo').textContent = a.otimo; $('#alg-morte').textContent = a.morte;
+      $('#s-com').textContent = jogo.comidos; $('#s-tam').textContent = jogo.corpo.length; $('#s-pas').textContent = jogo.passos;
+      $('#s-fome').textContent = `${jogo.fome}/${jogo.limiteFome}`; $('#s-nos').textContent = nos.toLocaleString('pt-BR');
+      $('#s-npc').textContent = jogo.comidos ? Math.round(nos / jogo.comidos).toLocaleString('pt-BR') : '—';
+      const p = pendente?.pensamento;
+      let html = p ? `<div>${p.texto}${p.temperatura != null ? '' : ''}</div>` : `<div style="color:var(--muted)">${humano ? 'Use as setas.' : jogo.vivo ? '' : 'Fim de jogo.'}</div>`;
+      if (p?.candidatos) {
+        const vals = p.candidatos.map(c => c.valor), lo = Math.min(...vals, 0), hi = Math.max(...vals, 1e-9);
+        html += '<ul class="cands">' + p.candidatos.map(c => `<li class="${c.dir === p.escolhido ? 'esc' : ''}"><span style="width:1.2em">${S.DIRS[c.dir].seta}</span><i style="width:${Math.round(60 * (c.valor - lo) / (hi - lo || 1)) + 4}px"></i><span>${c.rotulo}</span></li>`).join('') + '</ul>';
+      }
+      $('#pens').innerHTML = html;
+      $('#seed').textContent = humano ? '' : `semente da comida ${sementeJogo} · ${fam === 'deterministicos' || alg.id === 'genetico' ? 'o agente não sorteia nada' : `semente do agente ${sementeAgente}`}`;
+      $('#ga').classList.toggle('on', !humano && alg.id === 'genetico');
+    }
+
+    function legenda() {
+      const it = (cor, txt, estilo = '') => `<span><i style="background:${cor};${estilo}"></i>${txt}</span>`;
+      const l = fam === 'deterministicos'
+        ? [it('linear-gradient(90deg,hsl(200,55%,42%),hsl(280,55%,42%))', 'expandido (azul → roxo = ordem)'), it(COLORS.yellow, 'fronteira', 'opacity:.5'), it(COLORS.green, 'caminho planejado'), it(COLORS.red, 'caminho perigoso (A* seguro)'), it('transparent', 'fantasma: a cobra depois de comer', `outline:1px dashed ${COLORS.teal}`), it(COLORS.orange, 'passo de segurança'), it(COLORS.faint, 'ciclo hamiltoniano')]
+        : [it(COLORS.blue, 'simulação ↑'), it(COLORS.orange, '→'), it(COLORS.purple, '↓'), it(COLORS.pink, '←'), it(COLORS.green, 'variação principal (MCTS)'), it(COLORS.yellow, 'movimento escolhido')];
+      $('#legenda').innerHTML = l.join('');
+    }
+
+    function montarFamilia() {
+      $$('.familia').forEach(b => b.setAttribute('aria-pressed', b.dataset.fam === fam));
+      const lista = S.ALGORITMOS[fam], grupos = [...new Set(lista.map(a => a.grupo))];
+      $('#grupos').innerHTML = grupos.map(gr => `<div class="grupo"><small>${gr}</small><div class="chips">${lista.filter(a => a.grupo === gr).map(a => `<button class="btn small" data-a="${a.id}">${a.nome}</button>`).join('')}</div></div>`).join('');
+      $$('[data-a]').forEach(b => b.addEventListener('click', () => { alg = S.porId(b.dataset.a); humano = false; marcar(); reiniciar(); }));
+      marcar(); legenda();
+    }
+    const marcar = () => { $$('[data-a]').forEach(b => b.setAttribute('aria-pressed', !humano && b.dataset.a === alg.id)); $('#humano').setAttribute('aria-pressed', humano); };
+
+    // ---------------- controles ----------------
+    $$('.familia').forEach(b => b.addEventListener('click', () => {
+      if (fam === b.dataset.fam && !humano) return;
+      fam = b.dataset.fam; humano = false;
+      alg = S.ALGORITMOS[fam][fam === 'deterministicos' ? 4 : 3];
+      montarFamilia(); reiniciar(); $('#corrida').innerHTML = '';
+    }));
+    $('#play').addEventListener('click', () => (rodando ? parar() : jogar()));
+    $('#passo').addEventListener('click', () => { parar(); if (!jogo.vivo) reiniciar(); else { passoJogo(); painel(); desenhar(); } });
+    $('#repetir').addEventListener('click', () => { if (fam !== 'deterministicos') sementeAgente++; reiniciar(); jogar(); });
+    $('#nova').addEventListener('click', () => { sementeJogo++; sementeAgente++; reiniciar(); });
+    $('#vel').addEventListener('input', () => { $('#vel-o').value = `${velocidade()}/s`; });
+    $('#vel-o').value = `${velocidade()}/s`;
+    $('#tam').innerHTML = Object.entries(S.TAMANHOS).map(([k, t]) => `<option value="${k}" ${k === tamanho ? 'selected' : ''}>${t.nome}</option>`).join('');
+    $('#tam').addEventListener('change', e => { tamanho = e.target.value; reiniciar(); $('#corrida').innerHTML = ''; });
+    $('#bordas').addEventListener('change', e => { toroidal = e.target.value === '1'; reiniciar(); $('#corrida').innerHTML = ''; });
+    $('#ncom').addEventListener('change', e => { nComidas = +e.target.value; reiniciar(); $('#corrida').innerHTML = ''; });
+    $('#mostrar').addEventListener('change', desenhar);
+    $('#humano').addEventListener('click', () => { humano = !humano; marcar(); reiniciar(); if (humano) { $('#vel').value = 30; $('#vel-o').value = `${velocidade()}/s`; } });
+    const TECLAS = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3, w: 0, d: 1, s: 2, a: 3 };
+    window.addEventListener('keydown', e => {
+      if (e.target.closest('input, select, textarea')) return;
+      if (humano && e.key in TECLAS) { e.preventDefault(); const d = TECLAS[e.key]; if (d !== S.oposta(jogo.dir)) dirHumano = d; if (!rodando && jogo.vivo) jogar(); }
+      else if (e.key === ' ') { e.preventDefault(); rodando ? parar() : jogar(); }
+      else if (e.key === 'n') $('#passo').click();
+    });
+
+    // ---------------- corrida ----------------
+    const pausa = () => new Promise(r => setTimeout(r, 0));
+    // como S.jogarPartida, mas devolve o controle ao navegador a cada ~25 ms (o MCTS leva segundos por partida)
+    async function partidaAssincrona(criar, opts) {
+      const j = S.novoJogo(opts), ag = criar(S.rng(opts.sementeAgente));
+      let nos = 0, decisoes = 0, ms = 0, t = performance.now();
+      while (j.vivo && j.passos < opts.passosMax) {
+        const { dir, pensamento } = ag.decidir(j);
+        nos += pensamento?.nos ?? 0; decisoes++;
+        S.passo(j, dir);
+        if (performance.now() - t > 25) { ms += performance.now() - t; await pausa(); t = performance.now(); }
+      }
+      ms += performance.now() - t;
+      return { comidos: j.comidos, passos: j.passos, motivo: j.vivo ? 'limite' : j.motivo, venceu: j.venceu, nos, decisoes, ms };
+    }
+    let correndo = false;
+    $('#correr').addEventListener('click', async () => {
+      if (correndo) return;
+      correndo = true; $('#correr').disabled = true; parar();
+      const lista = S.ALGORITMOS[fam], N = 8, { w, h } = S.TAMANHOS[tamanho];
+      const res = lista.map(a => ({ a, rs: [] }));
+      $('#prog').hidden = false; $('#prog').max = lista.length * N; $('#prog').value = 0;
+      const desenhaTabela = () => {
+        const linhas = res.filter(r => r.rs.length);
+        const med = r => r.rs.reduce((s, x) => s + x.comidos, 0) / r.rs.length;
+        const top = Math.max(...linhas.map(med), 1);
+        const melhor = linhas.length ? linhas.reduce((a, b) => (med(b) > med(a) ? b : a)) : null;
+        $('#corrida').innerHTML = `<tr><th>algoritmo</th><th>comida (média)</th><th>desvio</th><th>melhor</th><th>vitórias</th><th>parede · corpo · fome</th><th>nós/decisão</th><th>ms/decisão</th></tr>` + linhas.map(r => {
+          const m = med(r), sd = Math.sqrt(r.rs.reduce((s, x) => s + (x.comidos - m) ** 2, 0) / r.rs.length);
+          const cnt = k => r.rs.filter(x => x.motivo === k).length;
+          const dec = r.rs.reduce((s, x) => s + x.decisoes, 0);
+          return `<tr class="${r === melhor ? 'melhor' : ''}"><td>${r.a.nome}</td><td style="text-align:left"><span class="bar" style="width:${Math.round(110 * m / top)}px"></span>${fmt(m)}</td><td>${fmt(sd)}</td><td>${Math.max(...r.rs.map(x => x.comidos))}</td><td>${cnt('venceu')}/${r.rs.length}</td><td>${cnt('parede')} · ${cnt('corpo')} · ${cnt('fome')}</td><td>${fmt(r.rs.reduce((s, x) => s + x.nos, 0) / dec)}</td><td>${(r.rs.reduce((s, x) => s + x.ms, 0) / dec).toFixed(3).replace('.', ',')}</td></tr>`;
+        }).join('');
+      };
+      for (const r of res) {
+        for (let k = 1; k <= N; k++) {
+          $('#prog-t').textContent = `${r.a.nome}, partida ${k}/${N}`;
+          await pausa();
+          r.rs.push(await partidaAssincrona(fabrica(r.a), { w, h, comidas: nComidas, toroidal, semente: 100 + k, sementeAgente: k, passosMax: 60000 }));
+          $('#prog').value++;
+          desenhaTabela();
+        }
+      }
+      $('#prog').hidden = true; $('#prog-t').textContent = `${N} partidas por algoritmo, sementes da comida 101 a ${100 + N}.`;
+      correndo = false; $('#correr').disabled = false;
+    });
+
+    // ---------------- algoritmo genético ----------------
+    function mostrarPesos(ws) {
+      const M = Math.max(3, ...ws.map(Math.abs));
+      $('#pesos').innerHTML = S.CARACTERISTICAS.map((nm, i) => {
+        const x = ws[i], larg = 50 * Math.abs(x) / M;
+        return `<div><span>${nm}</span><span class="barra"><i style="left:${x >= 0 ? 50 : 50 - larg}%;width:${larg}%;background:${x >= 0 ? COLORS.green : COLORS.red}"></i></span><b>${x.toFixed(2)}</b></div>`;
+      }).join('');
+    }
+    const gg = $('#ga-graf'), gctx = gg.getContext('2d');
+    gg.width = 760 * DPR; gg.height = 220 * DPR; gctx.scale(DPR, DPR);
+    function grafico(hist, total) {
+      const W = 760, H = 220, m = { l: 52, r: 14, t: 14, b: 28 };
+      gctx.clearRect(0, 0, W, H);
+      const top = Math.max(100, ...hist.map(x => x.melhor)) * 1.1;
+      const X = i => m.l + (W - m.l - m.r) * (i - 1) / Math.max(1, total - 1), Y = v => H - m.b - (H - m.t - m.b) * v / top;
+      gctx.strokeStyle = COLORS.border; gctx.fillStyle = COLORS.muted; gctx.font = '12px Inter, sans-serif'; gctx.lineWidth = 1;
+      for (let k = 0; k <= 4; k++) { const v = top * k / 4, y = Y(v); gctx.beginPath(); gctx.moveTo(m.l, y); gctx.lineTo(W - m.r, y); gctx.stroke(); gctx.textAlign = 'right'; gctx.fillText(Math.round(v).toLocaleString('pt-BR'), m.l - 6, y + 4); }
+      gctx.textAlign = 'center';
+      for (let i = 1; i <= total; i += Math.ceil(total / 10)) gctx.fillText(i, X(i), H - 8);
+      for (const [k, cor, nome] of [['melhor', COLORS.yellow, 'melhor'], ['media', COLORS.blue, 'média']]) {
+        gctx.strokeStyle = cor; gctx.lineWidth = 2.5; gctx.beginPath();
+        hist.forEach((x, i) => (i ? gctx.lineTo(X(x.geracao), Y(x[k])) : gctx.moveTo(X(x.geracao), Y(x[k]))));
+        gctx.stroke();
+        if (hist.length) { gctx.fillStyle = cor; gctx.textAlign = 'left'; const u = hist.at(-1); gctx.fillText(nome, Math.min(X(u.geracao) + 6, W - 50), Y(u[k]) - 6); }
+      }
+    }
+    $('#ga-treinar').addEventListener('click', async () => {
+      parar(); $('#ga-treinar').disabled = true;
+      const semente = 1 + Math.floor(Math.random() * 1e6), geracoes = 15, hist = [];
+      for (const g of S.evoluir({ semente, geracoes })) {
+        hist.push(g); grafico(hist, geracoes); mostrarPesos(g.pesos);
+        $('#ga-info').textContent = `Treino com semente ${semente}: geração ${g.geracao}/${geracoes}, 24 indivíduos, 2 partidas 12 × 8 cada.`;
+        await pausa();
+      }
+      pesos = hist.at(-1).pesos;
+      $('#ga-info').textContent += ' Pronto: a cobra agora joga com o melhor da última geração.';
+      $('#ga-treinar').disabled = false;
+      reiniciar();
+    });
+    $('#ga-campeao').addEventListener('click', () => { pesos = S.PESOS_CAMPEAO.slice(); mostrarPesos(pesos); $('#ga-info').textContent = 'Pesos do campeão pré-treinado (semente 7).'; reiniciar(); });
+    mostrarPesos(pesos); grafico([], 15);
+
+    // ---------------- tabelas e quiz ----------------
+    $('#tabelas').innerHTML = [['deterministicos', 'Determinísticos'], ['nao_deterministicos', 'Não determinísticos']].map(([k, t]) =>
+      `<h3>${t}</h3><table class="data"><tr><th>algoritmo</th><th>ideia</th><th>completo?</th><th>ótimo?</th></tr>${S.ALGORITMOS[k].map(a => `<tr><td style="text-align:left"><b>${a.nome}</b></td><td style="text-align:left">${a.ideia}</td><td>${a.completo}</td><td>${a.otimo}</td></tr>`).join('')}</table>`).join('');
+
+    mountQuiz($('#quiz'), [
+      { q: 'O A* com distância de Manhattan acha o caminho mais curto até a comida. Por que mesmo assim a cobra morre?', options: ['Porque o caminho é ótimo num modelo em que o corpo é parede fixa e nada importa depois da comida', 'Porque a distância de Manhattan não é admissível', 'Porque o A* não é completo', 'Porque a busca em largura seria mais rápida'], answer: 0, explain: 'O objetivo da busca (chegar à comida) não é o objetivo do jogo (sobreviver comendo). O A* seguro olha além da comida.' },
+      { q: 'Você roda o Monte Carlo duas vezes com a mesma semente da comida e obtém resultados diferentes. Isso é…', options: ['esperado: o agente sorteia as simulações', 'um bug: a semente deveria fixar tudo', 'culpa da comida, que é sorteada', 'impossível em grades pequenas'], answer: 0, explain: 'A semente da comida fixa o ambiente; o algoritmo usa outra fonte de aleatoriedade.' },
+      { q: 'Na têmpera simulada, o que acontece quando a temperatura T tende a zero?', options: ['Pioras quase nunca são aceitas: vira subida de encosta', 'Todo movimento é aceito: vira passeio aleatório', 'Vira A*', 'A cobra para'], answer: 0, explain: 'A probabilidade de aceitar uma piora é e^(Δ/T), que vai a 0 quando T → 0 com Δ < 0.' },
+      { q: 'O ciclo hamiltoniano nunca perde. Por que não é sempre a melhor escolha?', options: ['Leva até W·H passos por comida, mesmo com a comida ao lado', 'Só funciona no toro', 'Precisa de uma heurística admissível', 'É não determinístico'], answer: 0, explain: 'Garantia × eficiência: versões com atalhos pulam partes do ciclo enquanto a cobra é curta.' },
+      { q: 'O que a UCB1 equilibra na seleção do MCTS?', options: ['Aproveitar o que já parece bom e explorar o que foi pouco testado', 'Custo do caminho e heurística', 'Temperatura e energia', 'Profundidade e largura'], answer: 0, explain: 'Q̄ᵢ premia o bom; c·√(ln N / nᵢ) cresce para os pouco visitados.' },
+    ]);
+    renderMath();
+
+    montarFamilia();
+    reiniciar();
+  </script>
+</body>
+</html>

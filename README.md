@@ -115,7 +115,7 @@ python3 -m http.server 8000     # ou: npx serve
 | [Redes de Computadores · Módulo 1](periodo-07/redes-de-computadores/modulo-1/) · DCC023 | **Tutoriais:** caps. 1–4 do Tanenbaum com exercícios resolvidos · Revisão da prova 1 com simulado · Encapsulamento · Nyquist/Shannon · Codificação · CDMA · Circuitos × pacotes · Enquadramento · Hamming/CRC · Janela deslizante · ALOHA/CSMA · Ethernet/Wi-Fi · Pontes | Python |
 | [Redes de Computadores · Módulo 2](periodo-07/redes-de-computadores/modulo-2/) · DCC023 | **Tutoriais:** caps. 5–8 do Tanenbaum com exercícios resolvidos · Revisão da prova 2 com simulado · Roteamento · Endereçamento IP · TCP · DNS · Criptografia | Python |
 | [Fundamentos de Sistemas Paralelos e Distribuídos](periodo-07/fundamentos-de-sistemas-paralelos-e-distribuidos/) · DCC641 | Speedup e DAGs · Relógios lógicos · Eleição de líder · MapReduce | Python (multiprocessing) |
-| [Introdução à Inteligência Artificial](periodo-07/introducao-a-inteligencia-artificial/) · DCC642 | Busca (A*) · Minimax e alfa-beta · Decisões sob incerteza (MDP) · Perceptron e redes neurais | Python |
+| [Introdução à Inteligência Artificial](periodo-07/introducao-a-inteligencia-artificial/) · DCC642 | Busca (A*) · Snake: buscas determinísticas e não determinísticas · Minimax e alfa-beta · Decisões sob incerteza (MDP) · Perceptron e redes neurais | Python |
 
 ### Optativas
 
@@ -139,7 +139,7 @@ uma seção **"O que mudou na migração"** que registra cada correção feita n
 | 5º | Pesquisa Operacional | [TP1 · Clique máxima](periodo-05/pesquisa-operacional/trabalhos/tp1-clique-maxima/) | Julia, JuMP |
 | 6º | Compiladores I | [Gerador de código e alocação de registradores](periodo-06/compiladores-1/trabalhos/tp-alocacao-de-registradores/) | Python |
 | 6º | Engenharia de Software | [BarberFlow](periodo-06/engenharia-de-software/trabalhos/barberflow/) | Node.js, MongoDB, Jest |
-| 7º | Introdução à IA | [Snake com A\*](periodo-07/introducao-a-inteligencia-artificial/projetos/snake-a-estrela-e-neat/) · [Carro autônomo com NEAT](periodo-07/introducao-a-inteligencia-artificial/projetos/carro-autonomo-neat/) *(projetos extras)* | Python, pygame |
+| 7º | Introdução à IA | [Snake e algoritmos de busca](periodo-07/introducao-a-inteligencia-artificial/projetos/snake-algoritmos-de-busca/) · [Carro autônomo com NEAT](periodo-07/introducao-a-inteligencia-artificial/projetos/carro-autonomo-neat/) *(projetos extras)* | Python, pygame |
 | Optativa | Robótica Móvel | [TP1 · Transformações](optativas/robotica-movel/trabalhos/tp1-transformacoes-e-cena/) · [TP3 · Mapa de ocupação](optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao/) · [Robô garçom](optativas/robotica-movel/trabalhos/tp-final-robo-garcom/) | Python, CoppeliaSim |
 | Optativa | Computação Paralela | [Leilão paralelo](optativas/computacao-paralela/trabalhos/leilao-paralelo/) | C++, OpenMP |
 | Optativa | Computação em Nuvem | [Recomendador de playlists](optativas/computacao-em-nuvem/trabalhos/recomendador-de-playlists/) | Python, Kubernetes |

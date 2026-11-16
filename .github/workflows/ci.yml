@@ -56,7 +56,8 @@ jobs:
           for dir in periodo-05/algoritmos-2/trabalhos/tp2-caixeiro-viajante \
                      periodo-05/algoritmos-2/trabalhos/envoltoria-convexa \
                      periodo-06/compiladores-1/trabalhos/tp-alocacao-de-registradores \
-                     optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao; do
+                     optativas/robotica-movel/trabalhos/tp3-mapa-de-ocupacao \
+                     periodo-07/introducao-a-inteligencia-artificial/projetos/snake-algoritmos-de-busca; do
             echo "== $dir"; (cd "$dir" && python -m unittest discover -v -p "test_*.py")
           done
 

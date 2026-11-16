@@ -409,12 +409,13 @@ export const PERIODOS = [
         resumo: 'Agentes, busca com e sem informação, jogos, decisões sob incerteza e aprendizado de máquina.',
         visualizacoes: [
           { titulo: 'Busca', arquivo: 'busca.html', descricao: 'BFS, DFS, custo uniforme, gulosa e A* numa grade que você desenha.' },
+          { titulo: 'Snake: quinze maneiras de pensar', arquivo: 'snake.html', descricao: 'A cobrinha jogada por buscas determinísticas (BFS, A*, A* seguro, ciclo hamiltoniano) e não determinísticas (têmpera, Monte Carlo, MCTS, genético), vendo o que cada uma pensa.' },
           { titulo: 'Minimax e alfa-beta', arquivo: 'minimax.html', descricao: 'A árvore do livro com as podas, e um jogo da velha contra a IA perfeita.' },
           { titulo: 'Decisões sob incerteza', arquivo: 'mdp.html', descricao: 'Iteração de valor no mundo 4×3 e a política mudando com a recompensa.' },
           { titulo: 'Perceptron e redes neurais', arquivo: 'redes-neurais.html', descricao: 'Regiões de decisão aprendidas: o perceptron falha no XOR, a rede escondida resolve.' },
         ],
         trabalhos: [
-          { titulo: 'Snake com A*', pasta: 'projetos/snake-a-estrela-e-neat', extra: true, tags: ['Python', 'pygame'], descricao: 'O jogo da cobrinha jogado por A* em grade toroidal, numa versão que prevê a cauda saindo do caminho.' },
+          { titulo: 'Snake e algoritmos de busca', pasta: 'projetos/snake-algoritmos-de-busca', extra: true, tags: ['Python', 'pygame'], descricao: '15 agentes em duas famílias, determinísticos (BFS a ciclo hamiltoniano) e não determinísticos (aleatório a MCTS e genético), com torneio sem tela.' },
           { titulo: 'Carro autônomo com NEAT', pasta: 'projetos/carro-autonomo-neat', extra: true, tags: ['Python', 'pygame', 'NEAT'], descricao: 'Desenhe uma pista e evolua redes neurais que dirigem o carro a partir de sensores de distância.' },
         ],
       },
