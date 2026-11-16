@@ -129,3 +129,82 @@ test('catálogo: duas famílias com descrição completa', () => {
   assert.equal(S.ALGORITMOS.nao_deterministicos.length, 6);
   for (const a of S.TODOS) for (const k of ['id', 'nome', 'grupo', 'ideia', 'completo', 'otimo', 'morte']) assert.ok(a[k], `${a.id}.${k}`);
 });
+
+test('obstáculos: bloqueiam, matam e não recebem comida', () => {
+  const { w, h } = S.TAMANHOS.medio;
+  const j = S.novoJogo({ w, h, obstaculos: [6 * w + 10, 0, 1, 2] });
+  assert.equal(j.nObst, 3, 'a célula à frente da cobra nunca vira obstáculo');
+  assert.equal(S.vizinho(j, 1 * w + 1, 0), -1, 'vizinho de obstáculo é −1');
+  for (let s = 1; s < 30; s++) {
+    const k = S.novoJogo({ w, h, semente: s, ...S.MAPAS.aleatorio.gerar(w, h) });
+    assert.ok(!k.obst[k.comidas[0]], 'comida fora de obstáculo');
+  }
+  const m = S.novoJogo({ w, h, obstaculos: [6 * w + 12] });
+  m.comidas = [0];
+  S.passo(m, 1); S.passo(m, 1);
+  assert.ok(m.vivo);
+  S.passo(m, 1);
+  assert.equal(m.motivo, 'obstaculo');
+  for (const [k, mp] of Object.entries(S.MAPAS)) for (const t of Object.values(S.TAMANHOS)) {
+    const g = mp.gerar(t.w, t.h), jj = S.novoJogo({ w: t.w, h: t.h, ...g });
+    assert.ok(S.buscar(jj, { tipo: 'bfs' }).caminho, `${k} ${t.nome}: comida alcançável`);
+    if (g.comida != null) assert.equal(jj.comidas[0], g.comida);
+  }
+  // caminhos nunca passam por obstáculos; o ciclo hamiltoniano desiste
+  const lab = S.novoJogo({ w, h, ...S.MAPAS.labirinto.gerar(w, h) });
+  for (const tipo of ['bfs', 'dfs', 'ucs', 'gulosa', 'astar']) for (const v of S.buscar(lab, { tipo }).caminho) assert.ok(!lab.obst[v], tipo);
+  const r = S.jogarPartida(S.porId('hamiltoniano').criar, { w: 8, h: 6, obstaculos: [0], passosMax: 500 });
+  assert.ok(!r.venceu);
+});
+
+test('registrar o raciocínio não muda as decisões', () => {
+  const { w, h } = S.TAMANHOS.pequeno;
+  for (const a of S.TODOS) {
+    const opts = { w, h, semente: 4, ...S.MAPAS.pilares.gerar(w, h) };
+    const j1 = S.novoJogo(opts), j2 = S.novoJogo(opts);
+    const a1 = a.criar(S.rng(3)), a2 = a.criar(S.rng(3), { registrar: true });
+    for (let k = 0; k < 40 && j1.vivo; k++) {
+      const d1 = a1.decidir(j1), d2 = a2.decidir(j2);
+      assert.equal(d1.dir, d2.dir, `${a.id}, passo ${k}`);
+      assert.equal(d1.pensamento.etapas ?? null, null, 'sem registro, sem etapas');
+      S.passo(j1, d1.dir); S.passo(j2, d2.dir);
+    }
+  }
+});
+
+test('reprodução do raciocínio: revelar, ordem da fronteira e narração', () => {
+  const { w, h } = S.TAMANHOS.medio;
+  const j = S.novoJogo({ w, h, ...S.MAPAS.armadilha.gerar(w, h) });
+  for (const tipo of ['bfs', 'dfs', 'ucs', 'gulosa', 'astar']) {
+    const r = S.buscar(j, { tipo, registrar: true }), et = r.etapas;
+    assert.equal(et[0].t, 'inicio');
+    const fim = S.revelar(et, et.length - 1);
+    assert.equal(fim.expandidos.size, r.expandidos.length);
+    assert.deepEqual(fim.caminho, r.caminho);
+    assert.ok(fim.definido);
+    // o caminho só é definido quando a comida SAI da fronteira, e só depois é reconstruído
+    const iObj = et.findIndex(e => e.t === 'objetivo');
+    assert.equal(et[iObj].v, j.comidas[0]);
+    assert.ok(!S.revelar(et, iObj - 1).definido);
+    assert.ok(et.slice(iObj + 1).every(e => e.t === 'reconstroi' || e.t === 'definido'));
+    // em cada momento, o próximo a sair da fronteira (pela ordem exibida) é quem é expandido
+    for (let i = 0; i < et.length - 1; i++) {
+      if (et[i + 1].t !== 'expande') continue;
+      const ordem = S.ordemFronteira(S.revelar(et, i));
+      assert.equal(ordem[0].v, et[i + 1].v, `${tipo}: evento ${i + 1}`);
+    }
+    for (const e of et) assert.ok(S.narrar(j, e).length > 5, e.t);
+  }
+  // não determinísticos também narram tudo
+  for (const id of ['aleatorio', 'subida', 'tempera', 'montecarlo', 'mcts', 'genetico', 'astar-seguro', 'caixeiro', 'hamiltoniano']) {
+    const jj = S.novoJogo({ w: 12, h: 8, comidas: id === 'caixeiro' ? 3 : 1 });
+    const d = S.porId(id).criar(S.rng(1), { registrar: true }).decidir(jj);
+    const et = d.pensamento.etapas;
+    assert.ok(et.length > 0, id);
+    for (const e of et) assert.ok(S.narrar(jj, e).length > 5, `${id}: ${e.t}`);
+    const fim = S.revelar(et, et.length - 1);
+    if (!['caixeiro', 'hamiltoniano'].includes(id)) assert.equal(fim.escolhido, d.dir, id);
+  }
+  const mc = S.porId('montecarlo').criar(S.rng(1), { registrar: true }).decidir(S.novoJogo({ w: 12, h: 8 }));
+  assert.equal(mc.pensamento.etapas.filter(e => e.t === 'rollout').length, 3 * 20, '20 simulações por movimento');
+});

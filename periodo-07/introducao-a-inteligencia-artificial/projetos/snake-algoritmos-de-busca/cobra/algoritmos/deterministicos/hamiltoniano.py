@@ -36,10 +36,12 @@ class CicloHamiltoniano(Agente):
 
     def decidir(self, j: Jogo) -> Decisao:
         if self.suc is None:
-            self.ciclo = ciclo_hamiltoniano(j.w, j.h)
+            self.ciclo = None if j.obstaculos else ciclo_hamiltoniano(j.w, j.h)
             if self.ciclo is None:
                 d, _ = sobreviver(j)
-                return Decisao(d, "Grade com lados ímpares: não existe ciclo hamiltoniano.")
+                return Decisao(d, "Com obstáculos não há ciclo pronto (achar um ciclo hamiltoniano numa grade qualquer "
+                                  "é NP-difícil): só sobrevivo." if j.obstaculos else
+                               "Grade com lados ímpares: não existe ciclo hamiltoniano.")
             n = len(self.ciclo)
             self.suc = {v: self.ciclo[(i + 1) % n] for i, v in enumerate(self.ciclo)}
             # percorre no sentido em que o próximo passo não é o pescoço

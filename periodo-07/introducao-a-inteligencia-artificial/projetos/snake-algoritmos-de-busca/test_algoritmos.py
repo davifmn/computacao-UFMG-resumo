@@ -68,6 +68,8 @@ class TestBusca(unittest.TestCase):
         self.assertIsNone(ciclo_hamiltoniano(5, 5))
         r = jogar_partida(CicloHamiltoniano, w=8, h=6, semente=4)
         self.assertTrue(r["venceu"])
+        com_obstaculo = jogar_partida(CicloHamiltoniano, w=8, h=6, semente=4, obstaculos={0}, passos_max=500)
+        self.assertFalse(com_obstaculo["venceu"], "com obstáculos não há ciclo pronto")
 
 
 class TestFamilias(unittest.TestCase):

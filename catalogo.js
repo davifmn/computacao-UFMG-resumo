@@ -409,7 +409,7 @@ export const PERIODOS = [
         resumo: 'Agentes, busca com e sem informação, jogos, decisões sob incerteza e aprendizado de máquina.',
         visualizacoes: [
           { titulo: 'Busca', arquivo: 'busca.html', descricao: 'BFS, DFS, custo uniforme, gulosa e A* numa grade que você desenha.' },
-          { titulo: 'Snake: quinze maneiras de pensar', arquivo: 'snake.html', descricao: 'A cobrinha jogada por buscas determinísticas (BFS, A*, A* seguro, ciclo hamiltoniano) e não determinísticas (têmpera, Monte Carlo, MCTS, genético), vendo o que cada uma pensa.' },
+          { titulo: 'Snake: quinze maneiras de pensar', arquivo: 'snake.html', descricao: 'O raciocínio de 15 algoritmos evento por evento: a fronteira de BFS, DFS, gulosa e A*, o instante em que o caminho fica definido, simulações de Monte Carlo e MCTS, com obstáculos que você desenha.' },
           { titulo: 'Minimax e alfa-beta', arquivo: 'minimax.html', descricao: 'A árvore do livro com as podas, e um jogo da velha contra a IA perfeita.' },
           { titulo: 'Decisões sob incerteza', arquivo: 'mdp.html', descricao: 'Iteração de valor no mundo 4×3 e a política mudando com a recompensa.' },
           { titulo: 'Perceptron e redes neurais', arquivo: 'redes-neurais.html', descricao: 'Regiões de decisão aprendidas: o perceptron falha no XOR, a rede escondida resolve.' },

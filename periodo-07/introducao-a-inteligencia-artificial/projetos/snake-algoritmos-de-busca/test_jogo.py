@@ -66,5 +66,35 @@ class TestRegras(unittest.TestCase):
         self.assertTrue(escapa(j))
 
 
+    def test_obstaculos(self):
+        w, h = 18, 12
+        j = Jogo(w, h, obstaculos=frozenset({6 * w + 10, 0, 1, 2}))
+        self.assertEqual(len(j.obstaculos), 3, "a célula à frente da cobra nunca vira obstáculo")
+        self.assertEqual(j.vizinho(1 * w + 1, 0), -1)
+        m = Jogo(w, h, obstaculos=frozenset({6 * w + 12}))
+        m.comidas = [0]
+        m.passo(1)
+        m.passo(1)
+        self.assertTrue(m.vivo)
+        m.passo(1)
+        self.assertEqual(m.motivo, "obstaculo")
+        for s in range(1, 20):
+            k = Jogo(w, h, semente=s, obstaculos=frozenset(range(0, w * h, 7)))
+            self.assertNotIn(k.comidas[0], k.obstaculos)
+
+    def test_mapas_tem_caminho_e_comida_inicial(self):
+        from cobra.algoritmos.base import buscar
+        from cobra.mapas import MAPAS
+        for nome, gerar in MAPAS.items():
+            for w, h in [(12, 8), (18, 12), (24, 16)]:
+                obst, comida = gerar(w, h)
+                j = Jogo(w, h, obstaculos=frozenset(obst), comida=comida)
+                self.assertIsNotNone(buscar(j, "bfs").caminho, f"{nome} {w}x{h}")
+                if comida is not None:
+                    self.assertEqual(j.comidas[0], comida)
+                for t in ("bfs", "dfs", "ucs", "gulosa", "astar"):
+                    self.assertFalse(set(buscar(j, t).caminho) & j.obstaculos, t)
+
+
 if __name__ == "__main__":
     unittest.main()

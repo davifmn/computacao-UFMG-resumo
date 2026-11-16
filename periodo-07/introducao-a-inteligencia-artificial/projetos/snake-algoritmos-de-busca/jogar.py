@@ -3,10 +3,14 @@
     pip install pygame
     python3 jogar.py
 
-Menu: ←/→ troca de família, ↑/↓ escolhe, Enter joga.
-Jogo: Espaço pausa · N um passo · T mostra/esconde o pensamento · +/− velocidade ·
-      R mesma partida (o não determinístico sorteia de novo) · S outra partida ·
-      B bordas (paredes/toro) · Esc volta ao menu. Em "Você joga", setas ou WASD.
+Antes de andar, a cobra pensa: as células expandidas pela busca (ou as simulações do
+Monte Carlo) aparecem uma a uma, e o caminho só aparece quando fica definido.
+
+Menu: ←/→ troca de família, ↑/↓ escolhe, M mapa, Enter joga.
+Jogo: Espaço pausa · N um passo (ou conclui o raciocínio) · T mostra/esconde o pensamento ·
+      +/− velocidade · R mesma partida (o não determinístico sorteia de novo) · S outra partida ·
+      M próximo mapa · B bordas (paredes/toro) · clique: põe/tira obstáculo · Esc menu.
+      Em "Você joga", setas ou WASD.
 """
 from __future__ import annotations
 
@@ -16,6 +20,7 @@ import pygame
 
 from cobra.algoritmos import FAMILIAS
 from cobra.jogo import DIRS, Jogo, oposta
+from cobra.mapas import MAPAS
 
 W, H, CEL = 18, 12, 36
 PAINEL = 380
@@ -25,7 +30,9 @@ FUNDO, CASA1, CASA2 = (14, 17, 22), (26, 31, 39), (29, 34, 43)
 TEXTO, APAGADO, AZUL, AMARELO = (230, 232, 235), (154, 163, 176), (88, 196, 221), (244, 211, 94)
 VERDE, VERMELHO, LARANJA, TEAL, ROXO, ROSA = (131, 193, 103), (252, 98, 85), (255, 159, 67), (92, 208, 179), (177, 137, 245), (247, 143, 179)
 COR_DIR = [AZUL, LARANJA, ROXO, ROSA]
+OBST = (74, 81, 96)
 VELOCIDADES = [2, 4, 8, 12, 20, 35, 60, 120, 250]
+RACIOCINIO = 4                                  # eventos de raciocínio por passo de velocidade (padrão: 80/s)
 
 
 class Humano:
@@ -60,6 +67,10 @@ class App:
         self.vel = 4
         self.mostrar = True
         self.no_menu = True
+        self.mapas = list(MAPAS)
+        self.i_mapa = self.mapas.index("armadilha em U")
+        self.obst_editado = None                      # obstáculos desenhados com o mouse
+        self.pensando, self.rev, self.segurar = False, 0.0, 0.0
 
     # ------------------------------------------------------------------ partida
     def opcoes(self, col):
@@ -71,24 +82,38 @@ class App:
 
     def comecar(self):
         self.classe = self.opcoes(self.col)[self.lin][1]
-        self.jogo = Jogo(W, H, 1, self.toroidal, self.semente_jogo)
-        self.agente = self.classe(random.Random(self.semente_agente))
-        self.humano = self.classe is Humano
-        self.dec = None if self.humano else self.agente.decidir(self.jogo)
-        self.nos = self.dec.nos if self.dec else 0
+        obst, comida = MAPAS[self.mapas[self.i_mapa]](W, H)
+        if self.obst_editado is not None:
+            obst = self.obst_editado
+        self.jogo = Jogo(W, H, 1, self.toroidal, self.semente_jogo, obstaculos=frozenset(obst), comida=comida)
+        self.nos = 0
         self.rodando = False
         self.acc = 0.0
         self.no_menu = False
+        self.novo_agente()
+
+    def novo_agente(self):
+        self.agente = self.classe(random.Random(self.semente_agente))
+        self.humano = self.classe is Humano
+        self.decidir()
+
+    def decidir(self):
+        """Nova decisão; se houve busca ou simulação, ela é revelada aos poucos antes de andar."""
+        self.dec = None if self.humano or not self.jogo.vivo else self.agente.decidir(self.jogo)
+        if self.dec:
+            self.nos += self.dec.nos
+        self.pensando = bool(self.dec and self.mostrar and self.dec.replanejou and self.total_raciocinio())
+        self.rev = 0.0
+
+    def total_raciocinio(self):
+        return len(self.dec.expandidos) + len(self.dec.rollouts) if self.dec else 0
 
     def passo(self):
         j = self.jogo
         if not j.vivo:
             return
         j.passo(self.agente.dir if self.humano else self.dec.dir)
-        self.dec = None
-        if j.vivo and not self.humano:
-            self.dec = self.agente.decidir(j)
-            self.nos += self.dec.nos
+        self.decidir()
 
     # ------------------------------------------------------------------ eventos
     def tecla(self, k):
@@ -105,6 +130,9 @@ class App:
                 self.rodando = True
             elif k == pygame.K_b:
                 self.toroidal = not self.toroidal
+            elif k == pygame.K_m:
+                self.i_mapa = (self.i_mapa + 1) % len(self.mapas)
+                self.obst_editado = None
             return
         setas = {pygame.K_UP: 0, pygame.K_RIGHT: 1, pygame.K_DOWN: 2, pygame.K_LEFT: 3,
                  pygame.K_w: 0, pygame.K_d: 1, pygame.K_s: 2, pygame.K_a: 3}
@@ -118,7 +146,10 @@ class App:
             self.rodando = not self.rodando and self.jogo.vivo
         elif k == pygame.K_n:
             self.rodando = False
-            self.passo()
+            if self.pensando:
+                self.pensando = False            # conclui o raciocínio
+            else:
+                self.passo()
         elif k == pygame.K_t:
             self.mostrar = not self.mostrar
         elif k in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
@@ -137,9 +168,35 @@ class App:
         elif k == pygame.K_b:
             self.toroidal = not self.toroidal
             self.comecar()
+        elif k == pygame.K_m:
+            self.i_mapa = (self.i_mapa + 1) % len(self.mapas)
+            self.obst_editado = None
+            self.comecar()
+
+    def clique(self, pos):
+        """Põe ou tira um obstáculo; o agente pensa de novo no mundo novo."""
+        if self.no_menu or not self.jogo.vivo:
+            return
+        x, y = pos[0] // CEL, pos[1] // CEL
+        if not (0 <= x < W and 0 <= y < H):
+            return
+        v, j = y * W + x, self.jogo
+        if v in j.corpo or v in j.comidas:
+            return
+        j.obstaculos = j.obstaculos ^ {v}
+        self.obst_editado = set(j.obstaculos)
+        self.novo_agente()
 
     def atualizar(self, dt):
         if self.no_menu or not self.rodando:
+            return
+        if self.pensando:                               # revela o raciocínio antes de andar
+            self.rev += dt * RACIOCINIO * VELOCIDADES[self.vel]
+            if self.rev >= self.total_raciocinio():
+                self.pensando, self.segurar = False, 0.6
+            return
+        if self.segurar > 0:                           # um instante para ver o caminho definido
+            self.segurar -= dt
             return
         self.acc += dt
         intervalo = 1 / VELOCIDADES[self.vel]
@@ -186,6 +243,7 @@ class App:
                 sel = c == self.col and i == self.lin
                 self.texto(("> " if sel else "   ") + C.nome, (x + 8, y - (2 if sel else 0)), self.fb if sel else self.f, AMARELO if sel else TEXTO)
                 y += 22
+        self.texto(f"mapa (M): {self.mapas[self.i_mapa]}", (510, ALT - 84), cor=APAGADO)
         self.texto(f"←/→ família · ↑/↓ algoritmo · Enter joga · B bordas: {'toro' if self.toroidal else 'paredes'}",
                    (510, ALT - 60), cor=APAGADO)
 
@@ -193,24 +251,30 @@ class App:
         j, t = self.jogo, self.tela
         t.fill(FUNDO)
         for v in range(W * H):
-            pygame.draw.rect(t, CASA1 if (v % W + v // W) % 2 else CASA2, (v % W * CEL, v // W * CEL, CEL, CEL))
+            cor = OBST if v in j.obstaculos else CASA1 if (v % W + v // W) % 2 else CASA2
+            pygame.draw.rect(t, cor, (v % W * CEL, v // W * CEL, CEL, CEL))
         d = self.dec if self.mostrar else None
         if d:
             n = max(1, len(d.expandidos))
             alfa = 110 if d.replanejou else 35
-            for k, v in enumerate(d.expandidos):
+            visiveis = int(self.rev) if self.pensando else len(d.expandidos) + len(d.rollouts)
+            for k, v in enumerate(d.expandidos[:visiveis]):
                 c = pygame.Color(0)
                 c.hsla = (200 + 80 * k / n, 55, 42, 100)
                 self.celula(v, (c.r, c.g, c.b), alfa)
-            if d.replanejou:
-                for v in d.fronteira:
-                    self.celula(v, AMARELO, 55)
-            for dd, cel in d.rollouts:
-                self.linha([j.cabeca, *cel], COR_DIR[dd], 1)
-            for v in d.fantasma or []:
-                pygame.draw.rect(t, TEAL, (v % W * CEL + 5, v // W * CEL + 5, CEL - 10, CEL - 10), 1)
-            if d.caminho:
-                self.linha([j.cabeca, *d.caminho], VERMELHO if d.perigo else VERDE)
+            if self.pensando and d.expandidos and visiveis:
+                v = d.expandidos[min(visiveis, len(d.expandidos)) - 1]
+                pygame.draw.rect(t, AMARELO, (v % W * CEL + 1, v // W * CEL + 1, CEL - 2, CEL - 2), 3)
+            for k, (dd, cel) in enumerate(d.rollouts[:visiveis]):
+                self.linha([j.cabeca, *cel], COR_DIR[dd], 3 if self.pensando and k == visiveis - 1 else 1)
+            if not self.pensando:                     # só depois de pensar: fronteira, fantasma e caminho
+                if d.replanejou:
+                    for v in d.fronteira:
+                        self.celula(v, AMARELO, 55)
+                for v in d.fantasma or []:
+                    pygame.draw.rect(t, TEAL, (v % W * CEL + 5, v // W * CEL + 5, CEL - 10, CEL - 10), 1)
+                if d.caminho:
+                    self.linha([j.cabeca, *d.caminho], VERMELHO if d.perigo else VERDE)
         for c in j.comidas:
             pygame.draw.circle(t, VERMELHO, self.centro(c), CEL // 3)
         L = len(j.corpo)
@@ -230,7 +294,14 @@ class App:
         for k, (a, b) in enumerate(stats):
             self.texto(f"{a}: {b}", (x0 + (k % 2) * 180, 66 + (k // 2) * 22))
         y = 140
-        if d:
+        if d and self.pensando:
+            tot = self.total_raciocinio()
+            self.texto(f"pensando… {min(int(self.rev), tot)} de {tot} ({'expansões' if d.expandidos else 'simulações'})", (x0, y), cor=AMARELO)
+            y += 26
+        elif d and d.replanejou and d.expandidos:
+            self.texto(f"caminho definido depois de {len(d.expandidos)} expansões" if d.caminho else "sem caminho", (x0, y), cor=VERDE)
+            y += 26
+        if d and not self.pensando:                     # o resultado só aparece depois de pensar
             for ln in quebrar(self.f, d.texto, PAINEL - 30):
                 self.texto(ln, (x0, y))
                 y += 20
@@ -239,13 +310,15 @@ class App:
                 self.texto(f"{DIRS[dd][3]}  {rot}", (x0, y), cor=AMARELO if dd == d.dir else APAGADO)
                 y += 20
         if not j.vivo:
-            msg = {"venceu": "Venceu!", "parede": "Bateu na parede", "corpo": "Bateu no corpo", "fome": "Morreu de fome"}[j.motivo]
+            msg = {"venceu": "Venceu!", "parede": "Bateu na parede", "obstaculo": "Bateu num obstáculo",
+                   "corpo": "Bateu no corpo", "fome": "Morreu de fome"}[j.motivo]
             self.texto(msg, (x0, ALT - 150), self.fb, VERDE if j.venceu else VERMELHO)
         if self.col == 1 and not self.humano:
             self.texto(f"semente do agente: {self.semente_agente}", (x0, ALT - 118), cor=APAGADO)
         self.texto(f"semente da comida: {self.semente_jogo} · bordas: {'toro' if j.toroidal else 'paredes'}", (x0, ALT - 96), cor=APAGADO)
+        self.texto(f"mapa: {'personalizado' if self.obst_editado is not None else self.mapas[self.i_mapa]}", (x0, ALT - 74), cor=APAGADO)
         self.texto("Espaço pausa · N passo · T pensamento · +/− velocidade", (16, H * CEL + 14), cor=APAGADO)
-        self.texto("R mesma partida · S outra partida · B bordas · Esc menu", (16, H * CEL + 38), cor=APAGADO)
+        self.texto("R mesma partida · S outra partida · M mapa · B bordas · clique: obstáculo · Esc menu", (16, H * CEL + 38), cor=APAGADO)
 
     def desenhar(self):
         self.desenhar_menu() if self.no_menu else self.desenhar_jogo()
@@ -264,6 +337,8 @@ def main():
                 return
             if e.type == pygame.KEYDOWN:
                 app.tecla(e.key)
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                app.clique(e.pos)
         app.atualizar(dt)
         app.desenhar()
         pygame.display.flip()

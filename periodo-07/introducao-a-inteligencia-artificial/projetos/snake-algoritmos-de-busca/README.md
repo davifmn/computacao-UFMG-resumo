@@ -3,8 +3,12 @@
 **Projeto extra ligado a Introdução à IA** · Python · pygame
 
 O jogo da cobrinha como laboratório de busca: 15 agentes em duas famílias, cada um mostrando
-o que **pensa** antes de cada passo (células expandidas, fronteira, caminho planejado,
-simulações). A mesma coisa roda no navegador, sem instalar nada:
+o que **pensa** antes de cada passo. Antes de andar, o raciocínio é revelado aos poucos: as
+células expandidas aparecem uma a uma (ou as simulações, no Monte Carlo), e o caminho só
+aparece quando fica **definido**. Há mapas de obstáculos (pilares, corredores, armadilha em U,
+sala com uma porta, labirinto, aleatório) e você pode pôr e tirar obstáculos com o mouse.
+No navegador, sem instalar nada, o raciocínio é reproduzido evento por evento, com narração
+e a fronteira na ordem em que vai ser esvaziada:
 **[Snake: quinze maneiras de pensar](https://davifmn.github.io/computacao-UFMG-resumo/periodo-07/introducao-a-inteligencia-artificial/visualizacoes/snake.html)**.
 
 ## As duas famílias
@@ -70,19 +74,21 @@ pip install pygame
 python3 jogar.py                     # menu com as duas famílias
 python3 torneio.py                   # tabela comparativa, sem tela
 python3 torneio.py --familia det -n 10 --tamanho 24x16 --toro
+python3 torneio.py --mapa armadilha   # ou pilares, corredores, sala, labirinto, aleatório
 python3 torneio.py --evoluir         # treina o genético e mostra as gerações
 python3 -m unittest -v               # testes (não precisam de pygame)
 ```
 
-No jogo: `Espaço` pausa · `N` um passo · `T` mostra/esconde o pensamento · `+`/`−` velocidade ·
-`R` mesma partida · `S` outra partida · `B` bordas (paredes/toro) · `Esc` menu. Em "Você joga",
-setas ou WASD.
+No jogo: `Espaço` pausa · `N` um passo (ou conclui o raciocínio) · `T` mostra/esconde o
+pensamento · `+`/`−` velocidade · `R` mesma partida · `S` outra partida · `M` próximo mapa ·
+`B` bordas (paredes/toro) · clique: põe/tira obstáculo · `Esc` menu. Em "Você joga", setas ou WASD.
 
 ## Estrutura
 
 | Arquivo | Conteúdo |
 |---|---|
-| `cobra/jogo.py` | regras puras (sem pygame): passo, colisões, comida com semente, modelos de obstáculo, inundação e rota de fuga |
+| `cobra/jogo.py` | regras puras (sem pygame): passo, colisões, obstáculos, comida com semente, modelos de obstáculo do corpo, inundação e rota de fuga |
+| `cobra/mapas.py` | mapas de obstáculos (a mesma geometria da versão web) |
 | `cobra/algoritmos/base.py` | `Decisao` (direção + pensamento), a busca genérica (BFS, DFS, UCS, gulosa, A*) e o plano de sobrevivência |
 | `cobra/algoritmos/deterministicos/` | `planejador.py` (segue e replaneja), `busca_cega.py`, `busca_informada.py`, `a_estrela_cobra.py`, `hamiltoniano.py` |
 | `cobra/algoritmos/nao_deterministicos/` | `busca_local.py`, `monte_carlo.py` (Monte Carlo e MCTS), `genetico.py` |
@@ -111,7 +117,10 @@ Na refatoração (novembro de 2026), o projeto foi reescrito em torno das duas f
 - **Novos agentes**: BFS, DFS, custo uniforme com risco, gulosa, A* seguro e ciclo hamiltoniano
   (determinísticos); passeio aleatório, subida de encosta, têmpera simulada, Monte Carlo e MCTS
   (não determinísticos).
-- **Pensamento visível**: cada agente devolve o que considerou, e a interface desenha.
+- **Pensamento visível**: cada agente devolve o que considerou, e a interface o revela aos
+  poucos antes de andar (na página web, evento por evento, com narração).
+- **Obstáculos**: mapas prontos e edição com o mouse. Com obstáculos, o ciclo hamiltoniano
+  desiste (achar um ciclo hamiltoniano numa grade qualquer é NP-difícil).
 - A pasta mudou de `snake-a-estrela-e-neat` para `snake-algoritmos-de-busca`.
 
 ## Veja também

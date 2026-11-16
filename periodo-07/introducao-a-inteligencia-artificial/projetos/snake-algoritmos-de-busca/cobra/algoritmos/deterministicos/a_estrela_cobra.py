@@ -23,8 +23,11 @@ class AEstrelaCaixeiro(Planejador):
         def trecho(de, para):
             if (de, para) not in cache:
                 # depois da 1ª comida, o corpo de agora como obstáculo (aproximação do original)
-                s = j if de == j.cabeca else Jogo(j.w, j.h, 0, j.toroidal, 0, [de, *j.corpo[1:]], j.comidas[:],
-                                                   rng_comida=j.rng_comida)
+                if de == j.cabeca:
+                    s = j
+                else:
+                    s = j.clonar()
+                    s.corpo = [de, *j.corpo[1:]]
                 r = buscar(s, "astar", alvos=[para], idx=idx)
                 expandidos.extend(r.expandidos)
                 cache[(de, para)] = r

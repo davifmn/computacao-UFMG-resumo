@@ -5,6 +5,7 @@ cauda. As mesmas regras da versão web (visualizacoes/snake.js).
 """
 from __future__ import annotations
 
+import copy
 import random
 from dataclasses import dataclass, field
 
@@ -34,17 +35,26 @@ class Jogo:
     motivo: str | None = None
     simulacao: bool = False
     rng_comida: random.Random | None = None
+    obstaculos: frozenset[int] = frozenset()
+    comida: int | None = None                  # posição da primeira comida (opcional, para mapas)
 
     def __post_init__(self):
+        cx, cy = self.w // 2, self.h // 2
+        c = cy * self.w + cx
         if not self.corpo:
-            cx, cy = self.w // 2, self.h // 2
-            c = cy * self.w + cx
             self.corpo = [c, c - 1, c - 2]
+        # a área onde a cobra nasce (e a célula da frente) nunca tem obstáculo
+        self.obstaculos = frozenset(self.obstaculos) - {c + 1, c, c - 1, c - 2}
         self.limite_fome = 2 * self.w * self.h
         if self.rng_comida is None:
             self.rng_comida = random.Random(self.semente)
-            for _ in range(self.n_comidas):
+            if self.comida is not None and self.comida not in self.obstaculos and self.comida not in self.corpo:
+                self.comidas.append(self.comida)
+            while len(self.comidas) < self.n_comidas:
+                n = len(self.comidas)
                 self._sortear_comida()
+                if len(self.comidas) == n:
+                    break
 
     @property
     def cabeca(self) -> int:
@@ -52,20 +62,23 @@ class Jogo:
 
     def clonar(self) -> "Jogo":
         """Cópia para simulação: lá, comida comida não reaparece (o futuro é desconhecido)."""
-        c = Jogo(self.w, self.h, self.n_comidas, self.toroidal, self.semente, self.corpo[:], self.comidas[:],
-                 self.dir, self.passos, self.fome, self.comidos, self.vivo, self.venceu, self.motivo, True,
-                 self.rng_comida)
+        c = copy.copy(self)
+        c.corpo, c.comidas, c.simulacao = self.corpo[:], self.comidas[:], True
         return c
 
     def _sortear_comida(self):
-        ocupado = set(self.corpo) | set(self.comidas)
+        ocupado = set(self.corpo) | set(self.comidas) | self.obstaculos
         livres = [v for v in range(self.w * self.h) if v not in ocupado]
         if livres:
             self.comidas.append(livres[int(self.rng_comida.random() * len(livres))])
 
     # ------------------------------------------------------------------ geometria
     def vizinho(self, v: int, d: int) -> int:
-        """Célula vizinha de v na direção d, ou −1 se sair da grade (sem toro)."""
+        """Célula vizinha de v na direção d, ou −1 se sair da grade (sem toro) ou for obstáculo."""
+        u = self._destino(v, d)
+        return -1 if u < 0 or u in self.obstaculos else u
+
+    def _destino(self, v: int, d: int) -> int:
         dx, dy = DIRS[d][0], DIRS[d][1]
         x, y = v % self.w + dx, v // self.w + dy
         if self.toroidal:
@@ -75,7 +88,7 @@ class Jogo:
         return y * self.w + x
 
     def distancia(self, a: int, b: int) -> int:
-        """Manhattan; no toro, dando a volta quando é mais curto (continua admissível)."""
+        """Manhattan; no toro, dando a volta quando é mais curto. Ignora obstáculos: nunca superestima."""
         dx, dy = abs(a % self.w - b % self.w), abs(a // self.w - b // self.w)
         if self.toroidal:
             dx, dy = min(dx, self.w - dx), min(dy, self.h - dy)
@@ -100,9 +113,11 @@ class Jogo:
         self.dir = d
         self.passos += 1
         self.fome += 1
-        nv = self.vizinho(self.cabeca, d)
+        nv = self._destino(self.cabeca, d)
         if nv < 0:
             return self._morrer("parede")
+        if nv in self.obstaculos:
+            return self._morrer("obstaculo")
         come = nv in self.comidas
         # a cauda sai do lugar neste passo, a menos que a cobra coma (aí ela cresce)
         limite = len(self.corpo) if come else len(self.corpo) - 1
@@ -115,7 +130,7 @@ class Jogo:
             self.comidos += 1
             self.fome = 0
             self.comidas.remove(nv)
-            if len(self.corpo) == self.w * self.h:
+            if len(self.corpo) == self.w * self.h - len(self.obstaculos):
                 self.vivo, self.venceu, self.motivo = False, True, "venceu"
                 return self
             if not self.simulacao:

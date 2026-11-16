@@ -2,6 +2,8 @@
 
     python3 torneio.py                      # as duas famílias, 6 partidas cada, 18 × 12
     python3 torneio.py --familia det -n 10 --tamanho 24x16 --toro
+    python3 torneio.py --mapa labirinto      # mapas: "sem obstáculos", pilares, corredores,
+                                            # "armadilha em U", "sala com uma porta", labirinto, aleatório
     python3 torneio.py --evoluir            # treina o algoritmo genético e mostra as gerações
 """
 from __future__ import annotations
@@ -12,6 +14,7 @@ import statistics
 from cobra.algoritmos import FAMILIAS
 from cobra.algoritmos.nao_deterministicos import CARACTERISTICAS, evoluir
 from cobra.algoritmos.torneio import jogar_partida
+from cobra.mapas import MAPAS
 
 CAROS = {"MonteCarlo", "MCTS"}   # ~10 a 20 ms por decisão em Python: menos partidas
 
@@ -23,9 +26,14 @@ def main():
     ap.add_argument("--tamanho", default="18x12", help="LxA, por exemplo 24x16")
     ap.add_argument("--toro", action="store_true", help="as bordas atravessam")
     ap.add_argument("--comidas", type=int, default=1)
+    ap.add_argument("--mapa", default="sem obstáculos", help="um de: " + ", ".join(MAPAS) + " (basta o começo do nome)")
     ap.add_argument("--evoluir", action="store_true", help="treina o algoritmo genético")
     a = ap.parse_args()
     w, h = map(int, a.tamanho.lower().split("x"))
+    nome_mapa = next((m for m in MAPAS if m.startswith(a.mapa)), None)
+    if nome_mapa is None:
+        ap.error(f"mapa desconhecido: {a.mapa}")
+    obst, comida = MAPAS[nome_mapa](w, h)
 
     if a.evoluir:
         print("geração   melhor     média   pesos (" + ", ".join(CARACTERISTICAS) + ")")
@@ -35,16 +43,17 @@ def main():
 
     familias = {"det": ["Determinísticos"], "nd": ["Não determinísticos"]}.get(a.familia, list(FAMILIAS))
     for nome in familias:
-        print(f"\n== {nome} ({w} × {h}{', toro' if a.toro else ''}, {a.comidas} comida(s)) ==")
-        print(f"{'algoritmo':32s} {'comida':>7s} {'desvio':>7s} {'melhor':>6s} {'vitórias':>8s}  parede·corpo·fome  {'nós/dec':>8s} {'ms/dec':>7s}")
+        print(f"\n== {nome} ({w} × {h}, {nome_mapa}{', toro' if a.toro else ''}, {a.comidas} comida(s)) ==")
+        print(f"{'algoritmo':32s} {'comida':>7s} {'desvio':>7s} {'melhor':>6s} {'vitórias':>8s}  parede·corpo·fome  {'nós/dec':>8s} {'ms/dec':>7s}")  # parede inclui obstáculo
         for _, C in FAMILIAS[nome]:
             n = min(a.partidas, 2) if C.__name__ in CAROS else a.partidas
-            rs = [jogar_partida(C, w, h, a.comidas, a.toro, semente=100 + k, semente_agente=k) for k in range(1, n + 1)]
+            rs = [jogar_partida(C, w, h, a.comidas, a.toro, semente=100 + k, semente_agente=k, obstaculos=obst, comida=comida)
+                  for k in range(1, n + 1)]
             com = [r["comidos"] for r in rs]
             dec = sum(r["decisoes"] for r in rs)
             conta = lambda m: sum(r["motivo"] == m for r in rs)  # noqa: E731
             print(f"{C.nome:32s} {statistics.mean(com):7.1f} {statistics.pstdev(com):7.1f} {max(com):6d} "
-                  f"{conta('venceu'):5d}/{n:<2d}  {conta('parede'):6d}·{conta('corpo')}·{conta('fome'):<6d}"
+                  f"{conta('venceu'):5d}/{n:<2d}  {conta('parede') + conta('obstaculo'):6d}·{conta('corpo')}·{conta('fome'):<6d}"
                   f"  {sum(r['nos'] for r in rs) / dec:8.1f} {1000 * sum(r['s'] for r in rs) / dec:7.3f}")
 
 

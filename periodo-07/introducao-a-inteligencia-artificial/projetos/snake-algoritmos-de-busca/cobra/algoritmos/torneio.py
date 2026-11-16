@@ -8,9 +8,9 @@ from ..jogo import Jogo
 
 
 def jogar_partida(criar, w: int = 18, h: int = 12, comidas: int = 1, toroidal: bool = False, semente: int = 1,
-                  semente_agente: int = 1, passos_max: int = 50_000) -> dict:
+                  semente_agente: int = 1, passos_max: int = 50_000, obstaculos=(), comida: int | None = None) -> dict:
     """``criar(rng)`` devolve um agente novo. Devolve comidos, passos, motivo, nós e tempo."""
-    j = Jogo(w, h, comidas, toroidal, semente)
+    j = Jogo(w, h, comidas, toroidal, semente, obstaculos=frozenset(obstaculos), comida=comida)
     ag = criar(random.Random(semente_agente))
     nos = decisoes = 0
     t0 = time.perf_counter()

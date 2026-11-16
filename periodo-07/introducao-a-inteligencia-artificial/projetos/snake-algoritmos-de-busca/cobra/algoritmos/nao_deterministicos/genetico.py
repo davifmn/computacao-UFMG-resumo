@@ -27,7 +27,7 @@ def caracteristicas(j: Jogo, d: int) -> list[float]:
         return [0, 0, 1, 1, 0]
     sidx = s.indice()
     area, cauda = area_livre(s, sidx)
-    livres = max(1, s.w * s.h - len(s.corpo))
+    livres = max(1, s.w * s.h - len(s.obstaculos) - len(s.corpo))
     aperto = sum(1 for k in range(4) if (u := s.vizinho(nv, k)) < 0 or not livre_em(sidx, len(s.corpo), u, 1))
     return [0, dist if dist != float("inf") else 0, area / livres, 1 if cauda else 0, aperto / 4]
 
